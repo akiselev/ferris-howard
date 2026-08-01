@@ -10,7 +10,7 @@
 
 | Divergence | Class | Source |
 |---|---|---|
-| `for<a, b, c: Self>` — ascription distributes over the unascribed prefix (Rust's generic lists bound only `c`) | confined (Rust's `for<>` takes only lifetimes; deliberate divergence, documented loudly per F2) | F2 |
+| `for<a, b, c: Self>` — ascription distributes over the unascribed prefix (Rust's generic lists bound only `c`) | confined (Rust's `for<>` takes only lifetimes; deliberate divergence, documented loudly per F2). Landed M1 (A1.4) with the negative test F2 asks for: a body using the *first* binder at another type is an error, which is the observable difference between the two readings | F2 |
 | Types in term position: `finrank(K, V)` | extension | F8 |
 | Named arguments: `congruent(x, a, modulus: m)` | extension | F11 |
 | `in` as a binary operator outside loops | extension | F12 |
