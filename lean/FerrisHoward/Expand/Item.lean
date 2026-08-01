@@ -23,6 +23,8 @@ pass through to Lean. -/
 structure AttrSet where
   /-- `#[def]`: `type X = e;` becomes a `def` rather than an `abbrev`. -/
   defOptOut : Bool := false
+  /-- `#[name(n)]`: the name an otherwise-anonymous `impl` instance takes. -/
+  name? : Option Ident := none
   /-- Attributes passed through verbatim (design §3's `#[attr]` → `@[attr]` row). -/
   «lean» : TSyntaxArray ``attrInstance := #[]
   deriving Inhabited
@@ -39,9 +41,13 @@ private def addAttr (s : AttrSet) (a : TSyntax `fh_attr) : MacroM AttrSet :=
     | `(fh_attr| $n:ident($_args,*)) =>
         if n.getId == `name then
           -- design §3: `#[name(…)]` names the instance an `impl` would otherwise leave
-          -- anonymous. Every M0 item already carries its own name, so there is nothing
-          -- here for it to do yet.
-          Macro.throwErrorAt a "FH: `#[name(…)]` names an anonymous `impl`, which arrives at A1.6"
+          -- anonymous.
+          match _args.getElems with
+          | #[arg] =>
+            match arg with
+            | `(fh_expr| $x:ident) => return { s with name? := some x }
+            | _ => Macro.throwErrorAt arg "FH: `#[name(…)]` takes an identifier"
+          | _ => Macro.throwErrorAt a "FH: `#[name(…)]` takes exactly one identifier"
         else
           Macro.throwErrorAt a
             s!"FH: `#[{n.getId}(…)]` takes arguments, which are not supported yet; \
@@ -63,6 +69,11 @@ duplicates every builder, and a follow-up `attribute [attr] name` command is a d
 thing from design §3's `#[attr]` → `@[attr]` row. Guarded — anything that is not a
 declaration errors, which is exactly what `mod` and `use` should do. -/
 private def withAttrs (attrs : AttrSet) (d : TSyntax `command) : MacroM (TSyntax `command) := do
+  -- `#[name(…)]` is consumed by `impl`, which clears it before reaching here. On anything
+  -- else it is meaningless: the item already has a name of its own.
+  if let some n := attrs.name? then
+    Macro.throwErrorAt n
+      "FH: `#[name(…)]` names an `impl`'s instance; every other item already has a name"
   if attrs.lean.isEmpty then return d
   unless d.raw.getKind == ``Lean.Parser.Command.declaration do
     Macro.throwError "FH: attributes are not supported on this item"
@@ -163,6 +174,25 @@ private def expandVariant (enumName : Ident) (v : TSyntax ``fhEnumVariant) : Mac
             "FH: an enum variant's fields must be either all named or all unnamed"
     | _ => Macro.throwErrorAt v "FH: no expansion for this enum variant"
 
+/-- A trait's carrier parameters: explicit binders, plus the first one, which is what a
+supertrait is applied to. Lean classes are parameterised over their carrier explicitly
+(design §4.4), which is the one place FH's generics are not implicit. -/
+private def expandCarriers (g? : Option (TSyntax ``fhGenerics)) :
+    MacroM (Array (TSyntax ``bracketedBinderF) × Option Ident) := do
+  let some g := g? | return (#[], none)
+  let `(fhGenerics| <$ps,*>) := g | Macro.throwErrorAt g "FH: no expansion for these generics"
+  let mut binders := #[]
+  let mut first := none
+  for p in ps.getElems do
+    let (x, t) ← withRef p do
+      match p with
+      | `(fhGenericParam| $x:ident : $t) => do checkIdent x; return (x, ← expandExpr t)
+      | `(fhGenericParam| $x:ident) => do checkIdent x; return (x, ← `(Type _))
+      | _ => Macro.throwErrorAt p "FH: no expansion for this generic parameter"
+    if first.isNone then first := some x
+    binders := binders.push (← `(bracketedBinderF| ($x : $t)))
+  return (binders, first)
+
 /-- A declaration's binders, in Mathlib's order: implicit generics, then the instance
 binders a `where` clause asks for, then the explicit parameters. Implicits and instances
 are both inferred at call sites, so the order is a readability choice, not an interface
@@ -174,6 +204,58 @@ private def allBinders (gs : Option (TSyntax ``fhGenerics)) (wh : Option (TSynta
   let instances ← expandWhere wh
   let explicits ← ps.zip ts |>.mapM fun (p, t) => expandParam p t
   return generics ++ instances ++ explicits
+
+/-- A trait member → a class field.
+
+A method becomes a field whose type is a function, with its parameters kept as binders so
+their names stay visible in goals and available to named arguments; a body becomes the
+field's default value. A bare `name: <prop>;` is design §4.4's law — a field like any
+other, which is exactly why every `impl` has to discharge it. -/
+private def expandTraitMember (m : TSyntax `fh_member) : MacroM (TSyntax ``structSimpleBinder) :=
+  withRef m do
+    match m with
+    | `(fh_member| fn $n:ident $[$gs]? ($[$ps : $ts],*) -> $ret $body:fh_fn_body) => do
+        checkIdent n
+        let binders ← allBinders gs none ps ts
+        let ret ← expandExpr ret
+        match body with
+        | `(fh_fn_body| ;) => `(structSimpleBinder| $n:ident $binders* : $ret)
+        | `(fh_fn_body| { $e }) => do
+            let e ← expandExpr e
+            `(structSimpleBinder| $n:ident $binders* : $ret := $e)
+        | _ => Macro.throwErrorAt body "FH: no expansion for this method body"
+    | `(fh_member| $n:ident : $ty;) => do
+        checkIdent n
+        let ty ← expandExpr ty
+        `(structSimpleBinder| $n:ident : $ty)
+    | _ => Macro.throwErrorAt m "FH: no expansion for this trait member"
+
+/-- An impl member → a structure-instance field.
+
+A method keeps its binders — `op (a : Int) (b : Int) := a + b` — rather than becoming a
+`fun`. That is the idiomatic Lean, it keeps the parameter names and types the author
+wrote, and a lambda built from bracketed binders does not survive the pretty-printer,
+which the golden tier and the publication path both depend on. -/
+private def expandImplMember (m : TSyntax `fh_member) : MacroM (TSyntax ``structInstField) :=
+  withRef m do
+    match m with
+    | `(fh_member| fn $n:ident $[$_gs]? ($[$ps : $ts],*) -> $_ret { $e }) => do
+        checkIdent n
+        let binders ← ps.zip ts |>.mapM fun (p, t) => do
+          let p ← expandBinderPat p
+          let t ← expandExpr t
+          `(structInstFieldBinder| ($p : $t))
+        let e ← expandExpr e
+        `(structInstField| $n:ident $binders:structInstFieldBinder* := $e)
+    | `(fh_member| fn $n:ident $[$_gs]? ($[$_ps : $_ts],*) -> $_ret ;) =>
+        Macro.throwErrorAt m
+          s!"FH: `{n.getId}` needs a body here — an `impl` supplies values, and a bodyless \
+             `fn` declares an obligation"
+    | `(fh_member| $n:ident : $val;) => do
+        checkIdent n
+        let val ← expandExpr val
+        `(structInstField| $n:ident := $val)
+    | _ => Macro.throwErrorAt m "FH: no expansion for this impl member"
 
 /-- Stage-one expansion of a single FH item into Lean surface syntax. -/
 partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM (TSyntax `command) :=
@@ -195,6 +277,38 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
         let concl ← expandExpr concl
         let (body, sorryValued) ← expandFnBody body
         fhDecl (← withAttrs attrs (← `(command| theorem $n $binders* : $concl := $body))) sorryValued
+
+    | `(fh_item| trait $n:ident $[$gs]? $[: $parents]? $[$wh]? { $ms* }) => do
+        checkIdent n
+        -- a class's carrier is an explicit parameter, unlike a `fn`'s generics
+        let carriers ← expandCarriers gs
+        let instances ← expandWhere wh
+        let binders := carriers.1 ++ instances
+        let fields ← ms.mapM expandTraitMember
+        let decl ← match parents with
+          | none => `(command| class $n:ident $binders* where $fields:structSimpleBinder*)
+          | some bs => do
+              let some self := carriers.2
+                | Macro.throwErrorAt it
+                    "FH: a trait with supertraits needs a carrier, as in `trait C<Self>: D`"
+              let ps ← bs.raw[0].getSepArgs.mapM fun p => do
+                let p ← expandExpr ⟨p⟩
+                `(structParent| $p $self)
+              `(command| class $n:ident $binders* extends $ps,* where
+                  $fields:structSimpleBinder*)
+        fhDecl (← withAttrs attrs decl)
+
+    | `(fh_item| impl $cls for $carrier $[$wh]? { $ms* }) => do
+        let cls ← expandExpr cls
+        let carrier ← expandExpr carrier
+        let instances ← expandWhere wh
+        let fields ← ms.mapM expandImplMember
+        let decl ← match attrs.name? with
+          | some name => do
+              checkIdent name
+              `(command| instance $name:ident $instances:bracketedBinder* : $cls $carrier := { $fields:structInstField,* })
+          | none => `(command| instance $instances:bracketedBinder* : $cls $carrier := { $fields:structInstField,* })
+        fhDecl (← withAttrs { attrs with name? := none } decl)
 
     | `(fh_item| struct $n:ident $[: $bounds]? { $[$fnames : $ftys],* }) => do
         checkIdent n

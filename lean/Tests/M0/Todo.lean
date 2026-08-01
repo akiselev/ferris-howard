@@ -89,7 +89,7 @@ info: FH sorry report: 3 declaration(s) depend on `sorryAx`
 
 /-! ## Tier 3 — negative -/
 
-/-- error: FH: `#[name(…)]` names an anonymous `impl`, which arrives at A1.6 -/
+/-- error: FH: `#[name(…)]` names an `impl`'s instance; every other item already has a name -/
 #guard_msgs in
 #[name(other)] fn renamed() -> Nat { 1 }
 

@@ -43,6 +43,7 @@ declare_syntax_cat fh_pat
 declare_syntax_cat fh_item
 declare_syntax_cat fh_fn_body
 declare_syntax_cat fh_attr
+declare_syntax_cat fh_member
 
 namespace FerrisHoward
 
@@ -365,6 +366,38 @@ syntax (name := fhUse) "use " fh_expr ";" : fh_item
 
 /-- `type X = e;` → `abbrev X := e`, or `def` under `#[def]` (design §3). -/
 syntax (name := fhType) "type " ident " = " fh_expr ";" : fh_item
+
+/-! ### Traits and impls (A1.6)
+
+A trait body and an impl body hold the same two shapes, so they share one category: a
+**method** (`fn`, with or without a body) and a **field** (`name: value;`). What the two
+mean differs by context — in a trait a method is a field declaration and a bodyless one is
+an obligation; in an impl both are the values that discharge them. -/
+
+/-- A method: a field whose type is a function. In a trait, a body is the field's default
+value (design §4.4); in an impl, it is the implementation. -/
+syntax (name := fhMemberFn) "fn " ident (fhGenerics)? "(" (fh_pat ": " fh_expr),* ")"
+  " -> " fh_expr fh_fn_body : fh_member
+
+/-- A field. In a trait, `assoc: <prop>;` is design §4.4's **laws-as-fields** — a proof
+obligation every `impl` carries. In an impl it is the value discharging one, which may be
+a term, a `lean! { }` block, or `todo!()`. -/
+syntax (name := fhMemberField) ident ": " fh_expr ";" : fh_member
+
+/-- `trait C<Self> { … }` → `class C (Self : Type _) where …`.
+
+Three deltas from Rust, all design §4.4: laws are fields; the carrier is an explicit class
+parameter (so generics here become *explicit* binders, unlike on a `fn`); and extra
+parameters are just more generics, which is how multi-parameter classes like `Module<R,
+Self>` arrive. Supertraits become `extends`, with each parent applied to the carrier. -/
+syntax (name := fhTrait) "trait " ident (fhGenerics)? (": " fhBounds)? (fhWhere)?
+  " { " fh_member* " } " : fh_item
+
+/-- `impl C for T { … }` → `instance : C T := { … }`, named by `#[name(…)]` when it needs
+a name. Rust's coherence and orphan rules do not carry over — Lean has none and Mathlib
+depends on that (design §4.4). -/
+syntax (name := fhImpl) "impl " fh_expr:max " for " fh_expr:max (fhWhere)?
+  " { " fh_member* " } " : fh_item
 
 /-- An item carrying attributes. A separate production rather than an optional prefix on
 every item, so each production keeps a distinct leading token and the grammar stays
