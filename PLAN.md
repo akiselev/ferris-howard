@@ -1,12 +1,12 @@
 # Ferris–Howard Implementation Plan
 
-**Status:** Draft 0.3 · 2026-08-01 · Derived from `design.md`, `corpus-review.md`, `agent-interface.md`, `atlas.md`, `atlas-validation.md`. Revised after two adversarial-review rounds: round 1 (completeness audit, execution premortem, Lean-feasibility experiments on the pinned toolchain, prior-art research) and round 2 (50-point fix verification + cold re-read of the revision).
+**Status:** Draft 0.3 · 2026-08-01 · Derived from `design.md`, `corpus-review.md`, `agent-interface.md`, `atlas.md`, `atlas-validation.md`. Revised after two adversarial-review rounds: round 1 (completeness audit, execution premortem, Lean-feasibility experiments on the pinned toolchain, prior-art research) and round 2 (50-point fix verification + cold re-read of the revision). **§9 amendment queue fully landed and answer key v1 frozen 2026-08-01 — the next session starts at §7 week 1 (the vertical slice).**
 **Decisions in force:** FH-in-`.lean` per-declaration commands through M2 (standalone `.fh` at M3); monorepo `lean/` + `crates/`; Lean `leanprover/lean4:v4.32.2` + Mathlib `v4.32.2`, bumps only at milestone boundaries; Apache-2.0; corpus Rulings A–E and F1–F18 binding; authority order per `design.md` §8. Where this plan deviates from binding doc text, the deviation is queued in §9 and lands as a doc PR **before** its dependent code.
 
 ## 0. Ground rules (non-negotiable, from the docs)
 
 1. **Corpus as spec (Ruling E).** Every feature lands with all **four** test tiers: golden expansion, elaboration, negative, **span** (the fourth tier is plan-introduced; doc PR §9.3). The golden tier is the living syntax specification.
-2. **Stage one relentlessly (design §2).** Every feature PR states macro-expansion vs `elab_rules` and justifies stage two. Known stage-two items, flagged in advance: F9 coercion control (mechanism one-pager I6 — its blast radius vs this very rule is the open question), F10 ascription, F1 expected-type inference, `where P: Prime`→`Fact` bridge resolution, F13 (pending §9.2).
+2. **Stage one relentlessly (design §2).** Every feature PR states macro-expansion vs `elab_rules` and justifies stage two. Known stage-two items, flagged in advance: F9 coercion control (mechanism one-pager I6 — its blast radius vs this very rule is the open question), F10 ascription, F1 expected-type inference, `where P: Prime`→`Fact` bridge resolution, F13 expected-type election (landed §9.2).
 3. **Span preservation.** Discipline (verified experimentally): user syntax passes through antiquotes untouched; every synthesized node is wrapped in `withRef` of its FH source node; never re-parse strings. Mechanized from M0 via the span tier.
 4. **Ruling D governance.** Every grammar change classified extension/confined/violation; violations amend `corpus-review.md` first. The classification label is **human-applied**; automation is advisory.
 5. **Doc-first.** Ambiguities become PRs against the design docs before dependent code. The standing amendment queue is §9.
@@ -30,7 +30,7 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 ## 3. Phase I — Infrastructure
 
 - **I1. CI.** Pinned `leanprover/lean-action` + `use-mathlib-cache: true` + `actions/cache` on `.lake/build` (LeanProject template); `lake exe mk_all --check`; toolchain-match assertion; rust job; governance job = PR-template Ruling-D field + human-applied label (automation advisory).
-- **I2. Test harness on `#guard_msgs`.** Golden tier: `#fh_expand` logs hygiene-sanitized expansion under `#guard_msgs (whitespace := lax)`. Elaboration tier: zero errors + asserted `sorry` count. Negative tier: **exact pinned messages** (deviation from design §8's "substrings" — doc PR §9.3; exact-match is what the mechanism supports and re-baselining is cheap under rule 6). Span tier: position-asserting `#guard_msgs` variant; one span assertion per feature from M0. First negative test is M0-native (unresolved identifier under A0.1's no-auto-bind rule).
+- **I2. Test harness on `#guard_msgs`.** Golden tier: `#fh_expand` logs hygiene-sanitized expansion under `#guard_msgs (whitespace := lax)`. Elaboration tier: zero errors + asserted `sorry` count. Negative tier: **exact pinned messages** (design §8 as amended via §9.3; exact-match is what the mechanism supports and re-baselining is cheap under rule 6). Span tier: position-asserting `#guard_msgs` variant; one span assertion per feature from M0. First negative test is M0-native (unresolved identifier under A0.1's no-auto-bind rule).
 - **I3. Statement-hash mini-design → implement.** Explicit normalization decisions (alpha, universes, `mdata`, literals, binder-info, reducibility); **algorithm-version tag in every hash**. Consumers: C5 freeze, B1/B8 keying. Hash equality substitutes for anti-cheat's "definitionally identical" — stricter, decidable; recorded (doc PR §9.6).
 - **I4. Numeric-literals mini-design (gates M1).** Inherit `OfNat`/`OfScientific`; Ruling C item five; settle `half` (doc PR §9.5).
 - **I5. Angle-bracket lexing spike (timeboxed, week 1).** `ParserFn` splitting `>>`/`>=`/`>>=` at generic-close + precedence floor above comparisons, fuzzed against a **standalone prototype grammar** (the F6 rule doesn't exist until A1.5). If the timebox expires, **the spacing stopgap is the plan of record** through M1 and the spike resumes before A2.5 (its hard consumer).
@@ -53,19 +53,19 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 - A1.2 Dependent signatures; `{n*2}` brace escape (verified: longest-match suffices).
 - A1.3 Binder classes; turbofish; F1 expected-type nullary inference (stage two, flagged) — Ruling C item one.
 - A1.4 Quantifiers `for<>`/`exists<>` (F2 ascription + F2 negative test); anonymous constructors (Ruling C item two); `exists`-body `Sigma`/`Subtype` election (Ruling C item four).
-- A1.5 Ruling A operator set incl. `in`; `decide()`; Bool methods; F6 error **at expansion time** with exact span (parser can't produce fixed wording — verified; corpus deviation, doc PR §9.3); frozen F7 matrix as exhaustive goldens — **blocked on §9.1**; F12 negative test (`for<>` headers never capture `in`) lives here with the operator.
+- A1.5 Ruling A operator set incl. `in`; `decide()`; Bool methods; F6 error **at expansion time** with exact span (parser can't produce fixed wording — verified; corpus F6 amended accordingly, §9.3); F7 matrix as exhaustive goldens (§9.1 landed 2026-08-01 — the table is complete); F12 negative test (`for<>` headers never capture `in`) lives here with the operator.
 - A1.6 Traits-with-laws; multi-parameter classes; instance-shadowing lint.
 - A1.7 `lean! { }` with InfoView.
 - A1.8 **F10 ascription only**: `(e: T)` elaboration-hint-without-coercion. (The rest of the F9/F10 cluster — `as` coercion + disabling silent coercion — moves to A2.0: its consumers are all M2, and it needs I6 first.)
 - A1.9 `fh check` v0 (=C1): Frontend driver, JSON status/errors+FH spans/sorry goals/axioms.
-- Pre-M1 gates: I4; §9.1 doc PR; `!`-on-Bool decision (default: hard-error).
+- Pre-M1 gate remaining: the `!`-on-Bool decision (default: hard-error). (I4 and the §9.1 doc PR landed 2026-08-01.)
 - **Exit gate:** `euclids_lemma` (design §3) **and** corpus Group 2 (`id_unique`, quantified hypothesis) elaborate and check; full F7 matrix green; **one F10 ascription golden**.
 
 ### M2 — The conversation file (Ruling E order: Groups 8, 11, 12 → 9 → 5, 6, 7, 10; Group 2 was pulled into M1)
 - A2.0 **F9 coercion control** (per I6's mechanism): `as` coercion, `as!`, silent-coercion disable. Lands before A2.1/A2.5 (Group 6's `choose(n,k) as R` and Group 12's subtype introduction consume it). Gate: F9 negative golden — a silently-coercing expression must error.
-- A2.1 Prop-first consequences: set-builder/subtype (**F13 per §9.2** — position-dispatch is impossible under the unified grammar; the doc PR picks the mechanism); decidable-`if` (negative tests pin Lean's real wording; friendly F14 wording in `fh check` — corpus deviation, doc PR §9.3); `if h @ (cond)` (F15); F16 canonical-spelling policy recorded (mechanism since A0.2).
+- A2.1 Prop-first consequences: set-builder/subtype (F13 as amended: expected-type election, stage two, Ruling C item six, default `Set<A>`); decidable-`if` (negative tests pin Lean's real wording; friendly F14 wording in `fh check`, per the landed §9.3 amendment); `if h @ (cond)` (F15); F16 canonical-spelling policy recorded (mechanism since A0.2).
 - A2.2 Indexed enums; nested + `mutual` inductives; termination attributes; `#[partial]`, `#[noncomputable]`, `#[opaque]`, `extern "axiom"`.
-- A2.3 `?`-do (four-monad golden set; the unascribed-closure boundary documented on the differences page), explicit `pure`, structure literals, do-block `for`/`while`/`if`/`let mut` — **loop-header `in` needs a token-position decision** (`for pat in e` vs `in` the Prop operator; folded into §9.1) before this lands.
+- A2.3 `?`-do (four-monad golden set; the unascribed-closure boundary documented on the differences page), explicit `pure`, structure literals, do-block `for`/`while`/`if`/`let mut` — loop-header `in` is a positional keyword per the landed §9.1 amendment (top-level membership in the iteree parenthesized).
 - A2.4 Ambient `var` + `include` (F17) with the F17 corpus obligations (Groups 3/8/9 `var` rewrites + identical-elaboration goldens + ambient-hypothesis pair); `var`-shadowing lint; `Space` + trait-in-annotation + explicit universes (`Space<u>`, `#[universes(u,v)]`); role metadata.
 - A2.5 Mathlib bridge: `Fp<P>` (stage-two/bridge special-case — resolution must know `Prime` is a predicate), `Poly<R>` (**consumes I5's real fix**), `Fractions<R>`, `Quotient<R, I>`, morphism aliases, operator classes, `use lean::…`; F11 named arguments; F8 term-position-types tests.
 - A2.6 Groups 5/6/7/10 fixtures, completing Ruling E's twelve.
@@ -92,7 +92,7 @@ Order: B1→B2 after I3; B3 gate before B4; B8 after B1.
 
 - C1. `fh check` v0 with M1 → v1 at M2: role metadata, error taxonomy with branch hints, friendly-wording layer over Lean's raw messages, `simp?` feedback on simp success.
 - C2. REPL wrapper (fork/try/keep; proof-state snapshotting literature); Pantograph fallback; Kimina-style pooling for scale-out. Nothing counts until re-elaboration from source.
-- C3. `fh mcp` **composes with `lean-lsp-mcp`** for generic tooling (goals/diagnostics/search); FH-specific tools only: `fh check` JSON, span mapping, statement-hash/anti-cheat, `minimize`, Atlas queries. (Deviation from agent-interface §1's tool list — doc PR §9.6.)
+- C3. `fh mcp` **composes with `lean-lsp-mcp`** for generic tooling (goals/diagnostics/search); FH-specific tools only (per agent-interface §1 as amended via §9.6): `elaborate` (= `fh check` JSON with FH spans), `try`, `minimize`, statement-hash/anti-cheat, Atlas queries, `status`.
 - C4. Falsification battery: `plausible`, `decide`/`native_decide`, Rust-side enumeration/SAT with in-Lean verification; auto-run on whole-proof failure; role-metadata steering arrives at M2 — unsteered before that, accepted. No B-track dependency.
 - C5. Anti-cheat pipeline: fresh-env check, transitive-sorry scan, axiom whitelist, versioned hash freeze/verify, `leanchecker`; honesty-clause reports; rehearsal fixture (weakened statement must fail the hash check) before first real use; `lean4export` + external checker as the kernel-independence escalation.
 - C6. Open-problem runbook (agent-interface §5): openness re-verification, statement import (Formal Conjectures) + human review before freeze, falsification first, lemma-DAG farming via C3, writeup + wiki etiquette.
@@ -100,7 +100,7 @@ Order: B1→B2 after I3; B3 gate before B4; B8 after B1.
 
 ## 7. Sequencing — first three weeks (single implementer assumed; contention is real)
 
-**Week 1 — the vertical slice, serialized:** A0.1 → minimal `fn`→`def` → `#fh_expand` + sanitizer → four tiers on that feature → CI green (I1). Docs in parallel (human-review-sized, not implementation): §9.1/§9.4/§9.7 PRs, I3 + I6 one-pagers, B7 answer key (human, after §9.7). I5 runs as a strictly timeboxed spike only if slack exists — the stopgap is already the plan of record through M1.
+**Week 1 — the vertical slice, serialized:** A0.1 → minimal `fn`→`def` → `#fh_expand` + sanitizer → four tiers on that feature → CI green (I1). ~~Docs in parallel~~ **The §9 queue and the B7 answer key are already done (2026-08-01)** — week 1 is now pure implementation plus the I3 + I6 one-pagers. I5 runs as a strictly timeboxed spike only if slack exists — the stopgap is already the plan of record through M1.
 **Week 2:** A0.2–A0.6; I3 implementation.
 **Week 3:** M0 exit gate; B1 extractor; A1.5 matrix begins (§9.1 landed).
 Contention honestly stated: A-items serialize on one grammar and one implementer; B1 contends on the same person (it is Lean-side), hence week 3; C1 is embedded in M1 by design.
@@ -121,16 +121,16 @@ Contention honestly stated: A-items serialize on one grammar and one implementer
 - R12 `>>` lexing: I5 spike + stopgap-as-plan-of-record; hard consumer is A2.5, not M0/M1.
 - R13 **F9 blast radius** (new): if I6 finds no scoped mechanism, coercion control could force stage-two wrapping of all FH terms, colliding with ground rule 2 — surfacing this is exactly why I6 exists and why A2.0 doesn't start until it lands.
 
-## 9. Doc-amendment queue (each lands before its dependent code)
+## 9. Doc-amendment queue — **ALL LANDED 2026-08-01** (retained for audit)
 
-1. **corpus-review F7 completion:** `in` precedence slot (binary operator *and* the do-`for` loop-header token-position rule), `<->` associativity, quantifier-scope × operator interactions. Before A1.5 (loop-header clause before A2.3).
-2. **corpus-review F13 re-spec:** position-dispatch impossible under unified grammar; choose stage-two expected-type elaboration (sixth Ruling C item) vs always-`setOf`+`CoeSort` (F9 tension). Before A2.1.
-3. **corpus-review Ruling E + F6 + F14 + design §8 (one mechanics PR):** fourth (span) test tier; F6 enforcement at expansion time rather than "by the parser"; F14 friendly wording delivered via `fh check` while negative tests pin Lean's real message; negative tier = exact messages, not substrings. Before I2 fixture import.
-4. **corpus fixtures:** `//` → `--` until M3. Before I2 fixture import.
-5. **corpus-review Ruling C item five:** numeric literals (I4). Before M1.
-6. **agent-interface:** C3's lean-lsp-mcp composition (tool-list change); hash-equality as the §4(d) "definitionally identical" check. Before C3/C5.
-7. **atlas-validation §1/§3/§5:** dev-targets vs held-out validation set (incl. held-out tiering, pass bar, negative controls, publication rule), sanitized briefs, key custody, coverage-without-leakage mechanism for cluster briefs. Before the answer key is written (week 1).
-8. **design.md:** related-work paragraph (hax/Aeneas/Alloy/Verso); reserved-keyword + `?`/`!` costs on the differences page. Anytime; cheap.
+1. ✅ **corpus-review F7 completion:** `<->` non-associative; `in` in the comparison band, non-associative, no chaining; do-`for` loop-header `in` is a positional keyword (top-level membership in the iteree parenthesized); quantifier-scope interaction rows normative.
+2. ✅ **corpus-review F13 re-spec:** expected-type-driven election (stage two), default `Set<A>` when unconstrained; sanctioned as Ruling C item six, escape F10.
+3. ✅ **Mechanics (corpus-review F6/F14 + design §8):** four test tiers incl. span tier; exact-message negatives; F6 at expansion time; F14 raw-Lean wording pinned, friendly wording in `fh check`.
+4. ✅ **corpus fixtures:** `--`/`/- -/` comment rule recorded; in-doc `//` and `/* */` occurrences migrated.
+5. ✅ **corpus-review Ruling C item five:** numeric literals via `OfNat`/`OfScientific` (the I4 mini-design, decided in-doc); `half` spelled explicitly at use site.
+6. ✅ **agent-interface:** `fh mcp` composes with `lean-lsp-mcp` (FH-specific tools only); §4(d) implemented as versioned-hash equality.
+7. ✅ **atlas-validation §1/§3/§5:** dev vs held-out targets, coverage-without-leakage rule, burn rule, procedural-blinding caveat, held-out suite required for validation claims. **Answer key v1 frozen** — sha256 committed in atlas-validation.md §1; key stored out-of-repo (location deliberately unrecorded here); held-out targets, their tiering, and the suite pass bar are written inside the key.
+8. ✅ **design.md:** related-work paragraph; `differences.md` created (Ruling D page, M0 entries seeded).
 
 ## 10. New decisions this plan introduces (surfaced deliberately)
 
@@ -141,8 +141,7 @@ Harness on `#guard_msgs` with **exact-message** negatives (§9.3); **span tier a
 | Decision | Default | Due |
 |---|---|---|
 | `!` on Bool | hard-error, fixed wording | pre-M1 |
-| F13 mechanism | §9.2 decides | pre-A2.1 |
-| F9 mechanism | §I6 one-pager decides | pre-A2.0 |
+| F9 mechanism | I6 one-pager decides | pre-A2.0 |
 | `<explicit T>` override | not needed | M2, if friction |
 | `notation!` floor | adopted | M3 |
 | Unicode input | v2 opt-in | post-M3 |
