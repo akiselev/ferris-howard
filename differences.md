@@ -33,6 +33,7 @@ is not, which is why they are chosen conservatively (Ruling B).
 | Call syntax admits no space before `(`: `f(x)`, never `f (x)` | FH has no juxtaposition application, so this is not needed *yet*; keeping it reserves the freedom to parse statement bodies (A2.3) without a Rust-style ambiguity, and relaxing it later breaks nothing | M0 (A0.1) |
 | Field access admits no space around `.`: `x.f`, never `x . f` | same, and it is what every Rust programmer writes anyway | M0 (A0.2) |
 | No zero-argument closure `\|\| e` | `\|\|` lexes as one token (and is `∨` from A1.5). Rust has the same collision and resolves it in the parser; FH will not, per Ruling B | M0 (A0.2) |
+| An `enum` variant's fields are all named or all unnamed, never mixed | Rust has the same two variant shapes; mixing them has no Rust meaning to preserve, and choosing one silently would be worse | M0 (A0.3) |
 | `::` joins identifiers only: `f(x)::g` is an error | `::` is name composition, `.` is a value's field or method. They resolve differently, so conflating them would make one silently mean the other | M0 (A0.2) |
 
 ## Platform costs (M0 facts — Lean hosting, not design choices)

@@ -42,6 +42,7 @@ declare_syntax_cat fh_expr
 declare_syntax_cat fh_pat
 declare_syntax_cat fh_item
 declare_syntax_cat fh_fn_body
+declare_syntax_cat fh_attr
 
 namespace FerrisHoward
 
@@ -107,6 +108,29 @@ syntax:max (name := fhPatPath) fh_pat:max "::" ident : fh_pat
 /-- A constructor application in pattern position: `N::Succ(k)`. -/
 syntax:max (name := fhPatCtor) fh_pat:max noWs "(" fh_pat,* ")" : fh_pat
 
+/-! ## Attributes
+
+`#[attr]` → `@[attr]` (design §3). Arguments are FH expressions, because the attributes
+that take them take *FH* things: `#[terminates_by(b)]`, `#[universes(u, v)]`,
+`#[name(foo)]`. A few attribute names are consumed by FH rather than passed through —
+`#[def]` at A0.3 — and the rest pass through by name.
+
+Attribute names that are Lean *keywords* cannot be identifiers, so each gets its own
+production. `#[def]` and `#[instance]` are the two M0 needs; `#[partial]`,
+`#[noncomputable]` and `#[opaque]` arrive with A2.2, which is also where they stop being
+attributes and become definition modifiers. -/
+/-- An attribute, optionally applied to FH expressions: `#[simp]`, `#[terminates_by(b)]`. -/
+syntax (name := fhAttrIdent) ident ("(" fh_expr,*,? ")")? : fh_attr
+
+/-- `#[def]`: the `type` opt-out, `abbrev` → `def` (design §3). -/
+syntax (name := fhAttrDef) "def" : fh_attr
+
+/-- `#[instance]`, passed through as `@[instance]`. -/
+syntax (name := fhAttrInstance) "instance" : fh_attr
+
+/-- An attribute group: `#[simp]`, `#[simp, ext]`. -/
+syntax fhAttrs := "#[" fh_attr,*,? "]"
+
 /-! ## Items -/
 
 /-- The body of an `fn`: an expression block. -/
@@ -122,6 +146,45 @@ syntax (name := fhFnBodyNone) ";" : fh_fn_body
 Two bodies rather than two `fn` productions: distinct leading tokens (`{` vs `;`) keep
 the grammar backtrack-free, which is Ruling B's scope note. -/
 syntax (name := fhFn) "fn " ident "(" (fh_pat ": " fh_expr),* ")" " -> " fh_expr fh_fn_body : fh_item
+
+/-- A `+`-separated bound list: `B1 + B2`. Bounds parse at `max` so that `+` stays the
+separator once A1.5 makes it an operator — `B1 + B2` is two bounds, never one sum. -/
+syntax fhBounds := sepBy1(fh_expr:max, " + ")
+
+/-- `struct S { a: T, b: U }` → `structure S where a : T; b : U`, and
+`struct S: B1 + B2 { … }` → `structure S extends B1, B2 where …` (design §3's trait row,
+which §4.5 extends to plain structs). -/
+syntax (name := fhStruct) "struct " ident (": " fhBounds)?
+  " { " (ident ": " fh_expr),*,? " } " : fh_item
+
+/-- One field of an `enum` variant: `pred: N`, or an unnamed type.
+
+`atomic` is a two-token lookahead, not a backtracking parser: it is what distinguishes
+`Succ(pred: N)` from `Cons(Nat)`, and it is exactly what Lean's own `structParent` does
+for the same shape. Ruling B's concern is the *expression* grammar, where a backtrack
+would become an ambiguity report. -/
+syntax fhEnumField := (atomic(ident ": "))? fh_expr
+
+/-- One `enum` variant: `Zero`, `Succ(pred: N)`, `Cons(T)`. -/
+syntax fhEnumVariant := ident ("(" fhEnumField,*,? ")")?
+
+/-- `enum E { A(T), B }` → `inductive E where | A : T → E | B : E`. Plain (unindexed)
+enums only; per-variant return types for indexed families are A2.2. -/
+syntax (name := fhEnum) "enum " ident " { " fhEnumVariant,*,? " } " : fh_item
+
+/-- `mod m { … }` → `namespace m … end m`. -/
+syntax (name := fhMod) "mod " ident " { " fh_item* " } " : fh_item
+
+/-- `use a::b;` → `open a.b`. Rust-style renaming at use sites is M2 bridge work. -/
+syntax (name := fhUse) "use " fh_expr ";" : fh_item
+
+/-- `type X = e;` → `abbrev X := e`, or `def` under `#[def]` (design §3). -/
+syntax (name := fhType) "type " ident " = " fh_expr ";" : fh_item
+
+/-- An item carrying attributes. A separate production rather than an optional prefix on
+every item, so each production keeps a distinct leading token and the grammar stays
+backtrack-free (Ruling B). -/
+syntax (name := fhItemAttrs) fhAttrs fh_item : fh_item
 
 /-! ## The command entry point
 

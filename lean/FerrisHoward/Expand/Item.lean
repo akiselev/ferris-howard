@@ -9,12 +9,62 @@ import FerrisHoward.Expand.Basic
 
 Every FH item routes through `expandItem`, and the only `macro_rules` in the language
 dispatches the command wrapper to it. One dispatch point means the golden printer, the
-future `.fh` driver, and nested items (`mod { … }`, A0.3) all share the same translation
-rather than re-deriving it.
+future `.fh` driver, and nested items (`mod { … }`) all share the same translation rather
+than re-deriving it.
 -/
 
 namespace FerrisHoward
-open Lean
+open Lean Lean.Parser.Term Lean.Parser.Command
+
+/-! ## Attributes -/
+
+/-- What an item's `#[…]` groups add up to: some attributes are consumed by FH, the rest
+pass through to Lean. -/
+structure AttrSet where
+  /-- `#[def]`: `type X = e;` becomes a `def` rather than an `abbrev`. -/
+  defOptOut : Bool := false
+  /-- Attributes passed through verbatim (design §3's `#[attr]` → `@[attr]` row). -/
+  «lean» : TSyntaxArray ``attrInstance := #[]
+  deriving Inhabited
+
+/-- Fold one attribute into the set. -/
+private def addAttr (s : AttrSet) (a : TSyntax `fh_attr) : MacroM AttrSet :=
+  withRef a do
+    match a with
+    | `(fh_attr| def) => return { s with defOptOut := true }
+    | `(fh_attr| instance) =>
+        return { s with «lean» := s.lean.push (← `(attrInstance| instance)) }
+    | `(fh_attr| $n:ident) =>
+        return { s with «lean» := s.lean.push (← `(attrInstance| $n:ident)) }
+    | `(fh_attr| $n:ident($_args,*)) =>
+        Macro.throwErrorAt a
+          s!"FH: `#[{n.getId}(…)]` takes arguments, which are not supported yet; \
+             attributes with arguments arrive with the features that use them"
+    | _ => Macro.throwErrorAt a "FH: no expansion for this attribute"
+
+/-- Fold an attribute group into the set. -/
+private def addAttrs (s : AttrSet) (g : TSyntax ``fhAttrs) : MacroM AttrSet := do
+  match g with
+  | `(fhAttrs| #[$as,*]) => as.getElems.foldlM addAttr s
+  | _ => Macro.throwErrorAt g "FH: no expansion for this attribute group"
+
+/-- Attach `@[…]` to a generated declaration.
+
+Lean has no syntax for attaching attributes to an *arbitrary* command, so this grafts the
+`declModifiers` node of a throwaway declaration onto the generated one. The alternatives
+were worse: writing an attributed and an unattributed quotation for every item kind
+duplicates every builder, and a follow-up `attribute [attr] name` command is a different
+thing from design §3's `#[attr]` → `@[attr]` row. Guarded — anything that is not a
+declaration errors, which is exactly what `mod` and `use` should do. -/
+private def withAttrs (attrs : AttrSet) (d : TSyntax `command) : MacroM (TSyntax `command) := do
+  if attrs.lean.isEmpty then return d
+  unless d.raw.getKind == ``Lean.Parser.Command.declaration do
+    Macro.throwError "FH: attributes are not supported on this item"
+  let attrList := attrs.lean
+  let template ← `(command| @[$attrList,*] def fhAttrTemplate := ())
+  return ⟨d.raw.setArg 0 template.raw[0]⟩
+
+/-! ## Items -/
 
 /-- The value of an `fn`: its body, or `sorry` for a bodyless declaration.
 
@@ -32,15 +82,90 @@ private def expandFnBody (b : TSyntax `fh_fn_body) : MacroM (TSyntax `term × Bo
     | `(fh_fn_body| ;) => return (← `(sorry), true)
     | _ => Macro.throwErrorAt b "FH: no expansion for this function body"
 
+/-- One `enum` variant → one Lean constructor.
+
+A variant's fields are either all named or all unnamed, as in Rust, where those are two
+different variant shapes. Named fields become binders (`| Succ (pred : N) : N`), keeping
+the name visible in goals and available to named arguments; unnamed ones become an arrow
+chain (`| Cons : T → E`). Mixing is an error rather than a silent choice. -/
+private def expandVariant (enumName : Ident) (v : TSyntax ``fhEnumVariant) : MacroM (TSyntax ``ctor) :=
+  withRef v do
+    match v with
+    | `(fhEnumVariant| $c:ident) => `(ctor| | $c:ident : $enumName:ident)
+    | `(fhEnumVariant| $c:ident($fs,*)) => do
+        let fields ← fs.getElems.mapM fun f =>
+          match f with
+          | `(fhEnumField| $n:ident : $t) => return (some n, ← expandExpr t)
+          | `(fhEnumField| $t:fh_expr) => return (none, ← expandExpr t)
+          | _ => Macro.throwErrorAt f "FH: no expansion for this enum field"
+        let named := fields.filter (·.1.isSome)
+        if named.size == fields.size then
+          let binders ← fields.mapM fun (n, t) => `(bracketedBinderF| ($(n.get!) : $t))
+          `(ctor| | $c:ident $binders* : $enumName:ident)
+        else if named.isEmpty then
+          let mut ty : TSyntax `term := enumName
+          for (_, t) in fields.reverse do ty ← `($t → $ty)
+          `(ctor| | $c:ident : $ty)
+        else
+          Macro.throwErrorAt v
+            "FH: an enum variant's fields must be either all named or all unnamed"
+    | _ => Macro.throwErrorAt v "FH: no expansion for this enum variant"
+
 /-- Stage-one expansion of a single FH item into Lean surface syntax. -/
-def expandItem (it : TSyntax `fh_item) : MacroM (TSyntax `command) :=
+partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM (TSyntax `command) :=
   withRef it do
     match it with
+    | `(fh_item| $g:fhAttrs $inner:fh_item) => do
+        expandItem inner (← addAttrs attrs g)
+
     | `(fh_item| fn $n:ident($[$ps : $ts],*) -> $ret $body:fh_fn_body) => do
         let binders ← ps.zip ts |>.mapM fun (p, t) => expandParam p t
         let ret ← expandExpr ret
         let (body, sorryValued) ← expandFnBody body
-        fhDecl (← `(command| def $n $binders* : $ret := $body)) sorryValued
+        fhDecl (← withAttrs attrs (← `(command| def $n $binders* : $ret := $body))) sorryValued
+
+    | `(fh_item| struct $n:ident $[: $bounds]? { $[$fnames : $ftys],* }) => do
+        let fields ← fnames.zip ftys |>.mapM fun (f, t) => do
+          let t ← expandExpr t
+          `(structSimpleBinder| $f:ident : $t)
+        let decl ← match bounds with
+          | none => `(command| structure $n:ident where $fields:structSimpleBinder*)
+          | some bs => do
+              let ps ← bs.raw[0].getSepArgs.mapM fun p => do
+                let p ← expandExpr ⟨p⟩
+                `(structParent| $p:term)
+              `(command| structure $n:ident extends $ps,* where $fields:structSimpleBinder*)
+        fhDecl (← withAttrs attrs decl)
+
+    | `(fh_item| enum $n:ident { $vs,* }) => do
+        let ctors ← vs.getElems.mapM (expandVariant n)
+        fhDecl (← withAttrs attrs (← `(command| inductive $n:ident where $ctors*)))
+
+    | `(fh_item| mod $n:ident { $items* }) => do
+        unless attrs.lean.isEmpty && !attrs.defOptOut do
+          Macro.throwErrorAt it "FH: attributes are not supported on `mod`"
+        let items ← items.mapM (expandItem · {})
+        let open_ ← `(command| namespace $n)
+        let close ← `(command| end $n)
+        return ⟨mkNullNode (#[open_.raw] ++ items.map (·.raw) ++ #[close.raw])⟩
+
+    | `(fh_item| use $path;) => do
+        unless attrs.lean.isEmpty && !attrs.defOptOut do
+          Macro.throwErrorAt it "FH: attributes are not supported on `use`"
+        let path ← expandExpr path
+        unless path.raw.isIdent do
+          Macro.throwErrorAt it "FH: `use` takes a path, as in `use Nat::Prime;`"
+        let ns : Ident := ⟨path.raw⟩
+        `(command| open $ns:ident)
+
+    | `(fh_item| type $n:ident = $val;) => do
+        let val ← expandExpr val
+        let decl ← if attrs.defOptOut then
+            `(command| def $n:ident := $val)
+          else
+            `(command| abbrev $n:ident := $val)
+        fhDecl (← withAttrs attrs decl)
+
     | _ => Macro.throwErrorAt it "FH: no expansion for this item"
 
 macro_rules
