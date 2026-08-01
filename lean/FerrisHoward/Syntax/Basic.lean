@@ -335,6 +335,13 @@ syntax (name := fhAttrInstance) "instance" : fh_attr
 `decreasing_by` is a Lean keyword and so never arrives as an identifier. -/
 syntax (name := fhAttrDecreasingBy) "decreasing_by" "(" fh_expr ")" : fh_attr
 
+/-- `#[partial]` → `partial def`: no induction principle, and design §4.6 says to teach
+that loudly. Its own production — another Lean keyword. -/
+syntax (name := fhAttrPartial) "partial" : fh_attr
+
+/-- `#[noncomputable]` → `noncomputable def`, the specification-not-program marker. -/
+syntax (name := fhAttrNoncomputable) "noncomputable" : fh_attr
+
 /-- An attribute group: `#[simp]`, `#[simp, ext]`. -/
 syntax fhAttrs := "#[" fh_attr,*,? "]"
 

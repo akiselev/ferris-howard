@@ -23,6 +23,10 @@ pass through to Lean. -/
 structure AttrSet where
   /-- `#[def]`: `type X = e;` becomes a `def` rather than an `abbrev`. -/
   defOptOut : Bool := false
+  /-- `#[partial]`: `partial def` — no induction principle (design §4.6). -/
+  isPartial : Bool := false
+  /-- `#[noncomputable]`: the specification-not-program marker. -/
+  isNoncomputable : Bool := false
   /-- `#[terminates_by(e)]`: the well-founded measure (design §4.6). -/
   terminationBy? : Option (TSyntax `term) := none
   /-- `#[decreasing_by(lean! { … })]`: the proof that it decreases. -/
@@ -38,6 +42,8 @@ private def addAttr (s : AttrSet) (a : TSyntax `fh_attr) : MacroM AttrSet :=
   withRef a do
     match a with
     | `(fh_attr| def) => return { s with defOptOut := true }
+    | `(fh_attr| partial) => return { s with isPartial := true }
+    | `(fh_attr| noncomputable) => return { s with isNoncomputable := true }
     | `(fh_attr| instance) =>
         return { s with «lean» := s.lean.push (← `(attrInstance| instance)) }
     | `(fh_attr| $n:ident) =>
@@ -91,12 +97,26 @@ private def withAttrs (attrs : AttrSet) (d : TSyntax `command) : MacroM (TSyntax
   if let some n := attrs.name? then
     Macro.throwErrorAt n
       "FH: `#[name(…)]` names an `impl`'s instance; every other item already has a name"
-  if attrs.lean.isEmpty then return d
+  if attrs.lean.isEmpty && !attrs.isPartial && !attrs.isNoncomputable then return d
   unless d.raw.getKind == ``Lean.Parser.Command.declaration do
     Macro.throwError "FH: attributes are not supported on this item"
+  -- `declModifiers` is a fixed-shape node: [doc, attributes, _, _, noncomputable, unsafe,
+  -- partial]. Lean offers no way to attach modifiers to an already-built command, so the
+  -- fields are taken from template quotations and grafted. The layout is pinned by the
+  -- goldens in `Tests/M2/Modifiers.lean`, which is what makes the dependency safe to hold.
   let attrList := attrs.lean
-  let template ← `(command| @[$attrList,*] def fhAttrTemplate := ())
-  return ⟨d.raw.setArg 0 template.raw[0]⟩
+  let base ← if attrList.isEmpty then
+      `(command| def fhAttrTemplate := ())
+    else
+      `(command| @[$attrList,*] def fhAttrTemplate := ())
+  let mods ← do
+    let keywords ← `(command| noncomputable partial def fhModTemplate := ())
+    let km := keywords.raw[0]
+    let mut m := base.raw[0]
+    if attrs.isNoncomputable then m := m.setArg 4 km[4]
+    if attrs.isPartial then m := m.setArg 6 km[6]
+    pure m
+  return ⟨d.raw.setArg 0 mods⟩
 
 /-! ## Binders -/
 
