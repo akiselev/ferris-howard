@@ -249,7 +249,74 @@ syntax:max (name := fhExprTodo) "todo!" noWs "(" (str)? ")" : fh_expr
 
 /-- `let x = e; rest`, with an optional annotation. Plain `let` stays pure — the
 `?`-flavoured monadic form is A2.3. -/
-syntax (name := fhExprLet) "let " fh_pat (": " fh_expr)? " = " fh_expr "; " fh_expr : fh_expr
+syntax (name := fhExprLet) "let " fh_pat (": " fh_expr:1)? " = " fh_expr "; " fh_expr : fh_expr
+
+/-! ## Imperative statements (A2.3, design §4.7 and §5)
+
+Design §4.7: "`for`/`while`/`if` inside such blocks map to Lean's do-notation control
+flow, which was itself designed to imperative-language expectations." And §5, on what FH
+drops: "`mut` (no mutation outside do-notation's `let mut`, which Lean's do-notation
+supports natively and we map directly)".
+
+So these are not new semantics — each is Lean's own `doElem`, reached by the spelling a
+Rust programmer would use. A body containing any of them *is* a `do` block, by the same
+whole-body rule `?` already uses, and for the same reason: the monad has to come from the
+declared return type.
+
+Each statement carries its continuation, the shape `let` already has. That is what keeps
+the grammar a single expression category (§4.1) with no statement category to keep in
+sync — a block is an expression whose tail is its value.
+
+The continuation is *optional*, which is Rust's rule: a block ending in `;` has no value.
+`for i in xs { acc = acc + i; }` is the shape that needs it, and it is the shape everyone
+writes. A `fn` body that ends this way has no value either, and Lean says so.
+
+`break`, `continue` and `return e` are *tails* rather than statements: they end the block
+they are in, so there is nothing to continue with. `if found { return x } rest` is the
+shape that wants this, and it works because the `if` supplies the continuation.
+-/
+
+/-- `let mut x = e; rest` → `let mut x := e` (design §5). Separate from plain `let`
+because mutation is worth seeing at the binding site, which is Rust's judgement too. -/
+syntax:0 (name := fhExprLetMut) "let " "mut " fh_pat (": " fh_expr:1)? " = " fh_expr "; "
+  (fh_expr)? : fh_expr
+
+/-- Assignment: `x = e; rest` → `x := e`.
+
+The left side is an identifier. Rust also assigns through a field or an index (`p.x = e`,
+`v[i] = e`); those are restrictions, not divergences — recorded on the differences page,
+and reachable meanwhile by rebuilding: `p = Point{ x: e, ..p };`. -/
+syntax:0 (name := fhExprAssign) ident " = " fh_expr "; " (fh_expr)? : fh_expr
+
+/-- `for x in coll { body } rest` → Lean's `for x in coll do …`.
+
+Distinguished from the `for<x: T> P` quantifier by what follows `for`: an angle bracket
+binds, a pattern iterates. Rust reads both the same way. -/
+syntax:0 (name := fhExprFor) "for " fh_pat " in " fh_expr " { " fh_expr " } " (fh_expr)? : fh_expr
+
+/-- `while cond { body } rest` → Lean's `while cond do …`. The condition is a `Bool`,
+which is Lean's rule for `while` and Rust's for everything. -/
+syntax:0 (name := fhExprWhile) "while " fh_expr " { " fh_expr " } " (fh_expr)? : fh_expr
+
+/-- `if cond { body } rest` — the *statement* `if`, which has no `else` and so no value.
+
+The expression `if` (`fhExprIf`) requires one, because an expression must have a value in
+both branches; this form is the do-notation one, where the else-branch is "carry on". Rust
+draws the same line, and the parser picks between them by whether `else` follows. -/
+syntax:0 (name := fhExprIfStmt) "if " fh_expr " { " fh_expr " } " (fh_expr)? : fh_expr
+
+/-- `break` — Lean's `break`, inside a `for` or `while`. -/
+syntax:0 (name := fhExprBreak) "break" : fh_expr
+
+/-- `continue` — Lean's `continue`, inside a `for` or `while`. -/
+syntax:0 (name := fhExprContinue) "continue" : fh_expr
+
+/-- `return e` — Lean's `return`, which leaves the whole `do` block.
+
+This is the one place FH lifts into the monad without being asked, and it is not an
+exception to Ruling C: `return` *is* `pure` in do-notation, in Lean as in Rust's `?`
+desugaring, and writing it is the request. -/
+syntax:0 (name := fhExprReturn) "return " fh_expr : fh_expr
 
 /-! ## Operators (Ruling A, F7)
 

@@ -27,6 +27,14 @@ Never re-parse strings.
 namespace FerrisHoward
 open Lean Lean.Parser.Term
 
+/-- The statement forms, each of which is a Lean `doElem` and so also makes its block a
+`do` block (A2.3). Kept beside `?` rather than folded into it because the two ask
+different questions: this one decides whether to open a `do`, and `containsTry` polices
+where a `?` may appear. -/
+def isStatementKind (stx : Syntax) : Bool :=
+  [``fhExprLetMut, ``fhExprAssign, ``fhExprFor, ``fhExprWhile, ``fhExprIfStmt,
+    ``fhExprBreak, ``fhExprContinue, ``fhExprReturn].any stx.isOfKind
+
 /-- FH identifiers may not end in `?` or `!` (A0.6).
 
 Lean's lexer treats both as identifier characters, so `maybe_val?` is *one* identifier and
@@ -268,7 +276,13 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
             let ty ← expandExpr ty
             `(let $p : $ty := $val; $rest)
         | none => `(let $p := $val; $rest)
-    | _ => Macro.throwErrorAt e "FH: no expansion for this expression form"
+    | _ =>
+        if isStatementKind e then
+          Macro.throwErrorAt e
+            ("FH: `for`, `while`, `let mut`, assignment, `break`, `continue` and `return` \
+              are statements — they belong in a block, not inside an expression" : String)
+        else
+          Macro.throwErrorAt e "FH: no expansion for this expression form"
 
 /-- Quantifier binders: F2's distributed ascriptions, as Lean bracketed binders. -/
 partial def quantBinders (ps : Array (TSyntax ``fhGenericParam)) :
@@ -311,6 +325,15 @@ per-statement, because that is what makes the monad inferable from the declared 
 type. -/
 partial def containsTry (stx : Syntax) : Bool :=
   stx.isOfKind ``fhExprTry || stx.getArgs.any containsTry
+
+/-- Does this body want to be a `do` block? Design §4.7's rule, widened from `?` to the
+imperative statements, which are do-notation for the same reason.
+
+Whole-body, as with `?`: the monad comes from the declared return type, and a per-statement
+rule would have nowhere to get it. The known cost is the same one A2.3 recorded for `?` —
+a statement inside an unascribed closure has no expected type to work from. -/
+partial def isImperative (stx : Syntax) : Bool :=
+  stx.isOfKind ``fhExprTry || isStatementKind stx || stx.getArgs.any isImperative
 
 /-- Translate an FH pattern to a Lean pattern (which is a term).
 
@@ -374,6 +397,46 @@ partial def doElems (e : TSyntax `fh_expr) : MacroM (Array (TSyntax `doElem)) :=
             | some ty => `(doElem| let $x:ident : $ty := $v)
             | none => `(doElem| let $x:ident := $v)
         return #[head] ++ (← doElems rest)
+
+    -- The statement forms (A2.3). Each is Lean's own `doElem`, so the translation is the
+    -- spelling and nothing else; `continued` supplies the rest of the block, which is
+    -- empty when the statement ends with `;` — Rust's rule, and the one loop bodies want.
+    | `(fh_expr| let mut $p $[: $ty]? = $val; $[$rest]?) => do
+        let b ← expandBinderPat p
+        unless b.raw.isIdent do
+          Macro.throwErrorAt p "FH: `let mut` needs a name — there is nothing to assign to"
+        let x : Ident := ⟨b.raw⟩
+        let v ← expandExpr val
+        let head ← match ← ty.mapM expandExpr with
+          | some ty => `(doElem| let mut $x:ident : $ty := $v)
+          | none => `(doElem| let mut $x:ident := $v)
+        return #[head] ++ (← continued rest)
+    | `(fh_expr| $x:ident = $val; $[$rest]?) => do
+        checkIdent x
+        let v ← expandExpr val
+        return #[← `(doElem| $x:ident := $v)] ++ (← continued rest)
+    | `(fh_expr| for $p in $coll { $body } $[$rest]?) => do
+        let p : TSyntax `term := ⟨(← expandBinderPat p).raw⟩
+        let coll ← expandExpr coll
+        let seq ← doSeq body
+        let head ← `(doElem| for $p in $coll do $seq:doSeqItem*)
+        return #[head] ++ (← continued rest)
+    | `(fh_expr| while $c { $body } $[$rest]?) => do
+        let c ← expandExpr c
+        let seq ← doSeq body
+        let head ← `(doElem| while $c do $seq:doSeqItem*)
+        return #[head] ++ (← continued rest)
+    | `(fh_expr| if $c { $body } $[$rest]?) => do
+        let c ← expandExpr c
+        let seq ← doSeq body
+        let head ← `(doElem| if $c then $seq:doSeqItem*)
+        return #[head] ++ (← continued rest)
+    | `(fh_expr| break) => return #[← `(doElem| break)]
+    | `(fh_expr| continue) => return #[← `(doElem| continue)]
+    | `(fh_expr| return $v) => do
+        let v ← expandExpr v
+        return #[← `(doElem| return $v)]
+
     | _ =>
         if containsTry e then
           Macro.throwErrorAt e
@@ -381,6 +444,20 @@ partial def doElems (e : TSyntax `fh_expr) : MacroM (Array (TSyntax `doElem)) :=
               block's result, and Group 10 writes its `pure` explicitly" : String)
         else
           return #[← `(doElem| $(← expandExpr e):term)]
+
+/-- The rest of a block after a statement, which is empty when the statement ends the
+block — `for i in xs { acc = acc + i; }`, where the trailing `;` is Rust's way of saying
+the block has no value. -/
+partial def continued (rest : Option (TSyntax `fh_expr)) : MacroM (Array (TSyntax `doElem)) :=
+  match rest with
+  | some r => doElems r
+  | none => pure #[]
+
+/-- A statement body as a `doSeqItem` sequence, which is what Lean's `for`/`while`/`if`
+`doElem`s take. -/
+partial def doSeq (body : TSyntax `fh_expr) :
+    MacroM (Array (TSyntax ``Lean.Parser.Term.doSeqItem)) := do
+  (← doElems body).mapM fun el => `(Lean.Parser.Term.doSeqItem| $el:doElem)
 
 /-- Translate an FH pattern used in *binder* position to a Lean binder identifier.
 

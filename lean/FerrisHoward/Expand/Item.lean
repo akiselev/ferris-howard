@@ -203,13 +203,20 @@ private def expandFnBody (b : TSyntax `fh_fn_body) : MacroM (TSyntax `term × Bo
   withRef b do
     match b with
     | `(fh_fn_body| { $e }) =>
-        -- design §4.7: a block containing `?` *is* a `do` block, whole-body, which is what
-        -- makes the monad inferable from the declared return type.
-        if containsTry e then
-          let elems ← doElems e
+        -- design §4.7: a block containing `?` — or, from A2.3, any imperative statement —
+        -- *is* a `do` block, whole-body, which is what makes the monad inferable from the
+        -- declared return type.
+        if isImperative e then
           -- `do` takes a `doSeqItem` sequence, each item wrapping one `doElem`
-          let items ← elems.mapM fun el => `(Lean.Parser.Term.doSeqItem| $el:doElem)
-          return (← `(do $items*), false)
+          let seq ← doSeq e
+          -- Which monad? `?` *is* Rust's monadic operator, so a block that uses one is in
+          -- the return type's monad and a block that does not is pure imperative code —
+          -- which Lean writes `Id.run do`. The distinction is Rust's own, and it is
+          -- decidable at stage one, which elaborating against an expected type is not.
+          if containsTry e then
+            return (← `(do $seq*), false)
+          else
+            return (← `(Id.run do $seq*), false)
         else
           return (← expandExpr e, isTodo e)
     | `(fh_fn_body| ;) => return (← `(sorry), true)
