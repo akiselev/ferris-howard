@@ -1,6 +1,7 @@
 import Tests.Atlas
 import Tests.Smoke
 import Tests.M0
+import Tests.M1
 
 /-!
 # Fixture index

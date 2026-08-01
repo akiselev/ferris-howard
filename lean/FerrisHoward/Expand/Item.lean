@@ -139,6 +139,13 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
         let (body, sorryValued) ← expandFnBody body
         fhDecl (← withAttrs attrs (← `(command| def $n $binders* : $ret := $body))) sorryValued
 
+    | `(fh_item| theorem $n:ident($[$ps : $ts],*) -> $concl $body:fh_fn_body) => do
+        checkIdent n
+        let binders ← ps.zip ts |>.mapM fun (p, t) => expandParam p t
+        let concl ← expandExpr concl
+        let (body, sorryValued) ← expandFnBody body
+        fhDecl (← withAttrs attrs (← `(command| theorem $n $binders* : $concl := $body))) sorryValued
+
     | `(fh_item| struct $n:ident $[: $bounds]? { $[$fnames : $ftys],* }) => do
         checkIdent n
         let fields ← fnames.zip ftys |>.mapM fun (f, t) => do

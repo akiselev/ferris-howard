@@ -86,6 +86,13 @@ Zero-argument closures (`|| e`) are not FH syntax: `||` is a single token. Restr
 recorded on the differences page. -/
 syntax (name := fhExprClosure) "|" fh_pat,+ "|" fh_expr : fh_expr
 
+/-- `lean! { tactics }` → `by tactics` (design §4.8, A1.7).
+
+The one place an FH slot is *not* an FH category: the interior is Lean's own tactic
+parser, which is the entire point of an escape hatch — full Mathlib tactic access and a
+working InfoView, for free. -/
+syntax:max (name := fhExprLean) "lean!" " { " Lean.Parser.Tactic.tacticSeq " } " : fh_expr
+
 /-- `todo!()` / `todo!("msg")` → `sorry`, with the message logged (design §3). -/
 syntax:max (name := fhExprTodo) "todo!" noWs "(" (str)? ")" : fh_expr
 
@@ -155,6 +162,14 @@ syntax (name := fhFnBodyNone) ";" : fh_fn_body
 Two bodies rather than two `fn` productions: distinct leading tokens (`{` vs `;`) keep
 the grammar backtrack-free, which is Ruling B's scope note. -/
 syntax (name := fhFn) "fn " ident "(" (fh_pat ": " fh_expr),* ")" " -> " fh_expr fh_fn_body : fh_item
+
+/-- `theorem name(args) -> conclusion { proof }` → `theorem name (args) : conclusion := proof`.
+
+The `theorem` keyword is mandatory and there is no Prop-detection of `fn`s (the corpus
+review's standing decision, design §3). FH's `theorem` coexists with Lean's own by
+longest-match dispatch at the command boundary — verified on-toolchain, and the reason
+plain Lean `theorem` still parses in an FH file. -/
+syntax (name := fhTheorem) "theorem " ident "(" (fh_pat ": " fh_expr),* ")" " -> " fh_expr fh_fn_body : fh_item
 
 /-- A `+`-separated bound list: `B1 + B2`. Bounds parse at `max` so that `+` stays the
 separator once A1.5 makes it an operator — `B1 + B2` is two bounds, never one sum. -/

@@ -95,6 +95,7 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
           pure (⟨b.raw⟩ : TSyntax ``funBinder)
         let body ← expandExpr body
         `(fun $binders* => $body)
+    | `(fh_expr| lean! { $ts }) => `(by $ts)
     | `(fh_expr| todo!()) => `(fh_todo%)
     | `(fh_expr| todo!($msg:str)) => `(fh_todo% $msg)
     | `(fh_expr| let $p $[: $ty]? = $val; $rest) => do
