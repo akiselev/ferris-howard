@@ -76,6 +76,18 @@ scoped macro_rules
 
 end Bridge.Dvd
 
+namespace Bridge.Abs
+
+/-- `x.abs()` is `|x|` (F16).
+
+The canonical case for this bridge: `|x|` is `Abs.abs x`, no carrier declares an `abs`
+method, and generalized dot notation on a `Real` therefore looks for `Real.abs` and does
+not find it. Corpus Group 4 writes `(x - a).abs()` three times in one definition. -/
+scoped macro_rules
+  | `(fh_dot% $x abs) => do let c := mkIdent `abs; `($c $x)
+
+end Bridge.Abs
+
 namespace Bridge.Function
 
 /-- `f.comp(g)` is `f ∘ g`. Bridgeable only because it is opt-in: Mathlib has 587
