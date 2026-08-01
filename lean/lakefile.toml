@@ -11,9 +11,13 @@ rev = "v4.32.2"
 # `FerrisHoward/`, so a file that no one imports still has to compile. That is what
 # Mathlib's `mk_all --check` buys with an import-completeness check, obtained here
 # structurally instead (PLAN I1).
+#
+# The root module is listed explicitly: `X.+` does not include `X`, and without it Lake
+# does not consider the root a workspace module at all — `import FerrisHoward` then
+# silently resolves to whatever stale olean is on disk.
 [[lean_lib]]
 name = "FerrisHoward"
-globs = ["FerrisHoward.+"]
+globs = ["FerrisHoward", "FerrisHoward.+"]
 
 # Fixtures. Deliberate errors are legal here as long as every one of them is captured by
 # `#guard_msgs`; an uncaptured error fails the build, which is the point.

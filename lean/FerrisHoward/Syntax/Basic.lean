@@ -86,6 +86,15 @@ Zero-argument closures (`|| e`) are not FH syntax: `||` is a single token. Restr
 recorded on the differences page. -/
 syntax (name := fhExprClosure) "|" fh_pat,+ "|" fh_expr : fh_expr
 
+/-- `todo!()` / `todo!("msg")` → `sorry`, with the message logged (design §3). -/
+syntax:max (name := fhExprTodo) "todo!" noWs "(" (str)? ")" : fh_expr
+
+/-- The elaboration-time half of `todo!`; `todo!(…)` expands to it and
+`FerrisHoward/Elab/Todo.lean` elaborates it. Not FH surface syntax — it lives here
+because a grammar declaration belongs with the grammar, and because the module that
+*emits* it must have the token in scope. -/
+syntax (name := fhTodoTerm) "fh_todo%" (str)? : term
+
 /-- `let x = e; rest`, with an optional annotation. Plain `let` stays pure — the
 `?`-flavoured monadic form is A2.3. -/
 syntax (name := fhExprLet) "let " fh_pat (": " fh_expr)? " = " fh_expr "; " fh_expr : fh_expr

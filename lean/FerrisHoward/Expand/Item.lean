@@ -37,9 +37,15 @@ private def addAttr (s : AttrSet) (a : TSyntax `fh_attr) : MacroM AttrSet :=
     | `(fh_attr| $n:ident) =>
         return { s with «lean» := s.lean.push (← `(attrInstance| $n:ident)) }
     | `(fh_attr| $n:ident($_args,*)) =>
-        Macro.throwErrorAt a
-          s!"FH: `#[{n.getId}(…)]` takes arguments, which are not supported yet; \
-             attributes with arguments arrive with the features that use them"
+        if n.getId == `name then
+          -- design §3: `#[name(…)]` names the instance an `impl` would otherwise leave
+          -- anonymous. Every M0 item already carries its own name, so there is nothing
+          -- here for it to do yet.
+          Macro.throwErrorAt a "FH: `#[name(…)]` names an anonymous `impl`, which arrives at A1.6"
+        else
+          Macro.throwErrorAt a
+            s!"FH: `#[{n.getId}(…)]` takes arguments, which are not supported yet; \
+               attributes with arguments arrive with the features that use them"
     | _ => Macro.throwErrorAt a "FH: no expansion for this attribute"
 
 /-- Fold an attribute group into the set. -/
@@ -66,6 +72,11 @@ private def withAttrs (attrs : AttrSet) (d : TSyntax `command) : MacroM (TSyntax
 
 /-! ## Items -/
 
+/-- Is this body a hole? `todo!()` gets the same linter treatment as a bodyless `fn`: a
+stub has nothing to use its parameters in. -/
+private def isTodo (e : TSyntax `fh_expr) : Bool :=
+  e.raw.getKind == ``fhExprTodo
+
 /-- The value of an `fn`: its body, or `sorry` for a bodyless declaration.
 
 Design §3: `fn f(…) -> U;` is `def f … : U := sorry`. The `sorry` is deliberately Lean's
@@ -78,7 +89,7 @@ whether the unused-variable linter should be silenced for this declaration. -/
 private def expandFnBody (b : TSyntax `fh_fn_body) : MacroM (TSyntax `term × Bool) :=
   withRef b do
     match b with
-    | `(fh_fn_body| { $e }) => return (← expandExpr e, false)
+    | `(fh_fn_body| { $e }) => return (← expandExpr e, isTodo e)
     | `(fh_fn_body| ;) => return (← `(sorry), true)
     | _ => Macro.throwErrorAt b "FH: no expansion for this function body"
 
