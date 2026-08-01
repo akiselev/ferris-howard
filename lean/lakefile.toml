@@ -21,8 +21,8 @@ globs = ["FerrisHoward", "FerrisHoward.+"]
 
 # Fixtures. Deliberate errors are legal here as long as every one of them is captured by
 # `#guard_msgs`; an uncaptured error fails the build, which is the point.
-# `Tests/feasibility/` is excluded on purpose: those are archived spikes, run by hand with
-# `lake env lean <file>`, and several fail by design (I2 promotes them to fixtures).
+# Archived feasibility spikes live in `lean/spikes/`, outside any lib: several fail by
+# design, and they are run by hand with `lake env lean spikes/<file>.lean`.
 [[lean_lib]]
 name = "Tests"
-globs = ["Tests", "Tests.M0.*", "Tests.Smoke"]
+globs = ["Tests", "Tests.+"]
