@@ -342,6 +342,9 @@ syntax (name := fhAttrPartial) "partial" : fh_attr
 /-- `#[noncomputable]` → `noncomputable def`, the specification-not-program marker. -/
 syntax (name := fhAttrNoncomputable) "noncomputable" : fh_attr
 
+/-- `#[opaque]` → an `opaque` declaration: a value exists, and nothing may look at it. -/
+syntax (name := fhAttrOpaque) "opaque" : fh_attr
+
 /-- An attribute group: `#[simp]`, `#[simp, ext]`. -/
 syntax fhAttrs := "#[" fh_attr,*,? "]"
 
@@ -453,6 +456,13 @@ a name. Rust's coherence and orphan rules do not carry over — Lean has none an
 depends on that (design §4.4). -/
 syntax (name := fhImpl) "impl " fh_expr:max " for " fh_expr:max (fhWhere)?
   " { " fh_member* " } " : fh_item
+
+/-- `extern "axiom" { fn choice(…) -> …; }` → `axiom` declarations (design §4.6).
+
+Both cute and semantically honest: an axiom is exactly a function whose implementation
+lives outside the language. Items inside must be bodyless — a body would be an
+implementation, which is the thing an axiom does not have. -/
+syntax (name := fhExtern) "extern " str " { " fh_item* " } " : fh_item
 
 /-- An item carrying attributes. A separate production rather than an optional prefix on
 every item, so each production keeps a distinct leading token and the grammar stays

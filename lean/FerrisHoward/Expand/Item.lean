@@ -27,6 +27,8 @@ structure AttrSet where
   isPartial : Bool := false
   /-- `#[noncomputable]`: the specification-not-program marker. -/
   isNoncomputable : Bool := false
+  /-- `#[opaque]`: a value exists and nothing may look at it. -/
+  isOpaque : Bool := false
   /-- `#[terminates_by(e)]`: the well-founded measure (design §4.6). -/
   terminationBy? : Option (TSyntax `term) := none
   /-- `#[decreasing_by(lean! { … })]`: the proof that it decreases. -/
@@ -44,6 +46,7 @@ private def addAttr (s : AttrSet) (a : TSyntax `fh_attr) : MacroM AttrSet :=
     | `(fh_attr| def) => return { s with defOptOut := true }
     | `(fh_attr| partial) => return { s with isPartial := true }
     | `(fh_attr| noncomputable) => return { s with isNoncomputable := true }
+    | `(fh_attr| opaque) => return { s with isOpaque := true }
     | `(fh_attr| instance) =>
         return { s with «lean» := s.lean.push (← `(attrInstance| instance)) }
     | `(fh_attr| $n:ident) =>
@@ -319,6 +322,11 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
         let binders ← allBinders gs wh ps ts
         let ret ← expandExpr ret
         let (body, sorryValued) ← expandFnBody body
+        if attrs.isOpaque then
+          -- `opaque` is a different command, not a modifier: nothing may unfold it, so
+          -- termination attributes have nothing to attach to either.
+          return ← fhDecl (← withAttrs attrs (← `(command| opaque $n $binders* : $ret := $body)))
+            sorryValued
         let decl ← match attrs.terminationBy?, attrs.decreasingBy? with
           | none, none => `(command| def $n $binders* : $ret := $body)
           | some m, none => `(command| def $n $binders* : $ret := $body
@@ -368,6 +376,26 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
               `(command| instance $name:ident $instances:bracketedBinder* : $cls $carrier := { $fields:structInstField,* })
           | none => `(command| instance $instances:bracketedBinder* : $cls $carrier := { $fields:structInstField,* })
         fhDecl (← withAttrs { attrs with name? := none } decl)
+
+    | `(fh_item| extern $kind:str { $items* }) => do
+        unless kind.getString == "axiom" do
+          Macro.throwErrorAt kind
+            s!"FH: `extern \"{kind.getString}\"` is not a thing; the only extern block is \
+               `extern \"axiom\"` (design §4.6)"
+        let cmds ← items.mapM fun item =>
+          withRef item do
+            match item with
+            | `(fh_item| fn $n:ident $[$gs]? ($[$ps : $ts],*) -> $ret $[$wh]? ;) => do
+                checkIdent n
+                let binders ← allBinders gs wh ps ts
+                let ret ← expandExpr ret
+                fhDecl (← `(command| axiom $n $binders* : $ret))
+            | _ =>
+                Macro.throwErrorAt item
+                  ("FH: an `extern \"axiom\"` block holds bodyless `fn` declarations — a \
+                    body would be an implementation, which is what an axiom does not have"
+                   : String)
+        return ⟨mkNullNode (cmds.map (·.raw))⟩
 
     | `(fh_item| struct $n:ident $[: $bounds]? { $[$fnames : $ftys],* }) => do
         checkIdent n
