@@ -57,6 +57,23 @@ private def joinPath (lhs : TSyntax `term) (field : Ident) (ref : Syntax) : Macr
     Macro.throwErrorAt ref "FH: `::` joins identifiers; for a value's field or method use `.`"
   return mkIdentFrom ref (lhs.raw.getId ++ field.getId)
 
+/-- `f a b`, for the constant `f`.
+
+Ruling A's operators expand to the underlying constants — `Eq`, `And`, `LE.le` — and not
+to Lean's `=`, `∧`, `≤` notations, which are `binop%`/`binrel%` macros that insert
+coercions during unification. Disabling silent coercion (F9) is exactly what I6 decided
+FH does by *not* going through those elaborators (`coercion-control.md`); this function is
+where that decision lives. It costs golden readability (`Eq a b`, not `a = b`) and buys
+the property that a coercion in FH-authored code is one the author wrote. -/
+private def app2 (c : Name) (a b : TSyntax `term) : MacroM (TSyntax `term) := do
+  let f := mkIdent c
+  `($f $a $b)
+
+/-- `f a`, for the constant `f`. -/
+private def app1 (c : Name) (a : TSyntax `term) : MacroM (TSyntax `term) := do
+  let f := mkIdent c
+  `($f $a)
+
 mutual
 
 /-- Translate an FH expression to a Lean term.
@@ -69,6 +86,7 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
     -- user syntax, untouched: the ident node keeps the user's span
     | `(fh_expr| $x:ident) => do checkIdent x; pure ⟨x.raw⟩
     | `(fh_expr| $n:num) => pure ⟨n.raw⟩
+    | `(fh_expr| Prop) => `(Prop)
     | `(fh_expr| ($inner)) => do
         let inner ← expandExpr inner
         `(($inner))
@@ -95,6 +113,28 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
           pure (⟨b.raw⟩ : TSyntax ``funBinder)
         let body ← expandExpr body
         `(fun $binders* => $body)
+    -- Ruling A's operator set (A1.5); the F7 precedence table lives in the grammar module
+    | `(fh_expr| $a -> $b) => do
+        let a ← expandExpr a; let b ← expandExpr b
+        `($a → $b)
+    | `(fh_expr| $a <-> $b) => do app2 ``Iff (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a || $b) => do app2 ``Or (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a && $b) => do app2 ``And (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| !$a) => do app1 ``Not (← expandExpr a)
+    | `(fh_expr| $a == $b) => do app2 ``Eq (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a != $b) => do app2 ``Ne (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a <= $b) => do app2 ``LE.le (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a < $b) => do app2 ``LT.lt (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a >= $b) => do app2 ``GE.ge (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a > $b) => do app2 ``GT.gt (← expandExpr a) (← expandExpr b)
+    -- `Membership.mem` takes the container first, the element second
+    | `(fh_expr| $a in $b) => do app2 ``Membership.mem (← expandExpr b) (← expandExpr a)
+    | `(fh_expr| $a + $b) => do app2 ``HAdd.hAdd (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a - $b) => do app2 ``HSub.hSub (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a * $b) => do app2 ``HMul.hMul (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a / $b) => do app2 ``HDiv.hDiv (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $a % $b) => do app2 ``HMod.hMod (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| -$a) => do app1 ``Neg.neg (← expandExpr a)
     | `(fh_expr| lean! { $ts }) => `(by $ts)
     | `(fh_expr| todo!()) => `(fh_todo%)
     | `(fh_expr| todo!($msg:str)) => `(fh_todo% $msg)

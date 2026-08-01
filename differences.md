@@ -43,4 +43,5 @@ is not, which is why they are chosen conservatively (Ruling B).
 - **Comments:** until the M3 standalone `.fh` format, FH lives in `.lean` files — `--` and `/- -/` only; Rust's `//` and `/* */` cannot lex.
 - **Nested generics:** `Poly<Fp<P>>` requires the `>`-splitting lexer (I5); until it lands, write `Poly<Fp<P> >`.
 - **Non-associativity by decree:** `a < b < c`, `a <-> b <-> c`, and `a in b in c` are parse errors — parenthesize (F7 as amended).
-- **Precedence inversion vs Rust:** `!` binds *looser* than comparisons (`!a == b` is `!(a == b)` — the mathematical reading), per the F7 table (freeze formalizes pre-M1).
+- **Precedence inversion vs Rust:** `!` binds *looser* than comparisons (`!a == b` is `!(a == b)` — the mathematical reading), per the F7 table. Frozen and pinned as goldens at A1.5 (`Tests/M1/Operators.lean`).
+- **Operators expand to constants, not to Lean's notations:** `a == b` becomes `Eq a b`, not `a = b`. Lean's relational and arithmetic notations are `binrel%`/`binop%` macros that insert coercions while unifying, and F9 says coercions are written. This is I6's mechanism (`coercion-control.md`) and it is why goldens read `Eq a b`.

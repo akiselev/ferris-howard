@@ -51,6 +51,12 @@ namespace FerrisHoward
 /-- An identifier. -/
 syntax:max (name := fhExprIdent) ident : fh_expr
 
+/-- `Prop`, the kind of claims. It needs its own production because `Prop` is a Lean
+*keyword* and so never arrives as an identifier. Design §4.3 keeps the spelling as-is: it
+already says what it means. (`Space`, F18's replacement for `Type`, is an ordinary
+identifier and arrives with A2.4.) -/
+syntax:max (name := fhExprProp) "Prop" : fh_expr
+
 /-- A numeric literal. FH introduces no literal syntax of its own: elaboration is
 Lean's `OfNat` (Ruling C item five, the landed §9.5 amendment). -/
 syntax:max (name := fhExprNum) num : fh_expr
@@ -105,6 +111,89 @@ syntax (name := fhTodoTerm) "fh_todo%" (str)? : term
 /-- `let x = e; rest`, with an optional annotation. Plain `let` stays pure — the
 `?`-flavoured monadic form is A2.3. -/
 syntax (name := fhExprLet) "let " fh_pat (": " fh_expr)? " = " fh_expr "; " fh_expr : fh_expr
+
+/-! ## Operators (Ruling A, F7)
+
+One meaning everywhere: `==`/`!=` are `Eq`/`Ne`, `&& || !` are `∧ ∨ ¬`, `->` is
+implication, `<->` is `Iff`, `<= < > >=` are the order relations, `in` is `∈` — all
+Props, unconditionally. `Bool` is an ordinary type reached explicitly (`decide(p)`, which
+needs no syntax of its own: it is a call).
+
+The F7 table, frozen pre-M1, loosest to tightest, with the precedences used here:
+
+| level | operators | associativity |
+|---|---|---|
+| 25 | `->` | right |
+| 27 | `<->` | **non**-associative |
+| 30 | `||` | left |
+| 35 | `&&` | left |
+| 40 | `!` (prefix) | — |
+| 50 | `==` `!=` `<` `<=` `>` `>=` `in` | **non**-associative |
+| 65 | `+` `-` | left |
+| 70 | `*` `/` `%` | left |
+| 75 | `-` (prefix) | — |
+| max | call, field, `::` | left |
+
+Two rows are worth reading twice. `!` binds *looser* than comparisons, so `!a == b` is
+`¬(a = b)` — the mathematical reading, and an inversion of Rust's table. And the
+comparison band is non-associative: `a < b < c` and `a in b in c` are parse errors, the
+classic math-notation trap closed by decree (Ruling B).
+-/
+
+/-- Implication — the function arrow, available in every expression position (F3). -/
+syntax:25 (name := fhExprArrow) fh_expr:26 " -> " fh_expr:25 : fh_expr
+
+/-- `Iff` (F4). Non-associative: chained iff is the same trap as chained comparison. -/
+syntax:27 (name := fhExprIff) fh_expr:28 " <-> " fh_expr:28 : fh_expr
+
+/-- Disjunction. -/
+syntax:30 (name := fhExprOr) fh_expr:30 " || " fh_expr:31 : fh_expr
+
+/-- Conjunction. -/
+syntax:35 (name := fhExprAnd) fh_expr:35 " && " fh_expr:36 : fh_expr
+
+/-- Negation. Looser than the comparisons, so `!a == b` is `¬(a = b)`. -/
+syntax:40 (name := fhExprNot) "!" fh_expr:40 : fh_expr
+
+/-- Propositional equality. -/
+syntax:50 (name := fhExprEq) fh_expr:51 " == " fh_expr:51 : fh_expr
+
+/-- Propositional disequality. -/
+syntax:50 (name := fhExprNe) fh_expr:51 " != " fh_expr:51 : fh_expr
+
+/-- `≤`. -/
+syntax:50 (name := fhExprLe) fh_expr:51 " <= " fh_expr:51 : fh_expr
+
+/-- `<`. -/
+syntax:50 (name := fhExprLt) fh_expr:51 " < " fh_expr:51 : fh_expr
+
+/-- `≥`. -/
+syntax:50 (name := fhExprGe) fh_expr:51 " >= " fh_expr:51 : fh_expr
+
+/-- `>`. -/
+syntax:50 (name := fhExprGt) fh_expr:51 " > " fh_expr:51 : fh_expr
+
+/-- Membership (F12): `x in s` is `x ∈ s`. Rust reserves `in` but uses it only in loop
+headers, and FH's quantifiers are bracketed, so the spelling is free. -/
+syntax:50 (name := fhExprIn) fh_expr:51 " in " fh_expr:51 : fh_expr
+
+/-- Addition. -/
+syntax:65 (name := fhExprAdd) fh_expr:65 " + " fh_expr:66 : fh_expr
+
+/-- Subtraction. -/
+syntax:65 (name := fhExprSub) fh_expr:65 " - " fh_expr:66 : fh_expr
+
+/-- Multiplication. -/
+syntax:70 (name := fhExprMul) fh_expr:70 " * " fh_expr:71 : fh_expr
+
+/-- Division. -/
+syntax:70 (name := fhExprDiv) fh_expr:70 " / " fh_expr:71 : fh_expr
+
+/-- Remainder. -/
+syntax:70 (name := fhExprMod) fh_expr:70 " % " fh_expr:71 : fh_expr
+
+/-- Negation of a number. -/
+syntax:75 (name := fhExprNeg) "-" fh_expr:75 : fh_expr
 
 /-! ## Patterns -/
 
