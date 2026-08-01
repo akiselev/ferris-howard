@@ -88,6 +88,19 @@ scoped macro_rules
 
 end Bridge.Abs
 
+namespace Bridge.Pow
+
+/-- `a.pow(n)` is `a ^ n` (F16).
+
+Rust's `^` is exclusive-or, so FH cannot spell exponentiation with it and there is no
+operator left; the ASCII method spelling is the whole of what F16 exists for. And there is
+no carrier method to fall back on — corpus Group 7 writes `a.pow(P)` for `a : Fp<P>`,
+whose carrier is a `match` on `P` and has no namespace at all. -/
+scoped macro_rules
+  | `(fh_dot% $x pow) => do let c := mkIdent `HPow.hPow; `($c $x)
+
+end Bridge.Pow
+
 namespace Bridge.Function
 
 /-- `f.comp(g)` is `f ∘ g`. Bridgeable only because it is opt-in: Mathlib has 587
