@@ -56,13 +56,13 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 - **Exit gate:** vertical slice green in CI — FH definitions elaborate, `#print` clean, all four tiers exercised (incl. one span assertion, one M0-native negative).
 
 ### M1 — Statements (Groups 1, 3, 4 complete + Group 2 pulled into the gate)
-- A1.1 `theorem` keyword form.
+- ✅ **A1.1 `theorem` keyword form** (`636d51d`).
 - A1.2 Dependent signatures; `{n*2}` brace escape (verified: longest-match suffices).
 - A1.3 Binder classes; turbofish; F1 expected-type nullary inference (stage two, flagged) — Ruling C item one.
 - A1.4 Quantifiers `for<>`/`exists<>` (F2 ascription + F2 negative test); anonymous constructors (Ruling C item two); `exists`-body `Sigma`/`Subtype` election (Ruling C item four).
-- A1.5 Ruling A operator set incl. `in`; `decide()`; Bool methods; F6 error **at expansion time** with exact span (parser can't produce fixed wording — verified; corpus F6 amended accordingly, §9.3); F7 matrix as exhaustive goldens (§9.1 landed 2026-08-01 — the table is complete); F12 negative test (`for<>` headers never capture `in`) lives here with the operator.
+- ◐ **A1.5** (`65f7509`): Ruling A operator set incl. `in` landed with the F7 matrix as exhaustive goldens; `decide()` needs no syntax (it is a call); Bool methods come with the M2 bridge. Operators expand to constants (`Eq a b`), never to Lean's `binrel%`/`binop%` notations — that is I6's coercion control at its point of use. Remaining here: F6 error **at expansion time** with exact span (parser can't produce fixed wording — verified; corpus F6 amended accordingly, §9.3); F7 matrix as exhaustive goldens (§9.1 landed 2026-08-01 — the table is complete); F12 negative test (`for<>` headers never capture `in`) lives here with the operator.
 - A1.6 Traits-with-laws; multi-parameter classes; instance-shadowing lint.
-- A1.7 `lean! { }` with InfoView.
+- ✅ **A1.7 `lean! { }`** (`636d51d`) — the interior is Lean's own tactic parser, the one FH slot that is not an FH category.
 - A1.8 **F10 ascription only**: `(e: T)` elaboration-hint-without-coercion. (The rest of the F9/F10 cluster — `as` coercion + disabling silent coercion — moves to A2.0: its consumers are all M2, and it needs I6 first.)
 - A1.9 `fh check` v0 (=C1): Frontend driver, JSON status/errors+FH spans/sorry goals/axioms.
 - Pre-M1 gate remaining: the `!`-on-Bool decision (default: hard-error). (I4 and the §9.1 doc PR landed 2026-08-01.)
@@ -81,6 +81,8 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 
 ### M3 — Ergonomics
 `notation!` (above the floor); sorry-report tooling; full span audit; error-taxonomy polish; standalone `.fh` (Lake facet + preprocessor + LSP forwarding — Alloy's history says this is the hard part); the tutorial; differences page completeness review (it has been growing since M0).
+
+**Corpus:** Group 1 green as `Tests/corpus/g01_peano.lean` (2026-08-01) — Ruling E's first group, all four tiers.
 
 ## 5. Track B — the Atlas (parallel; needs only I3 + pinned Mathlib)
 
