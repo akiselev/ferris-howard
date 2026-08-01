@@ -158,6 +158,30 @@ syntax:max (name := fhExprTry) fh_expr:max noWs "?" : fh_expr
 no-mangling policy means Mathlib names are reachable verbatim as `Nat::Prime::dvd_mul`. -/
 syntax:max (name := fhExprPath) fh_expr:max "::" ident : fh_expr
 
+/-- A field in a structure literal: `x: e`, or bare `x` for Rust's field punning, which
+Lean spells the same way and means the same thing. -/
+syntax fhStructLitField := ident (": " fh_expr)?
+
+/-- Structure literal: `Point{ x: 1, y: 2 }` → `{ x := 1, y := 2 : Point }` (design §4.7).
+
+The type is carried into the literal rather than ascribed onto it, because an ascription
+would be a coercion site and F9 says coercions are written.
+
+**This is the production that makes braces postfix**, which is what makes Rust forbid
+struct literals in `if` conditions — `if x Foo { }` is ambiguous there. FH closes it with
+`noWs` instead: the brace must touch the type, `Point{ x: 1 }`, so `if cond { … }` with
+its space is never a literal.
+
+That is a restriction (Rust writes the space) and it is the same one FH already makes for
+calls, for the same reason: a lexical rule beats a parser that has to guess, and relaxing
+it later is non-breaking. Recorded on the differences page.
+
+All three of Rust's forms are here, because each already exists in Lean and means the
+same thing: named fields, punning (`Point{ x, y }`), and functional update
+(`Point{ x: 1, ..p }` → `{ p with x := 1 }`). -/
+syntax:max (name := fhExprStructLit)
+  fh_expr:max noWs " { " fhStructLitField,*,? (".." fh_expr)? " } " : fh_expr
+
 /-- `match e { p => e, … }`. Trailing comma allowed, as in Rust. -/
 syntax fhMatchArm := fh_pat " => " fh_expr
 
@@ -413,7 +437,8 @@ syntax (name := fhFnBodyNone) ";" : fh_fn_body
 
 Two bodies rather than two `fn` productions: distinct leading tokens (`{` vs `;`) keep
 the grammar backtrack-free, which is Ruling B's scope note. -/
-syntax (name := fhFn) "fn " ident (fhGenerics)? "(" (fh_pat ": " fh_expr),* ")" " -> " fh_expr (fhWhere)? fh_fn_body : fh_item
+syntax (name := fhFn) "fn " ident (fhGenerics)? "(" (fh_pat ": " fh_expr),* ")"
+  " -> " fh_expr (fhWhere)? fh_fn_body : fh_item
 
 /-- `theorem name(args) -> conclusion { proof }` → `theorem name (args) : conclusion := proof`.
 
@@ -421,12 +446,13 @@ The `theorem` keyword is mandatory and there is no Prop-detection of `fn`s (the 
 review's standing decision, design §3). FH's `theorem` coexists with Lean's own by
 longest-match dispatch at the command boundary — verified on-toolchain, and the reason
 plain Lean `theorem` still parses in an FH file. -/
-syntax (name := fhTheorem) "theorem " ident (fhGenerics)? "(" (fh_pat ": " fh_expr),* ")" " -> " fh_expr (fhWhere)? fh_fn_body : fh_item
+syntax (name := fhTheorem) "theorem " ident (fhGenerics)? "(" (fh_pat ": " fh_expr),* ")"
+  " -> " fh_expr (fhWhere)? fh_fn_body : fh_item
 
 /-- `struct S { a: T, b: U }` → `structure S where a : T; b : U`, and
 `struct S: B1 + B2 { … }` → `structure S extends B1, B2 where …` (design §3's trait row,
 which §4.5 extends to plain structs). -/
-syntax (name := fhStruct) "struct " ident (": " fhBounds)?
+syntax (name := fhStruct) "struct " ident (fhGenerics)? (": " fhBounds)?
   " { " (ident ": " fh_expr),*,? " } " : fh_item
 
 /-- One field of an `enum` variant: `pred: N`, or an unnamed type.

@@ -459,19 +459,28 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
                    : String)
         return ⟨mkNullNode (cmds.map (·.raw))⟩
 
-    | `(fh_item| struct $n:ident $[: $bounds]? { $[$fnames : $ftys],* }) => do
+    | `(fh_item| struct $n:ident $[$gs]? $[: $bounds]? { $[$fnames : $ftys],* }) => do
         checkIdent n
+        -- a structure's generics are **explicit** parameters, as `enum`'s are: `Wrap<T>`
+        -- is `Wrap T`, and writing the argument is what makes the literal's type readable
+        let (params, indices) ← splitEnumHeader gs
+        unless indices.isEmpty do
+          Macro.throwErrorAt gs.get!
+            "FH: `_` marks an index position, and a struct has none — use an `enum` for an \
+             indexed family (design §4.5)"
+        let binders ← params.mapM fun (x, t) => `(bracketedBinderF| ($x : $t))
         let fields ← fnames.zip ftys |>.mapM fun (f, t) => do
           checkIdent f
           let t ← expandExpr t
           `(structSimpleBinder| $f:ident : $t)
         let decl ← match bounds with
-          | none => `(command| structure $n:ident where $fields:structSimpleBinder*)
+          | none => `(command| structure $n:ident $binders* where $fields:structSimpleBinder*)
           | some bs => do
               let ps ← bs.raw[0].getSepArgs.mapM fun p => do
                 let p ← expandExpr ⟨p⟩
                 `(structParent| $p:term)
-              `(command| structure $n:ident extends $ps,* where $fields:structSimpleBinder*)
+              `(command| structure $n:ident $binders* extends $ps,*
+                  where $fields:structSimpleBinder*)
         fhDecl (← withAttrs attrs decl)
 
     | `(fh_item| enum $n:ident $[$gs]? { $vs,* }) => do

@@ -159,6 +159,22 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
         let ty ← expandExpr ty
         let body ← expandParenthesised body
         `(fh_comprehension% (fun ($x : $ty) => $body))
+    | `(fh_expr| $ty{ $flds,* $[.. $base?]? }) => do
+        let ty ← expandExpr ty
+        let fields ← flds.getElems.mapM fun fld => match fld with
+          | `(fhStructLitField| $f:ident : $v) => do
+              checkIdent f; let v ← expandExpr v; `(structInstField| $f:ident := $v)
+          -- punning: Lean spells `{ x }` the same way FH does, so it needs no value
+          | `(fhStructLitField| $f:ident) => do
+              checkIdent f; `(structInstField| $f:ident := $f:ident)
+          | _ => Macro.throwErrorAt fld "FH: no expansion for this structure-literal field"
+        match base? with
+        -- `..p` is Rust's functional update and `with` is Lean's; a `with` literal takes
+        -- its type from the base, so ascribing it too would be redundant
+        | some base => do let base ← expandExpr base; `({ $base with $fields:structInstField,* })
+        -- the type goes *inside* the literal rather than onto it as an ascription: an
+        -- ascription is a coercion site, and F9 says coercions are written
+        | none => `({ $fields:structInstField,* : $ty })
     | `(fh_expr| { $inner }) => expandParenthesised inner
     | `(fh_expr| $f<$args,*>) => do
         let f ← expandExpr f
