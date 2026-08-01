@@ -1,6 +1,6 @@
 # Ferris–Howard: A Rust-Syntax Frontend for Lean 4
 
-**Status:** Draft 0.1 · **Architecture:** Lean-native macro frontend (in-process elaboration)
+**Status:** Draft 0.2 (amended 2026-08-01: corpus-review Rulings A–E and F16–F18 folded in; host-embedding, repo-layout, and toolchain-pin decisions recorded) · **Architecture:** Lean-native macro frontend (in-process elaboration)
 **Working name:** Ferris–Howard, after the correspondence we intend to exploit.
 
 ## 1. Goals and non-goals
@@ -13,7 +13,7 @@ One framing principle governs every design decision below. Rust syntax earned it
 
 ## 2. Architecture
 
-The package defines a top-level command syntax (a `rust` block or per-declaration commands) via Lean's syntax extension machinery: `declare_syntax_cat` for our grammatical categories (rust-items, rust-types, rust-expressions, rust-patterns), parser descriptions for each production, and then a translation layer.
+The package defines top-level *per-declaration* command syntax via Lean's syntax extension machinery. **Decided (2026-08-01):** per-declaration commands, not a monolithic `rust { }` block — better incremental elaboration and precise error spans — and FH code lives inside ordinary `.lean` files through M2, so the IDE story below is inherited directly. A standalone `.fh` file format (Lake facet + preprocessor + LSP forwarding) is a materially different architecture and is deliberately deferred to M3/the agent layer. The machinery: `declare_syntax_cat` for our grammatical categories (rust-items, rust-patterns, and a *single* rust-expression category serving both term and type positions — the unified-grammar decision of §4.1; there is deliberately no separate rust-types category), parser descriptions for each production, and then a translation layer.
 
 The translation layer should be **two-stage**, and this is the most important early implementation decision. Stage one is macro expansion: `macro_rules`-style rewrites from our syntax categories into *Lean surface syntax* — `fn` becomes `def`, `trait` becomes `class`, and so on — so that Lean's own elaborator does all type checking, universe inference, and instance resolution, and so that everything downstream (error messages, `#print`, Mathlib interop, the InfoView) behaves as if the user had written idiomatic Lean. Stage two, used only where pure syntax-to-syntax rewriting can't express the translation, is `elab_rules`: direct elaboration with access to the environment, needed for name-resolution policy (section 6), attribute bridging, and the places where one Rust item must expand to *several* Lean declarations (e.g., an `enum` that emits an inductive plus derived instances plus namespace aliases).
 
@@ -21,7 +21,7 @@ Favor stage one relentlessly. Every construct handled by macro expansion is a co
 
 Because we elaborate in-process, the IDE story is inherited rather than built: the Lean language server sees our syntax nodes, hover and go-to-definition work wherever we correctly attach source spans during expansion (span preservation is a hard requirement on every macro — sloppy spans are the number-one cause of unusable DSLs in Lean), and the proof-state InfoView works inside escape-hatch tactic blocks with zero effort from us.
 
-Repository shape: a Lake package `FerrisHoward` with `Syntax/` (parser declarations), `Expand/` (stage-one macros), `Elab/` (stage-two elaborators), `Bridge/` (the Mathlib name/notation bridge, section 6), and `Tests/` (golden files, section 8). Mathlib as a dependency from day one — its presence is the entire point.
+Repository shape (**decided 2026-08-01** — monorepo, git repo named `ferris-howard`): `lean/` holds the Lake package `FerrisHoward` with `Syntax/` (parser declarations), `Expand/` (stage-one macros), `Elab/` (stage-two elaborators), `Bridge/` (the Mathlib name/notation bridge, section 6), and `Tests/` (golden files, section 8), plus later the Atlas extractor metaprogram; `crates/` holds the Cargo workspace (`fh-atlas`, later `fh-cli`/`fh-mcp`); design docs live at the repo root. Mathlib as a dependency from day one — its presence is the entire point. Toolchain policy: pin a stable Lean toolchain + the matching Mathlib release tag, commit the manifest, and bump only at milestone boundaries in a dedicated PR that re-runs every test tier (error-substring negative tests and pretty-printed goldens both drift across Lean versions, so bumps are a scheduled event, never a drive-by).
 
 ## 3. The core mapping
 
@@ -30,7 +30,7 @@ The uncontroversial spine, mostly settled in prior discussion. Each row is a sta
 | Rust surface | Lean target | Notes |
 |---|---|---|
 | `fn f(x: T) -> U { e }` | `def f (x : T) : U := e` | body is an expression |
-| `fn f(...) -> U;` (no body) | `def f ... : U := sorry` | or `axiom`, per attribute |
+| `fn f(...) -> U;` (no body) | `def f ... : U := sorry` | axioms use `extern "axiom"` (§4.6) |
 | `trait C { ... }` | `class C (α : Type u) ...` | see §4.4 for the self-type |
 | `trait C: D + E` | `class C ... extends D, E` | supertraits = `extends` |
 | `impl C for T { ... }` | `instance : C T := { ... }` | named via `#[name(...)]` if needed |
@@ -45,18 +45,17 @@ The uncontroversial spine, mostly settled in prior discussion. Each row is a sta
 | `\|x\| body` (closure) | `fun x => body` | closures ARE lambdas; load-bearing in §4.2 |
 | `#[attr]` | `@[attr]` | pass-through: `#[simp]`, `#[ext]`, `#[instance]`… |
 
-Theorems are the special case worth pinning down precisely, since they're the heart of the reading experience. A `fn` whose return type elaborates into `Prop` becomes a `theorem` rather than a `def` (detectable at stage two; or force it syntactically with a `thm fn` keyword or `#[theorem]` — recommend the automatic route with the keyword as an override, since "hypotheses are arguments, conclusion is the return type" should require no ceremony):
+Theorems are the special case worth pinning down precisely, since they're the heart of the reading experience. **Standing decision (corpus review):** theorem declarations require the `theorem` item keyword — `theorem name(args) -> conclusion { body }` — with no automatic Prop-detection of `fn`s. The earlier proposals (automatic detection, `thm fn`, `#[theorem]`) are superseded; explicit over implicit.
 
 ```rust
-#[theorem]
-fn euclids_lemma<p: Nat, a: Nat, b: Nat>(hp: p.Prime, h: p ∣ a * b)
-    -> p ∣ a || p ∣ b
+theorem euclids_lemma<p: Nat, a: Nat, b: Nat>(hp: p.Prime, h: p.dvd(a * b))
+    -> p.dvd(a) || p.dvd(b)
 {
     lean! { exact (Nat.Prime.dvd_mul hp).mp h }
 }
 ```
 
-Note `||` in a `Prop`-position return type mapping to `∨`, and `&&` to `∧` — the boolean operators are re-read as propositional connectives when the expected type is `Prop`, which Lean's elaborator can drive (this is ordinary unification-directed notation overloading, a standard Lean idiom). Similarly `==` in type position is `Eq`, `!=` is `Ne`. Rust's operator vocabulary maps onto propositions with almost no invention.
+Operator semantics follow corpus-review Ruling A: every operator has **one meaning, everywhere**. `==`/`!=` are `Eq`/`Ne`; `&& || !` are `∧ ∨ ¬`; `->` is implication (the function arrow, available in every expression position); `<->` is `Iff`; `<= < > >=` are the order relations; `in` is `∈` — all Props, unconditionally. There is no expected-type-driven double reading (an earlier draft's "`||` means `∨` when the expected type is `Prop`" is revoked as hidden implicitness). `Bool` is an ordinary type reached explicitly: `decide(p)` at Prop→Bool boundaries, methods (`.xor()`, `.band()`) for Bool algebra; the entire cost is F14's decidable-`if`, which is Lean's own semantics. Divisibility above illustrates F16: Mathlib notations without a Rust operator get canonical ASCII method spellings (`p.dvd(a)` for `p ∣ a`); Unicode operator *input* is a v2 opt-in, never required. Rust's operator vocabulary still maps onto propositions with almost no invention — it just does so unconditionally.
 
 ## 4. Covering Lean's full semantic surface
 
@@ -82,11 +81,10 @@ Angle-bracket generics `<T, n: Nat>` become **implicit** binders — this matche
 Quantifiers need surface syntax because they appear inside types constantly. Two Rust-native gifts solve this. Rust already has higher-ranked binder syntax, `for<'a>`, which we generalize: **`for<x: Nat> P(x)` is `∀ x : Nat, P x`**. And closures give existentials a binder: **`exists<x: Nat> P(x)`** as the dual (new keyword, same shape). Lambda is just closure syntax, already in the table. So:
 
 ```rust
-#[theorem]
-fn primes_infinite() -> for<n: Nat> exists<p: Nat> (p > n && p.Prime);
+theorem primes_infinite() -> for<n: Nat> exists<p: Nat> (p > n) && p.Prime;
 ```
 
-reads as a signature and elaborates to `∀ n, ∃ p, p > n ∧ p.Prime`. Dependent pairs (`Σ`-types, the data-carrying `∃`) come along free: `exists` with a `Type`-valued body elaborates to `Sigma`/`Subtype` per expected type, and the anonymous-constructor bridge (§4.7) provides `(w, h)` introduction.
+reads as a signature and elaborates to `∀ n, ∃ p, p > n ∧ p.Prime`. Dependent pairs (`Σ`-types, the data-carrying `∃`) come along free: `exists` with a `Space`-valued body elaborates to `Sigma`/`Subtype` per expected type, and the anonymous-constructor bridge (§4.7) provides `(w, h)` introduction. (This expected-type disambiguation is sanctioned-implicitness item four in corpus-review Ruling C; the escape is F10 ascription.)
 
 ### 4.3 Universes and `Prop`
 
@@ -97,7 +95,7 @@ The hierarchy `Prop = Sort 0`, `Type = Sort 1`, `Type 1`, … with polymorphism 
 Three deltas from Rust's trait model. First, **laws become fields.** The doc-comment axioms from our crate file are now real:
 
 ```rust
-trait Semigroup<Self: Type> {
+trait Semigroup<Self: Space> {
     fn op(a: Self, b: Self) -> Self;
     assoc: for<a: Self, b: Self, c: Self> op(op(a, b), c) == op(a, op(b, c));
 }
@@ -130,7 +128,7 @@ Lean demands totality evidence; Rust assumes divergence is fine. Surface policy:
 
 Do-notation: Rust's `?` operator *is* monadic bind, and the mapping is delightful — a block containing `?` elaborates as a `do` block, `let x = f()?;` becomes `let x ← f`, plain `let` stays pure, and the block's monad is inferred from the expected type. `for`/`while`/`if` inside such blocks map to Lean's do-notation control flow, which was itself designed to imperative-language expectations. This single feature makes `Option`/`Except`/`StateM` code look like the Rust it wants to be.
 
-Structure literals `Point { x: 1, y: 2 }` → `{ x := 1, y := 2 }`; anonymous constructors: Rust tuple syntax `(a, b)` already elaborates via Lean's `⟨a, b⟩` when the expected type is a structure/inductive — adopt expected-type-driven anonymous construction wholesale. Field access and method-call dot syntax map to Lean's (generalized) dot notation, which is *more* powerful than Rust's (namespace-directed), so nothing to build. Coercions: `x as ℝ` → `(↑x : ℝ)`; `as!` for `Nat`-subtraction-style lossy coercions if we want to distinguish. Operators: Rust's `Add/Mul/Neg/Index` trait vocabulary coincides with Lean's `HAdd/HMul/Neg/GetElem` heterogeneous classes almost name-for-name; we pre-bridge them in `Bridge/` so `a + b` just works on Mathlib types.
+Structure literals `Point { x: 1, y: 2 }` → `{ x := 1, y := 2 }`; anonymous constructors: Rust tuple syntax `(a, b)` already elaborates via Lean's `⟨a, b⟩` when the expected type is a structure/inductive — adopt expected-type-driven anonymous construction wholesale. Field access and method-call dot syntax map to Lean's (generalized) dot notation, which is *more* powerful than Rust's (namespace-directed), so nothing to build. Coercions: `x as Real` → `(↑x : Real)` — always written, per F9 (silent unification-driven coercion is disabled in FH-elaborated code), and distinct from ascription per F10 (`(e: T)` is an elaboration hint that inserts no coercion; `e as T` inserts one); `as!` for `Nat`-subtraction-style lossy coercions if we want to distinguish. Operators: Rust's `Add/Mul/Neg/Index` trait vocabulary coincides with Lean's `HAdd/HMul/Neg/GetElem` heterogeneous classes almost name-for-name; we pre-bridge them in `Bridge/` so `a + b` just works on Mathlib types.
 
 Custom notation, short of metaprogramming: a single declaration form, `notation! { ζ($s) => riemannZeta($s), precedence = 65 }`, expanding to Lean `notation` commands. This deliberately caps expressiveness (no custom parsers, no elaborators) — anything fancier goes through the escape hatch.
 
@@ -170,16 +168,16 @@ Two problems: names and idioms. Names: Mathlib uses `UpperCamelCase` types, `low
 
 **M0 — Skeleton.** Lake package, syntax categories, stage-one macros for `fn`/`def`, `struct`, plain `enum`, `mod`/`use`, `todo!()`, attributes pass-through. Exit: a file of non-dependent definitions elaborates; `#print` shows clean Lean.
 
-**M1 — Statements.** Dependent signatures (§4.1), binder classes and quantifiers (§4.2), traits-with-laws (§4.4), theorem detection, `lean!{}`. Exit: `euclids_lemma` as written in §3 elaborates and its proof checks against Mathlib.
+**M1 — Statements.** Dependent signatures (§4.1), binder classes and quantifiers (§4.2), traits-with-laws (§4.4), the `theorem` keyword form, `lean!{}`, and the minimal `fh check` (JSON status + FH-source spans + sorry goals — the span infrastructure is cheap to emit while the macros are being written and painful to retrofit). Prerequisite pulled forward from the corpus review: the numeric-literals mini-design (integer literals permeate M0/M1 code and Lean's `OfNat` elaboration is expected-type-driven; it needs a sanctioned Ruling C entry, not improvisation). Exit: `euclids_lemma` as written in §3 (ASCII, `theorem` keyword) elaborates and its proof checks against Mathlib.
 
-**M2 — The conversation file.** Indexed enums, termination attributes, do-notation/`?`, the Mathlib bridge module. Exit criterion with teeth: a Ferris–Howard port of our `riemann_as_traits.rs` elaborates end-to-end — real `EuclideanDomain`, real `ZMod`, laws as fields, and `impl RiemannHypothesis for IntegerWorld` reporting exactly one `sorry`.
+**M2 — The conversation file.** Indexed enums, termination attributes, do-notation/`?`, the Mathlib bridge module; `fh repl` and `fh mcp` (agent layer) land alongside. Exit criterion with teeth: a Ferris–Howard port of our `riemann_as_traits.rs` elaborates end-to-end — real `EuclideanDomain`, real `ZMod`, laws as fields, and `impl RiemannHypothesis for IntegerWorld` reporting exactly one `sorry`.
 
-**M3 — Ergonomics.** Notation declarations, coercion sugar, the sorry-report tooling, error-message polish (macro spans audited so every elaboration error points at Rust-syntax source), docs written as a "for Rust programmers" tutorial that is secretly the variable-taxonomy reading protocol from our discussion.
+**M3 — Ergonomics.** Notation declarations, coercion sugar, the sorry-report tooling, error-message polish (macro spans audited so every elaboration error points at Rust-syntax source), docs written as a "for Rust programmers" tutorial that is secretly the variable-taxonomy reading protocol from our discussion. Also M3: the standalone `.fh` file format (Lake facet + preprocessor), per the §2 embedding decision.
 
 ## 8. Testing and agent workflow
 
-Three test tiers, all CI-enforced via `lake`: **golden expansion tests** (Rust-syntax input → expected Lean surface syntax, comparing pretty-printed expansion — cheap, catches macro regressions, and reviewable by you without running Lean mentally); **elaboration tests** (files that must elaborate with zero errors and a specified `sorry` count); and **negative tests** (files that must *fail*, with expected error substrings — a DSL's error behavior is API). For the agent workstream this structure is the contract: every feature lands with all three tiers, and the golden tier doubles as the living syntax specification, which matters because "we come up with our syntax extensions as we go" needs a ratchet against accidental grammar drift. Suggest agents work from this doc section-by-section with §4 subsections as issue granularity, and that ambiguities discovered mid-implementation come back as PRs against *this document* first — the doc stays the source of truth, the grammar follows it.
+Three test tiers, all CI-enforced via `lake`: **golden expansion tests** (Rust-syntax input → expected Lean surface syntax, comparing pretty-printed expansion — cheap, catches macro regressions, and reviewable by you without running Lean mentally); **elaboration tests** (files that must elaborate with zero errors and a specified `sorry` count); and **negative tests** (files that must *fail*, with expected error substrings — a DSL's error behavior is API). For the agent workstream this structure is the contract: every feature lands with all three tiers, and the golden tier doubles as the living syntax specification, which matters because "we come up with our syntax extensions as we go" needs a ratchet against accidental grammar drift. Suggest agents work from this doc section-by-section with §4 subsections as issue granularity, and that ambiguities discovered mid-implementation come back as PRs against *this document* first — the doc stays the source of truth, the grammar follows it. Authority order, made explicit after the 2026-08-01 reconciliation: this document and `corpus-review.md` are now consistent; if they ever disagree again, the corpus review's recorded rulings win until this document is amended, and the amendment lands before the code that depends on it. Corpus fixtures live at `Tests/corpus/gNN_*.lean` (FH-in-`.lean` per the §2 embedding decision; a `.fh` fixture form arrives with M3).
 
 ## 9. Open questions
 
-Whether theorem-detection by `Prop`-valued return type suffices or the `thm fn` keyword should be mandatory (leaning automatic-with-override; needs error-message experiments for the case where a user *meant* `Bool`). Whether `<>` generics-as-implicits ever needs a per-parameter explicitness override (`<explicit T>`?) for Mathlib functions whose type arguments are conventionally explicit. How `notation!` precedence interacts with the Rust expression grammar's fixed precedence table (proposal: custom notation lives above a precedence floor so core Rust parsing is never destabilized). And the naming question, which is load-bearing for a public project: Ferris–Howard is a good joke; whether it's a good crate name is a different theorem.
+Theorem detection — **resolved** by the corpus review's standing decision: the `theorem` keyword is mandatory, no automatic Prop-detection (§3). Whether `<>` generics-as-implicits ever needs a per-parameter explicitness override (`<explicit T>`?) for Mathlib functions whose type arguments are conventionally explicit — decide during M2 bridge work if friction demands; turbofish and F8 term-position types already cover the escapes. How `notation!` precedence interacts with the Rust expression grammar's fixed precedence table — default answer adopted: custom notation lives above a precedence floor so core Rust parsing is never destabilized; revisit only if M3 usage hits the floor. Naming — **resolved (2026-08-01)**: the repository is `ferris-howard`; crate/package naming for distribution is deferred until first public release.
