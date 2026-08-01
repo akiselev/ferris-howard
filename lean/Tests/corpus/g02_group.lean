@@ -119,6 +119,21 @@ example : (Grp.e : Int) = 0 := rfl
 #guard_msgs in
 #print axioms instGrpInt
 
+/-! ## F1's escape
+
+Ruling C item one sanctions expected-type-driven nullary inference and names **turbofish**
+as its escape. Turbofish turns out to have no sound stage-one lowering — `@Grp.e G` leaves
+the instance argument explicit and fails on this very example, and the named form
+`Grp.e (Self := G)` needs the callee's binder name, which is elaboration information a
+macro cannot see. The escape that works, and that FH already has, is F10 ascription.
+-/
+
+fn pinned<G>() -> G where G: Grp { (Grp::e(): G) }
+
+/-- info: def pinned.{u_1} : {G : Type u_1} → [Grp G] → G := fun {G} [Grp G] => Grp.e -/
+#guard_msgs (whitespace := lax) in
+#print pinned
+
 /-! ## Tier 3 — negative
 
 An obligation is a field, so omitting one is Lean's own missing-field error — the law is
