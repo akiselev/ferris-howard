@@ -134,6 +134,11 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
     | `(fh_expr| ($inner)) => do
         let inner ← expandParenthesised inner
         `(($inner))
+    | `(fh_expr| ($first, $rest,*)) => do
+        let first ← expandParenthesised first
+        let rest ← rest.getElems.mapM expandParenthesised
+        let all := #[first] ++ rest
+        `(⟨$all,*⟩)
     | `(fh_expr| ($e : $t)) => do
         let e ← expandParenthesised e
         let t ← expandExpr t

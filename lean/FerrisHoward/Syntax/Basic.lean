@@ -78,6 +78,15 @@ syntax:max (name := fhExprNum) num : fh_expr
 /-- Parenthesised expression. Also the escape hatch Ruling B keeps insisting on. -/
 syntax:max (name := fhExprParen) "(" fh_expr ")" : fh_expr
 
+/-- Tuple syntax, which is Lean's **anonymous constructor** by expected type (design §4.7,
+Ruling C item two): `(a, b)` is `⟨a, b⟩`, so it introduces a `Prod`, an `Exists` witness, a
+`Subtype`'s value-and-proof pair, or any structure, according to what is expected.
+
+Two or more elements: one is the parenthesised expression above, and zero is Lean's `Unit`
+spelling, which FH does not have yet. Escape, as everywhere in Ruling C: name the
+constructor. -/
+syntax:max (name := fhExprTuple) "(" fh_expr ", " fh_expr,+ ")" : fh_expr
+
 /-- Type ascription (F10): `(e: T)` is an elaboration *hint*, and inserts no coercion.
 `e as T` is the coercion, and it is a different operator on purpose — Lean spells the two
 `(e : T)` and `(↑e : T)`, Rust conflates them into `as`, and Mathlib proofs need
