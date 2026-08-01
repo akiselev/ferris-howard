@@ -123,6 +123,20 @@ private def withAttrs (attrs : AttrSet) (d : TSyntax `command) : MacroM (TSyntax
 
 /-! ## Binders -/
 
+/-- One generic parameter, split into its binder and its optional annotation.
+
+The binder may be `_`: in an `enum` header that marks an **index** position (design §4.5),
+and elsewhere it is an ordinary anonymous binder. -/
+def genericParam (p : TSyntax ``fhGenericParam) :
+    MacroM (TSyntax [`ident, ``Lean.Parser.Term.hole] × Option (TSyntax `fh_expr)) :=
+  withRef p do
+    match p with
+    | `(fhGenericParam| $x:ident : $t) => do checkIdent x; return (⟨x.raw⟩, some t)
+    | `(fhGenericParam| $x:ident) => do checkIdent x; return (⟨x.raw⟩, none)
+    | `(fhGenericParam| _ : $t) => do let h ← `(_); return (⟨h.raw⟩, some t)
+    | `(fhGenericParam| _) => do let h ← `(_); return (⟨h.raw⟩, none)
+    | _ => Macro.throwErrorAt p "FH: no expansion for this generic parameter"
+
 /-- Angle-bracket generics → **implicit** binders (design §4.2). A bare `<T>` gets
 `Type _`: design §4.3's "a bare `<T>` defaults to `Space<_>`", spelled in core Lean until
 `Space` itself lands at A2.4. -/
@@ -132,15 +146,12 @@ private def expandGenerics (g? : Option (TSyntax ``fhGenerics)) :
   let `(fhGenerics| <$ps,*>) := g | Macro.throwErrorAt g "FH: no expansion for these generics"
   ps.getElems.mapM fun p =>
     withRef p do
-      match p with
-      | `(fhGenericParam| $x:ident : $t) => do
-          checkIdent x
+      let (x, t?) ← genericParam ⟨p⟩
+      match t? with
+      | some t => do
           let t ← expandExpr t
           `(bracketedBinderF| {$x : $t})
-      | `(fhGenericParam| $x:ident) => do
-          checkIdent x
-          `(bracketedBinderF| {$x : Type _})
-      | _ => Macro.throwErrorAt p "FH: no expansion for this generic parameter"
+      | none => `(bracketedBinderF| {$x : Type _})
 
 /-- `where` bounds → **instance** binders: `where R: CommRing + Finite` is
 `[CommRing R] [Finite R]`. -/
@@ -201,27 +212,35 @@ A variant's fields are either all named or all unnamed, as in Rust, where those 
 different variant shapes. Named fields become binders (`| Succ (pred : N) : N`), keeping
 the name visible in goals and available to named arguments; unnamed ones become an arrow
 chain (`| Cons : T → E`). Mixing is an error rather than a silent choice. -/
-private def expandVariant (enumName : Ident) (v : TSyntax ``fhEnumVariant) : MacroM (TSyntax ``ctor) :=
+private def expandVariant (uniform : TSyntax `term) (v : TSyntax ``fhEnumVariant) :
+    MacroM (TSyntax ``ctor) :=
   withRef v do
     match v with
-    | `(fhEnumVariant| $c:ident) => do
+    | `(fhEnumVariant| $c:ident $[$gs]? $[($fs,*)]? $[-> $ret]?) => do
         checkIdent c
-        `(ctor| | $c:ident : $enumName:ident)
-    | `(fhEnumVariant| $c:ident($fs,*)) => do
-        checkIdent c
-        let fields ← fs.getElems.mapM fun f =>
-          match f with
-          | `(fhEnumField| $n:ident : $t) => do checkIdent n; return (some n, ← expandExpr t)
-          | `(fhEnumField| $t:fh_expr) => return (none, ← expandExpr t)
-          | _ => Macro.throwErrorAt f "FH: no expansion for this enum field"
+        -- a variant's own generics are implicit binders on the constructor
+        let generics ← expandGenerics gs
+        -- absent an arrow the variant targets the uniform type; present, it declares the
+        -- index (design §4.5)
+        let target ← match ret with
+          | some r => expandExpr r
+          | none => pure uniform
+        let fields ← match fs with
+          | none => pure #[]
+          | some fs => fs.getElems.mapM fun f =>
+            match f with
+            | `(fhEnumField| $n:ident : $t) => do checkIdent n; return (some n, ← expandExpr t)
+            | `(fhEnumField| $t:fh_expr) => return (none, ← expandExpr t)
+            | _ => Macro.throwErrorAt f "FH: no expansion for this enum field"
         let named := fields.filter (·.1.isSome)
         if named.size == fields.size then
           let binders ← fields.mapM fun (n, t) => `(bracketedBinderF| ($(n.get!) : $t))
-          `(ctor| | $c:ident $binders* : $enumName:ident)
+          let all := generics ++ binders
+          `(ctor| | $c:ident $all* : $target)
         else if named.isEmpty then
-          let mut ty : TSyntax `term := enumName
+          let mut ty := target
           for (_, t) in fields.reverse do ty ← `($t → $ty)
-          `(ctor| | $c:ident : $ty)
+          `(ctor| | $c:ident $generics* : $ty)
         else
           Macro.throwErrorAt v
             "FH: an enum variant's fields must be either all named or all unnamed"
@@ -238,11 +257,15 @@ private def expandCarriers (g? : Option (TSyntax ``fhGenerics)) :
   let mut first := none
   for p in ps.getElems do
     let (x, t) ← withRef p do
-      match p with
-      | `(fhGenericParam| $x:ident : $t) => do checkIdent x; return (x, ← expandExpr t)
-      | `(fhGenericParam| $x:ident) => do checkIdent x; return (x, ← `(Type _))
-      | _ => Macro.throwErrorAt p "FH: no expansion for this generic parameter"
-    if first.isNone then first := some x
+      let (x, t?) ← genericParam ⟨p.raw⟩
+      let t ← match t? with
+        | some t => expandExpr t
+        | none => `(Type _)
+      return (x, t)
+    if first.isNone then
+      unless x.raw.isIdent do
+        Macro.throwErrorAt p "FH: a trait's carrier needs a name, not `_`"
+      first := some ⟨x.raw⟩
     binders := binders.push (← `(bracketedBinderF| ($x : $t)))
   return (binders, first)
 
@@ -309,6 +332,26 @@ private def expandImplMember (m : TSyntax `fh_member) : MacroM (TSyntax ``struct
         let val ← expandExpr val
         `(structInstField| $n:ident := $val)
     | _ => Macro.throwErrorAt m "FH: no expansion for this impl member"
+
+/-- An `enum` header, split into uniform **parameters** (named) and **index** positions
+(written `_`) — design §4.5's marker, and the whole of what distinguishes an indexed
+family from an ordinary Rust enum. -/
+private def splitEnumHeader (g? : Option (TSyntax ``fhGenerics)) :
+    MacroM (Array (Ident × TSyntax `term) × Array (TSyntax `term)) := do
+  let some g := g? | return (#[], #[])
+  let `(fhGenerics| <$ps,*>) := g | Macro.throwErrorAt g "FH: no expansion for these generics"
+  let mut params := #[]
+  let mut indices := #[]
+  for p in ps.getElems do
+    let (x, t?) ← genericParam ⟨p⟩
+    let t ← match t? with
+      | some t => expandExpr t
+      | none => `(Type _)
+    if x.raw.isIdent then
+      params := params.push (⟨x.raw⟩, t)
+    else
+      indices := indices.push t
+  return (params, indices)
 
 /-- Stage-one expansion of a single FH item into Lean surface syntax. -/
 partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM (TSyntax `command) :=
@@ -412,10 +455,24 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
               `(command| structure $n:ident extends $ps,* where $fields:structSimpleBinder*)
         fhDecl (← withAttrs attrs decl)
 
-    | `(fh_item| enum $n:ident { $vs,* }) => do
+    | `(fh_item| enum $n:ident $[$gs]? { $vs,* }) => do
         checkIdent n
-        let ctors ← vs.getElems.mapM (expandVariant n)
-        fhDecl (← withAttrs attrs (← `(command| inductive $n:ident where $ctors*)))
+        -- `_` in the header marks an index position — varying per constructor — against a
+        -- named parameter, which is uniform (design §4.5).
+        let (params, indices) ← splitEnumHeader gs
+        let uniform ← do
+          let names := params.map (·.1)
+          if names.isEmpty then pure (n : TSyntax `term) else `($n $names*)
+        let ctors ← vs.getElems.mapM (expandVariant uniform)
+        let decl ← if indices.isEmpty then
+            let binders ← params.mapM fun (x, t) => `(bracketedBinderF| ($x : $t))
+            `(command| inductive $n:ident $binders* where $ctors*)
+          else
+            let binders ← params.mapM fun (x, t) => `(bracketedBinderF| ($x : $t))
+            let mut sort ← `(Type _)
+            for t in indices.reverse do sort ← `($t → $sort)
+            `(command| inductive $n:ident $binders* : $sort where $ctors*)
+        fhDecl (← withAttrs attrs decl)
 
     | `(fh_item| mod $n:ident { $items* }) => do
         checkIdent n

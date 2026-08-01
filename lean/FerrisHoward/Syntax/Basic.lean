@@ -58,7 +58,7 @@ quantifier — they are the same shape and the same reading.
 The annotation parses at `max`, so the closing `>` cannot be stolen by the `>` comparison:
 `<n: Nat>` is a parameter list, never `n : (Nat > …)`. Same reason `fhBounds` parses at
 `max`. -/
-syntax fhGenericParam := ident (": " fh_expr:max)?
+syntax fhGenericParam := Lean.binderIdent (": " fh_expr:max)?
 
 /-! ## Expressions -/
 
@@ -409,12 +409,17 @@ for the same shape. Ruling B's concern is the *expression* grammar, where a back
 would become an ambiguity report. -/
 syntax fhEnumField := (atomic(ident ": "))? fh_expr
 
-/-- One `enum` variant: `Zero`, `Succ(pred: N)`, `Cons(T)`. -/
-syntax fhEnumVariant := ident ("(" fhEnumField,*,? ")")?
+/-- One `enum` variant: `Zero`, `Succ(pred: N)`, `Cons(T)`, and — for an indexed family —
+`Cons<n: Nat>(head: T, tail: Vector<T, n>) -> Vector<T, n + 1>` (design §4.5).
 
-/-- `enum E { A(T), B }` → `inductive E where | A : T → E | B : E`. Plain (unindexed)
-enums only; per-variant return types for indexed families are A2.2. -/
-syntax (name := fhEnum) "enum " ident " { " fhEnumVariant,*,? " } " : fh_item
+A per-variant return type is what declares the index; absent one, the variant targets the
+uniform type, which is an ordinary Rust enum. -/
+syntax fhEnumVariant := ident (fhGenerics)? ("(" fhEnumField,*,? ")")? (" -> " fh_expr)?
+
+/-- `enum E { A(T), B }` → `inductive E where | A : T → E | B : E`, and with a header
+`enum Vector<T, _: Nat>` the `_` marks an **index** position — varying per constructor —
+against `T`, which is a uniform parameter (design §4.5). -/
+syntax (name := fhEnum) "enum " ident (fhGenerics)? " { " fhEnumVariant,*,? " } " : fh_item
 
 /-- `mod m { … }` → `namespace m … end m`. -/
 syntax (name := fhMod) "mod " ident " { " fh_item* " } " : fh_item
