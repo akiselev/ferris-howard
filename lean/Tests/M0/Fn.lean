@@ -54,6 +54,19 @@ def apply_const : Nat :=
 #guard_msgs (whitespace := lax) in
 #fh_expand fn apply_const() -> Nat { const_nat(1, (0)) }
 
+/-! A bodyless `fn` is a `sorry`-backed definition (design §3). The second option is not
+decoration: a stub has no body to use its parameters in, so without it every conjecture
+stub would carry an unused-variable warning. The `sorry` warning itself is untouched. -/
+
+/--
+info: set_option autoImplicit false in
+set_option linter.unusedVariables false in
+def conjecture (n : Nat) : Nat :=
+  sorry
+-/
+#guard_msgs (whitespace := lax) in
+#fh_expand fn conjecture(n: Nat) -> Nat;
+
 /-! ## Tier 2 — elaboration
 
 Zero errors, zero sorries, and the translation means what it says: the `example`s check
@@ -75,6 +88,17 @@ example : apply_const = 1 := rfl
 /-- info: 'apply_const' does not depend on any axioms -/
 #guard_msgs in
 #print axioms apply_const
+
+/-! A bodyless `fn` is the exception: it *must* report a sorry, and the report has to
+survive into the environment rather than being FH's word for it. -/
+
+/-- warning: declaration uses `sorry` -/
+#guard_msgs in
+fn conjecture(n: Nat) -> Nat;
+
+/-- info: 'conjecture' depends on axioms: [sorryAx] -/
+#guard_msgs in
+#print axioms conjecture
 
 /-! ## Tier 3 — negative
 

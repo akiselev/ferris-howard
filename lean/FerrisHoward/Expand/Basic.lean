@@ -26,6 +26,20 @@ Never re-parse strings.
 namespace FerrisHoward
 open Lean Lean.Parser.Term
 
+/-- Join a `::` path into a single Lean name: `Nat::Prime::dvd_mul` is the identifier
+`Nat.Prime.dvd_mul`. Design §6's no-mangling policy means this is all the "bridge" a
+Mathlib name needs.
+
+Only identifiers compose; `f(x)::g` is a syntax-level error rather than a silent
+reinterpretation as field access, which is a different operation with different
+resolution. -/
+private def joinPath (lhs : TSyntax `term) (field : Ident) (ref : Syntax) : MacroM (TSyntax `term) := do
+  unless lhs.raw.isIdent do
+    Macro.throwErrorAt ref "FH: `::` joins identifiers; for a value's field or method use `.`"
+  return mkIdentFrom ref (lhs.raw.getId ++ field.getId)
+
+mutual
+
 /-- Translate an FH expression to a Lean term.
 
 Both term and type positions go through here — there is one expression grammar
@@ -43,18 +57,65 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
         let f ← expandExpr f
         let args ← args.getElems.mapM expandExpr
         `($f $args*)
+    | `(fh_expr| $recv.$field:ident) => do
+        let recv ← expandExpr recv
+        `($recv.$field)
+    | `(fh_expr| $lhs :: $field:ident) => do
+        joinPath (← expandExpr lhs) field e
+    | `(fh_expr| match $scrut { $[$pats => $rhss],* }) => do
+        let scrut ← expandExpr scrut
+        let alts ← pats.zip rhss |>.mapM fun (p, r) => do
+          let p ← expandPat p
+          let r ← expandExpr r
+          `(matchAltExpr| | $p => $r)
+        `(match $scrut:term with $alts:matchAlt*)
+    | `(fh_expr| |$ps,*| $body) => do
+        let binders ← ps.getElems.mapM fun p => do
+          let b ← expandBinderPat p
+          pure (⟨b.raw⟩ : TSyntax ``funBinder)
+        let body ← expandExpr body
+        `(fun $binders* => $body)
+    | `(fh_expr| let $p $[: $ty]? = $val; $rest) => do
+        let p ← expandBinderPat p
+        let val ← expandExpr val
+        let rest ← expandExpr rest
+        match ty with
+        | some ty => do
+            let ty ← expandExpr ty
+            `(let $p : $ty := $val; $rest)
+        | none => `(let $p := $val; $rest)
     | _ => Macro.throwErrorAt e "FH: no expansion for this expression form"
+
+/-- Translate an FH pattern to a Lean pattern (which is a term).
+
+Whether a bare identifier binds or matches a constructor is Lean's rule, inherited
+verbatim — the same rule Rust has, so nothing needs explaining to a Rust reader. -/
+partial def expandPat (p : TSyntax `fh_pat) : MacroM (TSyntax `term) :=
+  withRef p do
+    match p with
+    | `(fh_pat| $x:ident) => pure ⟨x.raw⟩
+    | `(fh_pat| _) => `(_)
+    | `(fh_pat| $n:num) => pure ⟨n.raw⟩
+    | `(fh_pat| $lhs :: $field:ident) => do
+        joinPath (← expandPat lhs) field p
+    | `(fh_pat| $ctor($args,*)) => do
+        let ctor ← expandPat ctor
+        let args ← args.getElems.mapM expandPat
+        `($ctor $args*)
+    | _ => Macro.throwErrorAt p "FH: no expansion for this pattern"
 
 /-- Translate an FH pattern used in *binder* position to a Lean binder identifier.
 
 Only the two irrefutable forms are legal here; destructuring parameter patterns
-(`fn f((a, b): (Nat, Nat))`) are an A0.2 question, not an M0 one. -/
-def expandBinderPat (p : TSyntax `fh_pat) : MacroM (TSyntax [`ident, ``Lean.Parser.Term.hole]) :=
+(`fn f((a, b): (Nat, Nat))`) are a later question, not an M0 one. -/
+partial def expandBinderPat (p : TSyntax `fh_pat) : MacroM (TSyntax [`ident, ``Lean.Parser.Term.hole]) :=
   withRef p do
     match p with
     | `(fh_pat| $x:ident) => pure ⟨x.raw⟩
     | `(fh_pat| _) => do let h ← `(_); pure ⟨h.raw⟩
     | _ => Macro.throwErrorAt p "FH: this pattern is not allowed in binder position"
+
+end
 
 /-- Build one explicit binder `(p : T)`.
 
@@ -78,8 +139,14 @@ quantified type variable yields vacuous theorems.
 This is stage one on purpose: `set_option … in` is a command combinator, so the rule is
 expressed in the expansion itself rather than in a bespoke elaborator, and it is visible
 in the golden tier where a semantic commitment of this size belongs. `relaxedAutoImplicit`
-needs no setting — with `autoImplicit` off it is not consulted (verified on-toolchain). -/
-def fhDecl (d : TSyntax `command) : MacroM (TSyntax `command) :=
+needs no setting — with `autoImplicit` off it is not consulted (verified on-toolchain).
+
+`unusedVariables` is switched off for `sorry`-valued declarations only. A bodyless `fn`
+declares an interface and has no body to use its parameters in, so the linter would fire
+on every conjecture stub — the one thing design §1 promises FH is good at. The
+`declaration uses 'sorry'` warning is untouched: that one is the point. -/
+def fhDecl (d : TSyntax `command) (sorryValued : Bool := false) : MacroM (TSyntax `command) := do
+  let d ← if sorryValued then `(command| set_option linter.unusedVariables false in $d) else pure d
   `(command| set_option autoImplicit false in $d)
 
 end FerrisHoward
