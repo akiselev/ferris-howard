@@ -8,9 +8,10 @@ import FerrisHoward.Test
 /-!
 # M0 · `todo!` and the sorry report (A0.4)
 
-* **Stage: one for the translation, two for the elaboration of `fh_todo%`.** Justified in
-  `FerrisHoward/Elab/Todo.lean`: the message has to reach the message log and `MacroM`
-  cannot log, only throw.
+* **Stage: one, and only one.** `todo!(…)` expands to Lean's own `sorry`; the message is a
+  *diagnostic* and lands in a linter (`FerrisHoward/Lint/Todo.lean`), not in the
+  translation. ADR-006 forces exactly this: an expansion containing FH-only syntax could
+  not be emitted as FH-free Lean.
 * **Ruling D:** `todo!()` is design §3's row; Rust's `todo!()` also means "not written
   yet", and here it means it in the strong sense — the declaration depends on `sorryAx`.
 * **Sorry count: three**, asserted below, and that is the point of the file.
@@ -22,7 +23,7 @@ import FerrisHoward.Test
 info: set_option autoImplicit false in
 set_option linter.unusedVariables false in
 def stub (n : Nat) : Nat :=
-  fh_todo%
+  sorry
 -/
 #guard_msgs (whitespace := lax) in
 #fh_expand fn stub(n: Nat) -> Nat { todo!() }
@@ -31,30 +32,31 @@ def stub (n : Nat) : Nat :=
 info: set_option autoImplicit false in
 set_option linter.unusedVariables false in
 def stub2 : Nat :=
-  fh_todo%"needs the Euclid argument"
+  sorry
 -/
 #guard_msgs (whitespace := lax) in
 #fh_expand fn stub2() -> Nat { todo!("needs the Euclid argument") }
 
 /-! ## Tier 2 — elaboration
 
-Both messages fire: FH's own log line, carrying the text, and Lean's `sorry` warning. The
-second is the one that cannot be faked — it comes from the kernel-visible `sorryAx` in the
-declaration, not from FH's say-so.
+Both messages fire: Lean's `sorry` warning and FH's own log line carrying the text. The
+first is the one that cannot be faked — it comes from the kernel-visible `sorryAx` in the
+declaration, not from FH's say-so. It also comes first now, because the message is a
+linter's and linters run after elaboration.
 -/
 
 /--
-info: FH todo
----
 warning: declaration uses `sorry`
+---
+info: FH todo
 -/
 #guard_msgs in
 fn stub(n: Nat) -> Nat { todo!() }
 
 /--
-info: FH todo: needs the Euclid argument
----
 warning: declaration uses `sorry`
+---
+info: FH todo: needs the Euclid argument
 -/
 #guard_msgs in
 fn stub2() -> Nat { todo!("needs the Euclid argument") }
@@ -99,14 +101,14 @@ error: FH: `#[terminates_by(…)]` takes arguments, which are not supported yet;
 
 /-! ## Tier 4 — span
 
-`todo!`'s log lands on the `todo!` itself, and Lean's `sorry` warning on the declaration
-name — which is the pair a reader wants: what is missing, and which declaration is
-incomplete.
+`todo!`'s log lands on the `todo!` itself and Lean's `sorry` warning on the declaration
+name — the pair a reader wants: what is missing, and which declaration is incomplete. The
+warning comes first because the linter runs after elaboration.
 -/
 
 /--
-info: info @ +0:22-35 «todo!("here")»
-warning @ +0:3-10 «spanned»
+info: warning @ +0:3-10 «spanned»
+info @ +0:22-35 «todo!("here")»
 -/
 #guard_msgs in
 #fh_spans in

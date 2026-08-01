@@ -52,6 +52,14 @@ jobs:
       - name: Manifest is unchanged
         run: git diff --exit-code lean/lake-manifest.json
 
+      # ADR-006's guarantee. Emits publication-grade Lean, checks it carries no FH
+      # dependency, elaborates it from scratch, and compares it to the FH original
+      # declaration by declaration using the I3 statement encoding. The point is not that
+      # the artifact compiles — it is that it states exactly what we proved, which is what
+      # lets FH drop out of the trusted base.
+      - name: emit-lean round-trip
+        run: python3 scripts/round-trip.py
+
   rust:
     name: rust
     runs-on: ubuntu-latest

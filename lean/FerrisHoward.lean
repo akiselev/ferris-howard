@@ -2,8 +2,9 @@
 Copyright (c) 2026 Ferris–Howard contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import FerrisHoward.Expand.Item
-import FerrisHoward.Elab.Todo
+import FerrisHoward.Emit
+import FerrisHoward.Lint.Todo
+import FerrisHoward.Report.Sorry
 
 /-!
 # Ferris–Howard
@@ -16,7 +17,10 @@ Layout (design §2):
 
 * `FerrisHoward/Syntax/` — parser declarations (the categories and productions);
 * `FerrisHoward/Expand/` — stage-one macros (FH surface → Lean surface);
-* `FerrisHoward/Elab/` — stage-two elaborators (none yet; each one must be justified);
+* `FerrisHoward/Emit/` — `emit-lean`, the publication path (ADR-006);
+* `FerrisHoward/Lint/` — post-elaboration diagnostics, which are *not* part of the
+  translation and can be switched off without changing what FH means;
+* `FerrisHoward/Report/` — tooling commands over the elaborated environment;
 * `FerrisHoward/Bridge/` — the Mathlib name/notation bridge (M2);
 * `FerrisHoward/Test/` — the four-tier harness, imported by fixtures under `Tests/`.
 

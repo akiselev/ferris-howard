@@ -6,7 +6,7 @@
 ## 0. Ground rules (non-negotiable, from the docs)
 
 1. **Corpus as spec (Ruling E).** Every feature lands with all **four** test tiers: golden expansion, elaboration, negative, **span** (the fourth tier is plan-introduced; doc PR §9.3). The golden tier is the living syntax specification.
-2. **Stage one relentlessly (design §2).** Every feature PR states macro-expansion vs `elab_rules` and justifies stage two. Known stage-two items, flagged in advance: F9 coercion control (mechanism one-pager I6 — its blast radius vs this very rule is the open question), F10 ascription, F1 expected-type inference, `where P: Prime`→`Fact` bridge resolution, F13 expected-type election (landed §9.2).
+2. **Syntax → syntax, and it is load-bearing (design §2; ADR-006, `research/codegen.md` §2).** Every FH construct expands to Lean *surface* syntax via `macro_rules`; `elab_rules` is reserved for constructs that genuinely need elaborator access, and each one is a decision to defend. ADR-006 turns this from a preference into a requirement: `emit-lean` is then one macro-expansion step plus a formatter, and faithfulness is by construction rather than by delaboration heroics. **The printable middle stage is the publication artifact**, which is also why the golden tier doubles as a preview of it. The **emittable lint** enforces the invariant mechanically: no FH node kind may survive expansion. Every feature PR states its stage. Known pressure points, flagged in advance: F9 coercion control (I6 — resolved as a *post-elaboration diagnostic*, so stage one survives), F10 ascription, F1 expected-type inference, `where P: Prime`→`Fact` bridge resolution, F13 expected-type election (landed §9.2). **As of 2026-08-01 the language contains no `elab_rules` at all**: `todo!`'s message moved to a linter for exactly this reason.
 3. **Span preservation.** Discipline (verified experimentally): user syntax passes through antiquotes untouched; every synthesized node is wrapped in `withRef` of its FH source node; never re-parse strings. Mechanized from M0 via the span tier.
 4. **Ruling D governance.** Every grammar change classified extension/confined/violation; violations amend `corpus-review.md` first. The classification label is **human-applied**; automation is advisory.
 5. **Doc-first.** Ambiguities become PRs against the design docs before dependent code. The standing amendment queue is §9.
@@ -115,6 +115,12 @@ Order: B1→B2 after I3; B3 gate before B4; B8 after B1.
 **Week 3:** M0 exit gate; ✅ B1 extractor (2026-08-01); A1.5 matrix begins (§9.1 landed).
 Contention honestly stated: A-items serialize on one grammar and one implementer; B1 contends on the same person (it is Lean-side), hence week 3; C1 is embedded in M1 by design.
 
+## 7a. Track E — codegen (ADR-006, `research/codegen.md`)
+
+- ✅ **E1 (with M0), 2026-08-01.** Syntax→syntax discipline adopted and now mechanically enforced; `emit-lean` on the statement layer (`FerrisHoward/Emit.lean`, `lake exe fh_emit`); round-trip gate in CI (`scripts/round-trip.py`). The gate emits, checks the artifact is FH-free by inspection, elaborates it from scratch, and compares it to the FH original declaration by declaration using I3's canonical statement encoding. Corpus Group 1 round-trips green: 28 declarations, statements byte-identical. Scaffolding policy: FH authoring commands and `#guard_msgs` assertions are dropped (a negative fixture's contents are deliberately ill-typed — the gate caught that on its first run), and declarations depending on `sorryAx` are omitted as unpublishable, reported rather than silent.
+- **E1 remainder.** Proof-term comparison (the gate checks statements, not terms) and `lean4checker` on the artifact alone. Prelude policy (ADR-006 §2: Mathlib-only, inline/vendor/upstream) needs no work yet — FH emits no FH constants, so the artifact's only imports are the source's own minus FH's.
+- **E2, E3** (emit-rust lanes R1–R3, Peregrine) — unscheduled here; `research/codegen.md` §1 holds the design. The user's instruction of 2026-08-01 was to leave Lean→Rust alone for now.
+
 ## 8. Risks
 
 - R1 Spans: span tier from M0; discipline in §0.3.
@@ -129,6 +135,7 @@ Contention honestly stated: A-items serialize on one grammar and one implementer
 - R10 B4 oracle sculpting/bus factor: property + differential tests; babble/Stitch first.
 - R11 Benchmark credibility: B7 repairs; without held-out targets the "cold" claim is unfalsifiable.
 - R12 `>>` lexing: I5 spike + stopgap-as-plan-of-record; hard consumer is A2.5, not M0/M1.
+- R14 **Emittability drift** (new, ADR-006): a construct that cannot expand to Lean surface syntax makes its file unpublishable. Mitigated by the emittable lint firing at authoring time, the round-trip gate in CI, and the standing rule that a stage-two construct is a decision to defend rather than a convenience.
 - R13 **F9 blast radius** — **closed 2026-08-01.** I6 found the scoped mechanism (`coercion-control.md`): no stage-two wrapping of FH terms is needed. Residual risk is narrow and named there: the audit reads `CoeExpansionTrace`, which is not a stability-guaranteed API, and a bump that breaks it costs an error message rather than semantics.
 
 ## 9. Doc-amendment queue — **ALL LANDED 2026-08-01** (retained for audit)

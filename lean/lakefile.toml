@@ -33,3 +33,10 @@ globs = ["Tests", "Tests.+"]
 name = "atlas_extract"
 root = "AtlasExtract"
 supportInterpreter = true
+
+# `emit-lean`: publication-grade Lean out (ADR-006). Its output has no FH dependency, and
+# the emittable lint fails the run if any FH construct does not expand.
+[[lean_exe]]
+name = "fh_emit"
+root = "FhEmit"
+supportInterpreter = true

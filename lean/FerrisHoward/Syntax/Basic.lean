@@ -46,6 +46,19 @@ declare_syntax_cat fh_attr
 
 namespace FerrisHoward
 
+/-! ## Shared binder syntax
+
+One angle-bracket parameter list serves both the generics of an item and the binders of a
+quantifier — they are the same shape and the same reading.
+-/
+
+/-- One angle-bracket generic parameter: `T`, or `n: Nat`.
+
+The annotation parses at `max`, so the closing `>` cannot be stolen by the `>` comparison:
+`<n: Nat>` is a parameter list, never `n : (Nat > …)`. Same reason `fhBounds` parses at
+`max`. -/
+syntax fhGenericParam := ident (": " fh_expr:max)?
+
 /-! ## Expressions -/
 
 /-- An identifier. -/
@@ -103,6 +116,23 @@ syntax fhMatchArm := fh_pat " => " fh_expr
 @[inherit_doc fhMatchArm]
 syntax:max (name := fhExprMatch) "match " fh_expr " { " fhMatchArm,*,? " }" : fh_expr
 
+/-- Universal quantification: `for<x: Nat> P(x)` is `∀ x : Nat, P x` (design §4.2,
+generalising Rust's higher-ranked `for<'a>`).
+
+Binder lists follow F2: **a type ascription distributes over the unascribed prefix**, so
+`for<a, b, c: Self>` binds all three at `Self`. Rust's generic lists bound only the last,
+which makes this a deliberate, loudly documented divergence.
+
+The body extends as far right as possible (F7 iv): `for<x: T> P && Q` is
+`for<x: T> (P && Q)`, and conjoining from outside means parenthesising the quantifier. -/
+syntax (name := fhExprForall) "for" "<" fhGenericParam,+ ">" fh_expr : fh_expr
+
+/-- Existential quantification, the dual of `for<>` (design §4.2).
+
+`exists` with a data-valued body elects `Sigma`/`Subtype` by expected type — Ruling C item
+four, stage two, and not yet implemented: this production always builds `Exists`. -/
+syntax (name := fhExprExists) "exists" "<" fhGenericParam,+ ">" fh_expr : fh_expr
+
 /-- Closure. Closures *are* lambdas (design §3), which is load-bearing for §4.2's
 quantifiers and for big operators (`Finset::range(n).sum(|k| …)`).
 
@@ -120,11 +150,6 @@ syntax:max (name := fhExprLean) "lean!" " { " Lean.Parser.Tactic.tacticSeq " } "
 /-- `todo!()` / `todo!("msg")` → `sorry`, with the message logged (design §3). -/
 syntax:max (name := fhExprTodo) "todo!" noWs "(" (str)? ")" : fh_expr
 
-/-- The elaboration-time half of `todo!`; `todo!(…)` expands to it and
-`FerrisHoward/Elab/Todo.lean` elaborates it. Not FH surface syntax — it lives here
-because a grammar declaration belongs with the grammar, and because the module that
-*emits* it must have the token in scope. -/
-syntax (name := fhTodoTerm) "fh_todo%" (str)? : term
 
 /-- `let x = e; rest`, with an optional annotation. Plain `let` stays pure — the
 `?`-flavoured monadic form is A2.3. -/
@@ -261,13 +286,6 @@ syntax fhAttrs := "#[" fh_attr,*,? "]"
 Angle-bracket generics, `+`-separated bounds, and `where` clauses are used by several item
 forms, so they are declared once here.
 -/
-
-/-- One angle-bracket generic parameter: `T`, or `n: Nat`.
-
-The annotation parses at `max`, so the closing `>` cannot be stolen by the `>` comparison:
-`<n: Nat>` is a parameter list, never `n : (Nat > …)`. Same reason `fhBounds` parses at
-`max`. -/
-syntax fhGenericParam := ident (": " fh_expr:max)?
 
 /-- Angle-bracket generics. They become **implicit** binders (design §4.2), which is the
 Rust intuition exactly: generics are inferred at call sites as Lean implicits are. A bare

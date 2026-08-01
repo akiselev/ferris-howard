@@ -53,7 +53,7 @@ comparison inside them does, and gets Rust's const-generic braces. -/
 info: set_option autoImplicit false in
 set_option linter.unusedVariables false in
 def dep_g {T : Type _} {n : Nat} (v : Vector T (HMul.hMul n 2)) : Fin (HAdd.hAdd n 1) :=
-  fh_todo%
+  sorry
 -/
 #guard_msgs (whitespace := lax) in
 #fh_expand fn dep_g<T, n: Nat>(v: Vector<T, {n * 2} >) -> Fin<n + 1> { todo!() }

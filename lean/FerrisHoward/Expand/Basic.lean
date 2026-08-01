@@ -74,6 +74,32 @@ private def app1 (c : Name) (a : TSyntax `term) : MacroM (TSyntax `term) := do
   let f := mkIdent c
   `($f $a)
 
+/-- F2's rule, made concrete: a type ascription distributes over the **unascribed prefix**
+before it, so `for<a, b, c: Self>` binds all three at `Self` and `for<a: A, b: B>` binds
+each at its own. Walking right to left is the whole implementation: every parameter takes
+the nearest ascription to its right.
+
+Trailing unascribed parameters — `for<a, b>` with no ascription anywhere after them — get
+a hole and are inferred, which is what a reader of `∀ a b, …` expects.
+
+Rust's generic lists bind only the last parameter, so this is a divergence and not an
+oversight; it is on the differences page for that reason. -/
+private def distributeAscriptions (ps : Array (TSyntax ``fhGenericParam)) :
+    MacroM (Array (Ident × Option (TSyntax `fh_expr))) := do
+  let mut out : Array (Ident × Option (TSyntax `fh_expr)) := #[]
+  let mut pending : Option (TSyntax `fh_expr) := none
+  for p in ps.reverse do
+    match p with
+    | `(fhGenericParam| $x:ident : $t) =>
+        checkIdent x
+        pending := some t
+        out := out.push (x, some t)
+    | `(fhGenericParam| $x:ident) =>
+        checkIdent x
+        out := out.push (x, pending)
+    | _ => Macro.throwErrorAt p "FH: no expansion for this binder"
+  return out.reverse
+
 mutual
 
 /-- Translate an FH expression to a Lean term.
@@ -112,6 +138,19 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
           let r ← expandExpr r
           `(matchAltExpr| | $p => $r)
         `(match $scrut:term with $alts:matchAlt*)
+    | `(fh_expr| for<$ps,*> $body) => do
+        let binders ← quantBinders ps.getElems
+        let body ← expandExpr body
+        `(∀ $binders*, $body)
+    | `(fh_expr| exists<$ps,*> $body) => do
+        let binders ← existsBinders ps.getElems
+        let body ← expandExpr body
+        -- `explicitBinders` is a single-child choice node whose child, for the bracketed
+        -- branch, is a null node of binders; `expandExplicitBinders` reads exactly that
+        -- shape. Splicing into the quotation produces a different one, which elaborates
+        -- to an `Exists` that binds nothing — silently.
+        let eb := mkNode ``Lean.explicitBinders #[mkNullNode (binders.map (·.raw))]
+        `(∃ $(⟨eb⟩):explicitBinders, $body)
     | `(fh_expr| |$ps,*| $body) => do
         let binders ← ps.getElems.mapM fun p => do
           let b ← expandBinderPat p
@@ -147,8 +186,11 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
     | `(fh_expr| $a % $b) => do app2 ``HMod.hMod (← expandExpr a) (← expandExpr b)
     | `(fh_expr| -$a) => do app1 ``Neg.neg (← expandExpr a)
     | `(fh_expr| lean! { $ts }) => `(by $ts)
-    | `(fh_expr| todo!()) => `(fh_todo%)
-    | `(fh_expr| todo!($msg:str)) => `(fh_todo% $msg)
+    -- `todo!` expands to Lean's own `sorry`, so the declaration carries `sorryAx` and
+    -- the emitted artifact stays FH-free (ADR-006). The message is a *diagnostic* and
+    -- lands in `FerrisHoward/Lint/Todo.lean`, not in the translation.
+    | `(fh_expr| todo!()) => `(sorry)
+    | `(fh_expr| todo!($_msg:str)) => `(sorry)
     | `(fh_expr| let $p $[: $ty]? = $val; $rest) => do
         let p ← expandBinderPat p
         let val ← expandExpr val
@@ -159,6 +201,31 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
             `(let $p : $ty := $val; $rest)
         | none => `(let $p := $val; $rest)
     | _ => Macro.throwErrorAt e "FH: no expansion for this expression form"
+
+/-- Quantifier binders: F2's distributed ascriptions, as Lean bracketed binders. -/
+partial def quantBinders (ps : Array (TSyntax ``fhGenericParam)) :
+    MacroM (Array (TSyntax ``bracketedBinderF)) := do
+  (← distributeAscriptions ps).mapM fun (x, t?) =>
+    match t? with
+    | some t => do
+        let t ← expandExpr t
+        `(bracketedBinderF| ($x : $t))
+    | none => `(bracketedBinderF| ($x : _))
+
+/-- The same binders for `∃`, whose notation takes `bracketedExplicitBinders` rather than
+Lean's general bracketed binders — and requires the annotation, so an inferred binder is
+spelled `(x : _)`. -/
+partial def existsBinders (ps : Array (TSyntax ``fhGenericParam)) :
+    MacroM (Array (TSyntax ``Lean.bracketedExplicitBinders)) := do
+  (← distributeAscriptions ps).mapM fun (x, t?) => do
+    let t ← match t? with
+      | some t => expandExpr t
+      | none => `(_)
+    -- Each element must be a `binderIdent` *node*, not a bare ident: Lean's
+    -- `expandExplicitBinders` reads `idents[i][0]`, so a cast ident silently becomes an
+    -- anonymous binder and the body's occurrences stop resolving.
+    let b ← `(Lean.binderIdent| $x:ident)
+    `(bracketedExplicitBinders| ($b : $t))
 
 /-- The one position where a `<` comparison needs no parentheses of its own: directly
 inside a pair. This is F6's escape, and the reason the rule is stated as "parenthesise it"
