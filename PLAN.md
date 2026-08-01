@@ -18,7 +18,11 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 
 **Week 1 (2026-08-01).** A0.1 categories + the `fn`→`def` slice + the four-tier harness (`882bd84`); CI (`4fc8c38`); the I3 and I6 one-pagers (`statement-hash.md`, `coercion-control.md`). I5 was not started — the spacing stopgap is the plan of record through M1.
 
-**Week 2 (2026-08-01).** A0.2 expressions (`ec970c8`), A0.3 items (`97fb285`), A0.4 `todo!` + derived sorry report (`b7d97e9`), A0.5/A0.6 lexing (`9537453`), I3 implementation. Corpus Group 1's `add` elaborates with structural recursion inferred. Every M0 feature carries all four tiers; full `lake build` green.
+**Week 2 (2026-08-01).** A0.2 expressions (`ec970c8`), A0.3 items (`97fb285`), A0.4 `todo!` + derived sorry report (`b7d97e9`), A0.5/A0.6 lexing (`9537453`), I3 implementation (`c1295bb`). Corpus Group 1's `add` elaborates with structural recursion inferred. Every M0 feature carries all four tiers; full `lake build` green.
+
+**Week 3 (2026-08-01).** M0 exit gate met. B1 extractor (`837eab9`). Then M1, out of the plan's numbering but in Ruling E's group order: A1.1 `theorem` + A1.7 `lean!` (`636d51d`), A1.5 operators with the F7 matrix frozen (`b9fe0d3`), corpus **Group 1 green** (`167633f`), A1.2/A1.3 generics, `where`, dependent signatures, F6 (`2ebd04e`), **ADR-006** — syntax→syntax made binding, `emit-lean`, the emittable lint and the round-trip gate (`d91cce2`), A1.4 quantifiers (`138eac8`), A1.8 ascription (`f2d476a`), A1.6 traits-with-laws + corpus **Group 2 green** (`b272763`), A1.9 `fh check` v0 (`2449542`), and the `!`-on-Bool ledger item resolved (`b9b4152`).
+
+**M1 remaining:** turbofish (A1.3), anonymous constructors and the `exists`-body `Sigma`/`Subtype` election (A1.4), the instance-shadowing lint (A1.6), Bool methods (A2.5's bridge), and the exit gate's `euclids_lemma` — which needs `.dvd()` and therefore the bridge, as the ordering note above records.
 
 ## 2. Verified platform facts this plan relies on (feasibility round, pinned toolchain)
 
