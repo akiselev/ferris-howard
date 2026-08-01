@@ -121,6 +121,19 @@ private def expandWhere (w? : Option (TSyntax ``fhWhere)) :
 
 /-! ## Items -/
 
+/-- The namespace a `use` opens.
+
+`use lean::C;` is the bridge import: it opens `FerrisHoward.Bridge.C`, whose scoped
+`macro_rules` give `C`'s F16 method spellings. Everything else opens itself. Resolving it
+here rather than at elaboration keeps the whole thing in stage one. -/
+private def usePath? (x : Ident) : Ident :=
+  match x.getId.components with
+  | first :: rest =>
+    if first == `lean && !rest.isEmpty then
+      mkIdentFrom x (rest.foldl (· ++ ·) `FerrisHoward.Bridge)
+    else x
+  | _ => x
+
 /-- Is this body a hole? `todo!()` gets the same linter treatment as a bodyless `fn`: a
 stub has nothing to use its parameters in. -/
 private def isTodo (e : TSyntax `fh_expr) : Bool :=
@@ -342,10 +355,13 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
     | `(fh_item| use $path;) => do
         unless attrs.lean.isEmpty && !attrs.defOptOut do
           Macro.throwErrorAt it "FH: attributes are not supported on `use`"
+        -- `use lean::C;` brings FH's bridge for `C` into scope — Rust's rule that a
+        -- trait's methods are callable once the trait is imported (F16, design §6).
+        -- Anything else is an ordinary `open`.
         let path ← expandExpr path
         unless path.raw.isIdent do
           Macro.throwErrorAt it "FH: `use` takes a path, as in `use Nat::Prime;`"
-        let ns : Ident := ⟨path.raw⟩
+        let ns := usePath? ⟨path.raw⟩
         `(command| open $ns:ident)
 
     | `(fh_item| type $n:ident = $val;) => do

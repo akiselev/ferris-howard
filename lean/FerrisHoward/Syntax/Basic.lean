@@ -158,6 +158,17 @@ parser, which is the entire point of an escape hatch — full Mathlib tactic acc
 working InfoView, for free. -/
 syntax:max (name := fhExprLean) "lean!" " { " Lean.Parser.Tactic.tacticSeq " } " : fh_expr
 
+/-- The method-spelling hook: `x.m` expands to `fh_dot% x m` and a `macro_rules` decides
+what it means (F16, `FerrisHoward/Bridge/`).
+
+The default rule is plain dot notation, so nothing changes unless a bridge is *in scope* —
+and a bridge is brought into scope by `use lean::C;`, which is Rust's own rule: a trait's
+methods are callable when the trait is imported. Scoped `macro_rules` implement it
+directly, in stage one, with no global table and no environment access.
+
+Not FH surface syntax; it exists so the decision has somewhere to live. -/
+syntax (name := fhDotTerm) "fh_dot% " term:max ident : term
+
 /-- `todo!()` / `todo!("msg")` → `sorry`, with the message logged (design §3). -/
 syntax:max (name := fhExprTodo) "todo!" noWs "(" (str)? ")" : fh_expr
 

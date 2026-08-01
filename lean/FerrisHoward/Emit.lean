@@ -41,10 +41,34 @@ complete expansion rather than a partial one, and it deliberately does *not* kee
 into Lean's own macros: the artifact should read as the Lean a person would have written,
 not as its internal unfolding. -/
 partial def expandFh (stx : Syntax) : CommandElabM Syntax := do
-  if isFhKind stx.getKind then
-    if let some stx' ← liftMacroM (Lean.Macro.expandMacro? stx) then
-      return ← expandFh stx'
-  return stx
+  let stx ←
+    if isFhKind stx.getKind then
+      match ← liftMacroM (Lean.Macro.expandMacro? stx) with
+      | some stx' => expandFh stx'
+      | none => pure stx
+    else pure stx
+  -- and then into the children: an item's expansion can leave FH nodes *inside* Lean
+  -- surface syntax — `fh_dot%`, the method-spelling hook, is one by design — and those
+  -- have to be resolved too, in the scope this command is elaborated in.
+  match stx with
+  | .node info k args => return .node info k (← args.mapM expandFh)
+  | _ => return stx
+
+/-- Flatten `(f x) y` into `f x y`.
+
+Application is left-associative, so the two are the same term; but a bridged method
+spelling arrives nested — `p.dvd(a)` becomes `Dvd.dvd p` applied to `a` — and an artifact
+meant for a referee should read as the Lean a person would have written. This is the only
+normalisation the printer performs, and it is why a golden shows `Dvd.dvd p a`. -/
+partial def flattenApps : Syntax → Syntax
+  | .node info k args =>
+    let args := args.map flattenApps
+    let stx := Syntax.node info k args
+    if k == ``Lean.Parser.Term.app && args[0]!.isOfKind ``Lean.Parser.Term.app then
+      let inner := args[0]!
+      .node info k #[inner[0]!, mkNullNode (inner[1]!.getArgs ++ args[1]!.getArgs)]
+    else stx
+  | s => s
 
 /-- The first surviving FH node, if any. -/
 partial def firstFhNode? (stx : Syntax) : Option Syntax :=
@@ -72,7 +96,7 @@ partial def sanitizeHygiene : Syntax → Syntax
 /-- Pretty-print an expansion: one command, or the `null` node of several that an item
 expanding to more than one declaration produces. -/
 def ppExpansion (stx : Syntax) : CommandElabM Format := do
-  let stx := sanitizeHygiene stx
+  let stx := flattenApps (sanitizeHygiene stx)
   if stx.getKind == nullKind then
     let fmts ← stx.getArgs.mapM fun c => liftCoreM <| ppCommand ⟨c⟩
     return Format.joinSep fmts.toList Format.line

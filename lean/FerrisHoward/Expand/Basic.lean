@@ -2,6 +2,7 @@
 Copyright (c) 2026 Ferris–Howard contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import FerrisHoward.Bridge.Methods
 import FerrisHoward.Syntax.Basic
 
 /-!
@@ -110,7 +111,24 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
   withRef e do
     match e with
     -- user syntax, untouched: the ident node keeps the user's span
-    | `(fh_expr| $x:ident) => do checkIdent x; pure ⟨x.raw⟩
+    | `(fh_expr| $x:ident) => do
+        checkIdent x
+        -- Lean's lexer takes `p.dvd` as a *single* identifier, so the `.` production below
+        -- never sees it and the F16 table has to apply here too. Splitting the last
+        -- component off is safe precisely because FH distinguishes the two operators: `::`
+        -- composes names and never routes through this case, so `IsUnit::dvd` still means
+        -- the constant, while `p.dvd` means the notation.
+        -- Lean's lexer takes `p.dvd` as a *single* identifier, so a dotted one is routed
+        -- through the same hook as the `.` production. With no bridge in scope the
+        -- default rule rebuilds exactly this identifier, so nothing changes.
+        match x.getId with
+        | .str p last =>
+          if p == .anonymous then pure ⟨x.raw⟩
+          else
+            let recv := mkIdentFrom x p
+            let m := mkIdentFrom x (Name.mkSimple last)
+            `(fh_dot% $recv $m)
+        | _ => pure ⟨x.raw⟩
     | `(fh_expr| $n:num) => pure ⟨n.raw⟩
     | `(fh_expr| Prop) => `(Prop)
     | `(fh_expr| ($inner)) => do
@@ -127,7 +145,10 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
     | `(fh_expr| $recv.$field:ident) => do
         checkIdent field
         let recv ← expandExpr recv
-        `($recv.$field)
+        -- The method-spelling hook (F16): a bridge brought into scope by `use lean::C;`
+        -- decides what the spelling means; with none in scope this is Lean's generalized
+        -- dot notation, unchanged (design §4.7).
+        `(fh_dot% $recv $field)
     | `(fh_expr| { $inner }) => expandParenthesised inner
     | `(fh_expr| $f<$args,*>) => do
         let f ← expandExpr f

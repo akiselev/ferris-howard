@@ -19,6 +19,7 @@
 | Ambient `var` declarations, mention-based inclusion, `include` | confined | F17 |
 | `Space` kind vocabulary; trait names in annotation position (`var G: Grp;`) | confined | F18 |
 | `theorem` as an item keyword | confined | standing decision |
+| `use lean::C;` brings a class's F16 method spellings into scope (`p.dvd(a)` is `p ∣ a` only after `use lean::Dvd;`) | confined — Rust has trait imports and this is the same rule applied to notation spellings; outside the import `.` is plain dot notation, unchanged | F16, design §6 |
 | Per-variant return types on `enum` (indexed families) | extension | design §4.5 |
 | `extern "axiom" { ... }` | extension | design §4.6 |
 
