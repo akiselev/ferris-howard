@@ -438,6 +438,10 @@ syntax fhEnumVariant := ident (fhGenerics)? ("(" fhEnumField,*,? ")")? (" -> " f
 against `T`, which is a uniform parameter (design §4.5). -/
 syntax (name := fhEnum) "enum " ident (fhGenerics)? " { " fhEnumVariant,*,? " } " : fh_item
 
+/-- `mutual { … }` → Lean's `mutual … end` (design §4.5): several declarations that refer
+to one another. -/
+syntax (name := fhMutual) "mutual " " { " fh_item* " } " : fh_item
+
 /-- `mod m { … }` → `namespace m … end m`. -/
 syntax (name := fhMod) "mod " ident " { " fh_item* " } " : fh_item
 

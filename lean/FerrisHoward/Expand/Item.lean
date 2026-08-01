@@ -353,6 +353,16 @@ private def splitEnumHeader (g? : Option (TSyntax ``fhGenerics)) :
       indices := indices.push t
   return (params, indices)
 
+/-- Peel the `set_option … in` wrappers `fhDecl` adds, leaving the bare declaration.
+
+Used only by `mutual`, whose block cannot contain wrapped commands; the options are put
+back around the whole block. -/
+private partial def stripDeclOptions (stx : Syntax) : Syntax :=
+  if stx.getKind == ``Lean.Parser.Command.in then
+    stripDeclOptions stx.getArgs.back!
+  else
+    stx
+
 /-- Stage-one expansion of a single FH item into Lean surface syntax. -/
 partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM (TSyntax `command) :=
   withRef it do
@@ -473,6 +483,18 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
             for t in indices.reverse do sort ← `($t → $sort)
             `(command| inductive $n:ident $binders* : $sort where $ctors*)
         fhDecl (← withAttrs attrs decl)
+
+    | `(fh_item| mutual { $items* }) => do
+        unless attrs.lean.isEmpty && attrs.name?.isNone do
+          Macro.throwErrorAt it "FH: attributes belong on the declarations inside a `mutual`, not on the block"
+        -- A mutual block takes bare declarations: Lean rejects `set_option … in` inside
+        -- one ("either all elements … must be inductive/structure declarations"), so the
+        -- options FH puts on every declaration are hoisted to the whole block instead.
+        let decls ← items.mapM fun item => do
+          let cmd ← expandItem item {}
+          pure (⟨stripDeclOptions cmd.raw⟩ : TSyntax `command)
+        let block ← `(command| mutual $decls:command* end)
+        fhDecl block
 
     | `(fh_item| mod $n:ident { $items* }) => do
         checkIdent n
