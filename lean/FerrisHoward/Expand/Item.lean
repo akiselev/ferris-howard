@@ -202,7 +202,16 @@ whether the unused-variable linter should be silenced for this declaration. -/
 private def expandFnBody (b : TSyntax `fh_fn_body) : MacroM (TSyntax `term × Bool) :=
   withRef b do
     match b with
-    | `(fh_fn_body| { $e }) => return (← expandExpr e, isTodo e)
+    | `(fh_fn_body| { $e }) =>
+        -- design §4.7: a block containing `?` *is* a `do` block, whole-body, which is what
+        -- makes the monad inferable from the declared return type.
+        if containsTry e then
+          let elems ← doElems e
+          -- `do` takes a `doSeqItem` sequence, each item wrapping one `doElem`
+          let items ← elems.mapM fun el => `(Lean.Parser.Term.doSeqItem| $el:doElem)
+          return (← `(do $items*), false)
+        else
+          return (← expandExpr e, isTodo e)
     | `(fh_fn_body| ;) => return (← `(sorry), true)
     | _ => Macro.throwErrorAt b "FH: no expansion for this function body"
 

@@ -288,6 +288,14 @@ partial def expandParenthesised (e : TSyntax `fh_expr) : MacroM (TSyntax `term) 
     | `(fh_expr| $a < $b) => do app2 ``LT.lt (← expandExpr a) (← expandExpr b)
     | _ => expandExpr e
 
+/-- Does this expression contain a `?`, and therefore want to be a `do` block?
+
+Design §4.7: "a block containing `?` elaborates as a `do` block". Whole-body, not
+per-statement, because that is what makes the monad inferable from the declared return
+type. -/
+partial def containsTry (stx : Syntax) : Bool :=
+  stx.isOfKind ``fhExprTry || stx.getArgs.any containsTry
+
 /-- Translate an FH pattern to a Lean pattern (which is a term).
 
 Whether a bare identifier binds or matches a constructor is Lean's rule, inherited
@@ -305,6 +313,58 @@ partial def expandPat (p : TSyntax `fh_pat) : MacroM (TSyntax `term) :=
         let args ← args.getElems.mapM expandPat
         `($ctor $args*)
     | _ => Macro.throwErrorAt p "FH: no expansion for this pattern"
+
+/-- Expand a `?`-carrying body as a `do` block.
+
+`let x = e?;` becomes `let x ← e` and a plain `let` stays pure — the distinction design
+§4.7 draws, and the reason `?` is worth having rather than making every `let` monadic. The
+tail is whatever the body ends with, which is why Group 10 writes `PMF::pure(…)`
+explicitly: there is no silent return-lift, Ruling C's list being closed.
+
+A `?` anywhere other than at the end of a `let` value is refused rather than guessed at.
+Rust allows `f(g()?)`; expressing that here means naming the intermediate, and saying so
+beats inventing a binding the author did not write. -/
+partial def doElems (e : TSyntax `fh_expr) : MacroM (Array (TSyntax `doElem)) :=
+  withRef e do
+    match e with
+    | `(fh_expr| let $p $[: $ty]? = $val; $rest) => do
+        let b ← expandBinderPat p
+        unless b.raw.isIdent do
+          Macro.throwErrorAt p
+            ("FH: a `?`-block's `let` needs a name — `_` discards a result the block went \
+              to the trouble of producing" : String)
+        let x : Ident := ⟨b.raw⟩
+        let ty? ← ty.mapM expandExpr
+        let head ←
+          if val.raw.isOfKind ``fhExprTry then
+            let inner : TSyntax `fh_expr := ⟨val.raw[0]⟩
+            if containsTry inner then
+              Macro.throwErrorAt val
+                ("FH: one `?` per `let`, at the end of the value" : String)
+            let rhs ← expandExpr inner
+            -- the right-hand side of `←` is a *doElem*, not a term: Lean allows
+            -- `let x ← do …`, so a plain term goes in wrapped.
+            let rhs ← `(doElem| $rhs:term)
+            match ty? with
+            | some ty => `(doElem| let $x:ident : $ty ← $rhs)
+            | none => `(doElem| let $x:ident ← $rhs)
+          else
+            if containsTry val then
+              Macro.throwErrorAt val
+                ("FH: `?` belongs at the end of a `let` value — name the intermediate \
+                  rather than nesting it" : String)
+            let v ← expandExpr val
+            match ty? with
+            | some ty => `(doElem| let $x:ident : $ty := $v)
+            | none => `(doElem| let $x:ident := $v)
+        return #[head] ++ (← doElems rest)
+    | _ =>
+        if containsTry e then
+          Macro.throwErrorAt e
+            ("FH: `?` belongs at the end of a `let` value — a tail expression is the \
+              block's result, and Group 10 writes its `pure` explicitly" : String)
+        else
+          return #[← `(doElem| $(← expandExpr e):term)]
 
 /-- Translate an FH pattern used in *binder* position to a Lean binder identifier.
 

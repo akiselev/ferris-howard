@@ -143,6 +143,17 @@ Generic arguments parse *above* the comparison band, so `Fin<n+1>` works and the
 `>` is never stolen — but anything at or below a comparison needs the braces. -/
 syntax:max (name := fhExprBrace) "{" fh_expr "}" : fh_expr
 
+/-- `e?` — Rust's `?` operator, which *is* monadic bind (design §4.7).
+
+A block containing one elaborates as a `do` block, and `let x = f()?;` becomes
+`let x ← f`. The monad comes from the block's expected type, which a declared return type
+always supplies — Ruling C item three, escape: ascribe.
+
+`noWs` matters here for a reason A0.6 already fixed: Lean's lexer takes `x?` as a single
+identifier, so `?` can only follow something that ends in a delimiter — `f()?`, `(e)?` —
+which is how every use in corpus Group 10 is written anyway. -/
+syntax:max (name := fhExprTry) fh_expr:max noWs "?" : fh_expr
+
 /-- Path: `Nat::succ`, `N::Zero`. `::` joins identifiers into one Lean name — design §6's
 no-mangling policy means Mathlib names are reachable verbatim as `Nat::Prime::dvd_mul`. -/
 syntax:max (name := fhExprPath) fh_expr:max "::" ident : fh_expr
