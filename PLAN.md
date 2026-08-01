@@ -65,7 +65,7 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 - ✅ **A1.7 `lean! { }`** (`636d51d`) — the interior is Lean's own tactic parser, the one FH slot that is not an FH category.
 - ◐ **A1.8 F10 ascription** (2026-08-01): `(e: T)` lands as an elaboration hint. The *without-coercion* half is not enforced yet and the fixture says so: it arrives with A2.0's audit, which licenses coercions whose ref lies in an `as` node and flags every other. Ascription is the escape named by four of Ruling C's six sanctioned implicitnesses, which is why it lands before the features that need escaping from. (The rest of the F9/F10 cluster — `as` coercion + disabling silent coercion — moves to A2.0: its consumers are all M2, and it needs I6 first.)
 - ✅ **A1.9 `fh check` v0** (=C1, 2026-08-01): `lake exe fh_check <file>` — Frontend driver, JSON with status, diagnostics carrying **FH-source** spans, and per-declaration axioms including whether each depends on `sorryAx`. Sorries are derived from the environment, not bookkept, so `lean! { sorry }` is caught too. Exit status 1 on errors. Smoke-tested in CI against a corpus fixture. **Not yet** (C1's v1 at M2, and named rather than implied): the error taxonomy with branch hints, the friendly-wording layer over Lean's raw messages — F14's "no Decidable instance" belongs there — and `simp?` feedback.
-- Pre-M1 gate remaining: the `!`-on-Bool decision (default: hard-error). (I4 and the §9.1 doc PR landed 2026-08-01.)
+- Pre-M1 gate: **clear.** The `!`-on-Bool decision resolved 2026-08-01 (A2.0's coercion audit delivers it — see the ledger); I4 and the §9.1 doc PR landed 2026-08-01.
 - **Exit-gate ordering note (2026-08-01):** `euclids_lemma` as design §3 writes it needs `p.dvd(a)`, and `.dvd()` is an F16 canonical-ASCII spelling that resolves through the Mathlib bridge — scheduled at A2.5, i.e. *after* this gate. Either the bridge's `Dvd`/`Membership`-style method table is pulled forward into M1, or the gate's fixture spells divisibility another way. Flagged rather than silently resolved.
 - **Exit gate:** `euclids_lemma` (design §3) **and** corpus Group 2 (`id_unique`, quantified hypothesis) elaborate and check; full F7 matrix green; **one F10 ascription golden**.
 
@@ -157,7 +157,7 @@ Harness on `#guard_msgs` with **exact-message** negatives (§9.3); **span tier a
 
 | Decision | Default | Due |
 |---|---|---|
-| `!` on Bool | hard-error, fixed wording | pre-M1 |
+| `!` on Bool | **resolved 2026-08-01: A2.0's coercion audit delivers it.** Stage one cannot: `!` expands before any type is known. Lean currently coerces `b : Bool` to `b = true`, applies `¬`, and coerces back with `decide` — two silent insertions, which is F9 in miniature, and both are unlicensed under I6's audit. Today's behaviour is pinned as a golden in `Tests/M1/Operators.lean`, so the change is a visible re-baseline | done |
 | F9 mechanism | I6 one-pager decides | pre-A2.0 |
 | `<explicit T>` override | not needed | M2, if friction |
 | `notation!` floor | adopted | M3 |

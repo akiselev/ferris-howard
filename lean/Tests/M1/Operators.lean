@@ -114,6 +114,32 @@ theorem zero_in(s: NatList) -> member(0, List::cons(0, s)) {
 #guard_msgs in
 #print axioms implies_trans_holds
 
+/-! ## `!` on a `Bool`, pinned rather than fixed
+
+The deferred-decisions ledger wants `!` on a `Bool` to be a hard error, forcing `.bnot()`.
+It currently is not — and the reason is worth seeing, because it is F9 in miniature:
+
+Lean coerces `b : Bool` to the Prop `b = true`, applies `¬`, then coerces *back* with
+`decide` to meet the declared `Bool`. Two silent coercions, no diagnostic, and a
+`decide ¬b = true` where the author wrote `!b`.
+
+Stage one cannot catch this: `!` expands before any type is known. But I6's audit does,
+exactly and without a bespoke check — both insertions go through `mkCoe`, neither has a
+syntax ref inside an `as` node, so both are unlicensed (`coercion-control.md`). The ledger
+item therefore resolves as "A2.0 delivers it", and the golden below is what changes when
+it does.
+-/
+
+/-- info: set_option autoImplicit false in def bool_not (b : Bool) : Bool := Not b -/
+#guard_msgs (whitespace := lax) in
+#fh_expand fn bool_not(b: Bool) -> Bool { !b }
+
+fn bool_not(b: Bool) -> Bool { !b }
+
+/-- info: def bool_not : Bool → Bool := fun b => decide ¬b = true -/
+#guard_msgs (whitespace := lax) in
+#print bool_not
+
 /-! ## Tier 3 — negative
 
 Non-associativity by decree (F7 as amended): chained comparison, chained iff, and chained
