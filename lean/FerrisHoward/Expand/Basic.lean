@@ -88,7 +88,7 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
     | `(fh_expr| $n:num) => pure ⟨n.raw⟩
     | `(fh_expr| Prop) => `(Prop)
     | `(fh_expr| ($inner)) => do
-        let inner ← expandExpr inner
+        let inner ← expandParenthesised inner
         `(($inner))
     | `(fh_expr| $f($args,*)) => do
         let f ← expandExpr f
@@ -98,6 +98,11 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
         checkIdent field
         let recv ← expandExpr recv
         `($recv.$field)
+    | `(fh_expr| { $inner }) => expandParenthesised inner
+    | `(fh_expr| $f<$args,*>) => do
+        let f ← expandExpr f
+        let args ← args.getElems.mapM expandExpr
+        `($f $args*)
     | `(fh_expr| $lhs :: $field:ident) => do
         joinPath (← expandExpr lhs) field e
     | `(fh_expr| match $scrut { $[$pats => $rhss],* }) => do
@@ -124,7 +129,13 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
     | `(fh_expr| $a == $b) => do app2 ``Eq (← expandExpr a) (← expandExpr b)
     | `(fh_expr| $a != $b) => do app2 ``Ne (← expandExpr a) (← expandExpr b)
     | `(fh_expr| $a <= $b) => do app2 ``LE.le (← expandExpr a) (← expandExpr b)
-    | `(fh_expr| $a < $b) => do app2 ``LT.lt (← expandExpr a) (← expandExpr b)
+    | `(fh_expr| $_a < $_b) =>
+        -- F6, enforced at expansion time with a fixed message and an exact span (the
+        -- parser cannot word it; corpus-review F6 as amended). One rule, everywhere:
+        -- `<` can open a generic argument list, so a comparison wears parentheses.
+        Macro.throwErrorAt e
+          "FH: parenthesise this comparison — `(a < b)`. A bare `<` could open a generic \
+           argument list"
     | `(fh_expr| $a >= $b) => do app2 ``GE.ge (← expandExpr a) (← expandExpr b)
     | `(fh_expr| $a > $b) => do app2 ``GT.gt (← expandExpr a) (← expandExpr b)
     -- `Membership.mem` takes the container first, the element second
@@ -148,6 +159,15 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
             `(let $p : $ty := $val; $rest)
         | none => `(let $p := $val; $rest)
     | _ => Macro.throwErrorAt e "FH: no expansion for this expression form"
+
+/-- The one position where a `<` comparison needs no parentheses of its own: directly
+inside a pair. This is F6's escape, and the reason the rule is stated as "parenthesise it"
+rather than "you cannot write it". -/
+partial def expandParenthesised (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
+  withRef e do
+    match e with
+    | `(fh_expr| $a < $b) => do app2 ``LT.lt (← expandExpr a) (← expandExpr b)
+    | _ => expandExpr e
 
 /-- Translate an FH pattern to a Lean pattern (which is a term).
 

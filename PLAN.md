@@ -57,8 +57,8 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 
 ### M1 — Statements (Groups 1, 3, 4 complete + Group 2 pulled into the gate)
 - ✅ **A1.1 `theorem` keyword form** (`636d51d`).
-- A1.2 Dependent signatures; `{n*2}` brace escape (verified: longest-match suffices).
-- A1.3 Binder classes; turbofish; F1 expected-type nullary inference (stage two, flagged) — Ruling C item one.
+- ✅ **A1.2 Dependent signatures; `{n*2}` brace escape** (2026-08-01). Dependency costs nothing once generics bind values: `Vector<T, n>`, `Fin<n + 1>`, `Vector<T, {n * 2} >` all elaborate. Generic *arguments* parse above the comparison band, which is what keeps `>` from being stolen; anything at or below a comparison uses the braces.
+- ◐ **A1.3**: binder classes landed (2026-08-01) — angle-bracket generics → implicit binders, `where` bounds → instance binders, in Mathlib's order; F6 enforced at expansion time with fixed wording and an exact span. **Remaining:** turbofish and F1 expected-type nullary inference (stage two, flagged) — Ruling C item one. Turbofish is deliberately deferred to the feature that forces its shape (`@f T x` vs Lean's named-argument form): F1's escape in Group 2.
 - A1.4 Quantifiers `for<>`/`exists<>` (F2 ascription + F2 negative test); anonymous constructors (Ruling C item two); `exists`-body `Sigma`/`Subtype` election (Ruling C item four).
 - ◐ **A1.5** (`65f7509`): Ruling A operator set incl. `in` landed with the F7 matrix as exhaustive goldens; `decide()` needs no syntax (it is a call); Bool methods come with the M2 bridge. Operators expand to constants (`Eq a b`), never to Lean's `binrel%`/`binop%` notations — that is I6's coercion control at its point of use. Remaining here: F6 error **at expansion time** with exact span (parser can't produce fixed wording — verified; corpus F6 amended accordingly, §9.3); F7 matrix as exhaustive goldens (§9.1 landed 2026-08-01 — the table is complete); F12 negative test (`for<>` headers never capture `in`) lives here with the operator.
 - A1.6 Traits-with-laws; multi-parameter classes; instance-shadowing lint.
@@ -66,6 +66,7 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 - A1.8 **F10 ascription only**: `(e: T)` elaboration-hint-without-coercion. (The rest of the F9/F10 cluster — `as` coercion + disabling silent coercion — moves to A2.0: its consumers are all M2, and it needs I6 first.)
 - A1.9 `fh check` v0 (=C1): Frontend driver, JSON status/errors+FH spans/sorry goals/axioms.
 - Pre-M1 gate remaining: the `!`-on-Bool decision (default: hard-error). (I4 and the §9.1 doc PR landed 2026-08-01.)
+- **Exit-gate ordering note (2026-08-01):** `euclids_lemma` as design §3 writes it needs `p.dvd(a)`, and `.dvd()` is an F16 canonical-ASCII spelling that resolves through the Mathlib bridge — scheduled at A2.5, i.e. *after* this gate. Either the bridge's `Dvd`/`Membership`-style method table is pulled forward into M1, or the gate's fixture spells divisibility another way. Flagged rather than silently resolved.
 - **Exit gate:** `euclids_lemma` (design §3) **and** corpus Group 2 (`id_unique`, quantified hypothesis) elaborate and check; full F7 matrix green; **one F10 ascription golden**.
 
 ### M2 — The conversation file (Ruling E order: Groups 8, 11, 12 → 9 → 5, 6, 7, 10; Group 2 was pulled into M1)

@@ -34,6 +34,8 @@ is not, which is why they are chosen conservatively (Ruling B).
 | Field access admits no space around `.`: `x.f`, never `x . f` | same, and it is what every Rust programmer writes anyway | M0 (A0.2) |
 | No zero-argument closure `\|\| e` | `\|\|` lexes as one token (and is `∨` from A1.5). Rust has the same collision and resolves it in the parser; FH will not, per Ruling B | M0 (A0.2) |
 | An `enum` variant's fields are all named or all unnamed, never mixed | Rust has the same two variant shapes; mixing them has no Rust meaning to preserve, and choosing one silently would be worse | M0 (A0.3) |
+| A `<` comparison must be parenthesised: `(a < b)`, never bare | F6: a bare `<` could open a generic argument list, and one rule everywhere beats a rule that depends on where you are. Enforced at expansion time with fixed wording and an exact span | M1 (A1.3) |
+| Generic *arguments* parse above the comparison band | so `Fin<n + 1>` works without help while `Vector<T, {a < b}>` needs Rust's const-generic braces — the same escape Rust programmers already use | M1 (A1.2) |
 | `::` joins identifiers only: `f(x)::g` is an error | `::` is name composition, `.` is a value's field or method. They resolve differently, so conflating them would make one silently mean the other | M0 (A0.2) |
 
 ## Platform costs (M0 facts — Lean hosting, not design choices)

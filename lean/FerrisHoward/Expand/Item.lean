@@ -70,6 +70,44 @@ private def withAttrs (attrs : AttrSet) (d : TSyntax `command) : MacroM (TSyntax
   let template ← `(command| @[$attrList,*] def fhAttrTemplate := ())
   return ⟨d.raw.setArg 0 template.raw[0]⟩
 
+/-! ## Binders -/
+
+/-- Angle-bracket generics → **implicit** binders (design §4.2). A bare `<T>` gets
+`Type _`: design §4.3's "a bare `<T>` defaults to `Space<_>`", spelled in core Lean until
+`Space` itself lands at A2.4. -/
+private def expandGenerics (g? : Option (TSyntax ``fhGenerics)) :
+    MacroM (Array (TSyntax ``bracketedBinderF)) := do
+  let some g := g? | return #[]
+  let `(fhGenerics| <$ps,*>) := g | Macro.throwErrorAt g "FH: no expansion for these generics"
+  ps.getElems.mapM fun p =>
+    withRef p do
+      match p with
+      | `(fhGenericParam| $x:ident : $t) => do
+          checkIdent x
+          let t ← expandExpr t
+          `(bracketedBinderF| {$x : $t})
+      | `(fhGenericParam| $x:ident) => do
+          checkIdent x
+          `(bracketedBinderF| {$x : Type _})
+      | _ => Macro.throwErrorAt p "FH: no expansion for this generic parameter"
+
+/-- `where` bounds → **instance** binders: `where R: CommRing + Finite` is
+`[CommRing R] [Finite R]`. -/
+private def expandWhere (w? : Option (TSyntax ``fhWhere)) :
+    MacroM (Array (TSyntax ``bracketedBinderF)) := do
+  let some w := w? | return #[]
+  let `(fhWhere| where $bs,*) := w | Macro.throwErrorAt w "FH: no expansion for this `where` clause"
+  let mut out := #[]
+  for b in bs.getElems do
+    match b with
+    | `(fhWhereBound| $x:ident : $bounds) =>
+        checkIdent x
+        for bound in bounds.raw[0].getSepArgs do
+          let c ← expandExpr ⟨bound⟩
+          out := out.push (← `(bracketedBinderF| [$c $x]))
+    | _ => Macro.throwErrorAt b "FH: no expansion for this `where` bound"
+  return out
+
 /-! ## Items -/
 
 /-- Is this body a hole? `todo!()` gets the same linter treatment as a bodyless `fn`: a
@@ -125,6 +163,18 @@ private def expandVariant (enumName : Ident) (v : TSyntax ``fhEnumVariant) : Mac
             "FH: an enum variant's fields must be either all named or all unnamed"
     | _ => Macro.throwErrorAt v "FH: no expansion for this enum variant"
 
+/-- A declaration's binders, in Mathlib's order: implicit generics, then the instance
+binders a `where` clause asks for, then the explicit parameters. Implicits and instances
+are both inferred at call sites, so the order is a readability choice, not an interface
+one. -/
+private def allBinders (gs : Option (TSyntax ``fhGenerics)) (wh : Option (TSyntax ``fhWhere))
+    (ps : Array (TSyntax `fh_pat)) (ts : Array (TSyntax `fh_expr)) :
+    MacroM (Array (TSyntax ``bracketedBinderF)) := do
+  let generics ← expandGenerics gs
+  let instances ← expandWhere wh
+  let explicits ← ps.zip ts |>.mapM fun (p, t) => expandParam p t
+  return generics ++ instances ++ explicits
+
 /-- Stage-one expansion of a single FH item into Lean surface syntax. -/
 partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM (TSyntax `command) :=
   withRef it do
@@ -132,16 +182,16 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
     | `(fh_item| $g:fhAttrs $inner:fh_item) => do
         expandItem inner (← addAttrs attrs g)
 
-    | `(fh_item| fn $n:ident($[$ps : $ts],*) -> $ret $body:fh_fn_body) => do
+    | `(fh_item| fn $n:ident $[$gs]? ($[$ps : $ts],*) -> $ret $[$wh]? $body:fh_fn_body) => do
         checkIdent n
-        let binders ← ps.zip ts |>.mapM fun (p, t) => expandParam p t
+        let binders ← allBinders gs wh ps ts
         let ret ← expandExpr ret
         let (body, sorryValued) ← expandFnBody body
         fhDecl (← withAttrs attrs (← `(command| def $n $binders* : $ret := $body))) sorryValued
 
-    | `(fh_item| theorem $n:ident($[$ps : $ts],*) -> $concl $body:fh_fn_body) => do
+    | `(fh_item| theorem $n:ident $[$gs]? ($[$ps : $ts],*) -> $concl $[$wh]? $body:fh_fn_body) => do
         checkIdent n
-        let binders ← ps.zip ts |>.mapM fun (p, t) => expandParam p t
+        let binders ← allBinders gs wh ps ts
         let concl ← expandExpr concl
         let (body, sorryValued) ← expandFnBody body
         fhDecl (← withAttrs attrs (← `(command| theorem $n $binders* : $concl := $body))) sorryValued

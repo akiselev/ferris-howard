@@ -1,0 +1,25 @@
+# FH Solid State, Tier 2: Topological Matter, Certified
+
+**Status:** Draft 0.1 · Second tier. Ambition step: from symmetry algebra to topology — the field's last-forty-years revolution, which happens to be built from *integers computed from finite data*, i.e., certification-shaped physics.
+
+**The tier's thesis.** Topological invariants are the rare physics quantities that are exactly integer-valued theorems about finite objects: winding numbers of 1D Bloch Hamiltonians, Chern numbers over discretized Brillouin zones, symmetry indicators from finite representation theory. The field computes them numerically and trusts quantization on faith-plus-theory; FH ships the quantization *as* the theorem, per model, per parameter region. And the organizing structure of the whole subject — the tenfold way — is literally a dictionary (symmetry classes ↔ Clifford algebras ↔ Bott periodicity), making Tier 2 the Atlas's most natural physics habitat after resource theories.
+
+## S2.1 — Certified invariants for the canonical models
+
+Winding number of the SSH chain as a function of parameters, with the topological transition located exactly (consuming Tier 1's certified spectra); Chern number of the Haldane and Qi–Wu–Zhang models via the discretized Berry-curvature method (Fukui–Hatsugai–Suzuki), *plus* the part the numerics literature waves at: a certified theorem that the discrete sum is exactly integral and, above an explicit mesh resolution tied to the certified gap, equals the continuum invariant. That mesh-sufficiency theorem is the tier's first genuinely new mathematical object — the folklore "fine enough grid" made explicit and checked — and every downstream Chern computation in the literature implicitly needs it. The ℤ₂ invariants (Kane–Mele) follow the same pattern with more bookkeeping.
+
+## S2.2 — Bulk–boundary correspondence, kernel-checked
+
+For 1D two-band models the bulk–boundary correspondence (winding number = protected edge-mode count) has genuinely rigorous proofs at textbook scale — formalizable now, and the result is the field's central slogan as a machine-checked theorem for an honest model class. Extension ladder: chiral-symmetric 1D generally, then the half-plane Chern case (harder analysis; statement-level first). This target has outsized Atlas value: bulk–boundary is a *dictionary between a bulk index and an edge count* — a proven functor row in the holographic-correspondence skeleton family, sitting one shelf below A3's holographic codes, and the `similar` query linking them is a validation-grade rediscovery test.
+
+## S2.3 — The tenfold way as a certified dictionary
+
+The periodic table of topological insulators — ten symmetry classes × dimensions → classifying groups (0, ℤ, ℤ₂) — is Clifford-algebra representation theory plus Bott periodicity, finite mathematics with a celebrated tabular answer. Program: formalize the symmetry-class taxonomy, derive the table's entries as theorems (the Clifford-module route keeps it algebraic; K-theory proper can wait), and — the Atlas move — index the whole structure as dictionary rows: symmetry class ↔ Clifford algebra ↔ classifying space, with Bott periodicity as a *proven periodic transport*. Deliverable: the periodic table of topological matter, entry by entry, kernel-checked — a reference artifact with the same role for this field that the space-group census has for Tier 1, and the two compose (crystalline symmetry × tenfold way) into Tier 2's stretch target below.
+
+## S2.4 — Symmetry indicators and the band-representation census
+
+Topological quantum chemistry reorganized the field around a finite-representation-theoretic question: which band structures are consistent with which space-group representations, and which combinations force topology. The inputs are Tier 1's certified space-group table plus finite rep theory; the outputs — elementary band representations and symmetry-indicator groups per space group — are finite censuses currently maintained in databases whose derivations live in supplementary materials. A certified census (per space group: the indicator group, computed and proven) turns the field's working reference tables into theorems and inherits the exhaustive-classification credibility pattern from D5's flavor census. This is the tier's largest deliverable and its clearest handshake with working materials physics: these tables are what practitioners actually consult when hunting topological materials — the first "theorems with lab handles" the solid-state track produces.
+
+## Tier-2 ledger
+
+S2.1's mesh-sufficiency theorem and S2.2's 1D correspondence are the quick publishable wins; S2.3 is a season of algebra with a permanent artifact at the end; S2.4 is the year-scale census. Exit criterion: the periodic table certified, one bulk–boundary theorem checked, and the indicator census running per-space-group — at which point the tier has converted the topological revolution's *classification layer* into kernel-checked infrastructure, and Tier 3 can ask about the physics the classification protects: gaps, phases, and what happens between them.

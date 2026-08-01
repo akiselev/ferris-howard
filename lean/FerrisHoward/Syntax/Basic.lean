@@ -75,6 +75,24 @@ dot notation, which is namespace-directed and so strictly more powerful than Rus
 for Mathlib notations (F16) is recorded at A2.1. -/
 syntax:max (name := fhExprField) fh_expr:max noWs "." noWs ident : fh_expr
 
+/-- Generic application: `Vector<T, n>`, `Fp<P>`.
+
+`noWs` before `<` is what separates this from a comparison: `Vector<T, n>` is application,
+`a < b` is `LT.lt`. F6 closes the remaining gap by requiring a `<` comparison to be
+parenthesised — see `FerrisHoward/Expand/Basic.lean`, where the rule is enforced with a
+fixed message at an exact span (the parser cannot word it, per the F6 amendment).
+
+Nested generics need a space until I5's `>`-splitting lexer lands: `Poly<Fp<P> >`, because
+`>>` is a maximal-munch token. Recorded on the differences page. -/
+syntax:max (name := fhExprGeneric) fh_expr:max noWs "<" fh_expr:51,+ ">" : fh_expr
+
+/-- The brace escape: `Vector<T, {n*2}>` (design §4.1, Rust's const-generic braces, which
+Rust programmers already know).
+
+Generic arguments parse *above* the comparison band, so `Fin<n+1>` works and the closing
+`>` is never stolen — but anything at or below a comparison needs the braces. -/
+syntax:max (name := fhExprBrace) "{" fh_expr "}" : fh_expr
+
 /-- Path: `Nat::succ`, `N::Zero`. `::` joins identifiers into one Lean name — design §6's
 no-mangling policy means Mathlib names are reachable verbatim as `Nat::Prime::dvd_mul`. -/
 syntax:max (name := fhExprPath) fh_expr:max "::" ident : fh_expr
@@ -236,7 +254,37 @@ syntax (name := fhAttrInstance) "instance" : fh_attr
 /-- An attribute group: `#[simp]`, `#[simp, ext]`. -/
 syntax fhAttrs := "#[" fh_attr,*,? "]"
 
-/-! ## Items -/
+/-! ## Items
+
+### Shared binder syntax
+
+Angle-bracket generics, `+`-separated bounds, and `where` clauses are used by several item
+forms, so they are declared once here.
+-/
+
+/-- One angle-bracket generic parameter: `T`, or `n: Nat`.
+
+The annotation parses at `max`, so the closing `>` cannot be stolen by the `>` comparison:
+`<n: Nat>` is a parameter list, never `n : (Nat > …)`. Same reason `fhBounds` parses at
+`max`. -/
+syntax fhGenericParam := ident (": " fh_expr:max)?
+
+/-- Angle-bracket generics. They become **implicit** binders (design §4.2), which is the
+Rust intuition exactly: generics are inferred at call sites as Lean implicits are. A bare
+`<T>` defaults to `Type _` (design §4.3's `Space<_>`; the `Space` spelling itself is
+A2.4). -/
+syntax fhGenerics := "<" fhGenericParam,*,? ">"
+
+/-- A `+`-separated bound list: `B1 + B2`. Bounds parse at `max` so that `+` stays the
+separator once A1.5 makes it an operator — `B1 + B2` is two bounds, never one sum. -/
+syntax fhBounds := sepBy1(fh_expr:max, " + ")
+
+/-- One `where` bound: `T: Grp`, `R: CommRing + Finite`. -/
+syntax fhWhereBound := ident ": " fhBounds
+
+/-- A `where` clause. Bounds become **instance** binders — again the Rust intuition, since
+you never pass a trait impl explicitly there either. -/
+syntax fhWhere := " where " fhWhereBound,+
 
 /-- The body of an `fn`: an expression block. -/
 syntax (name := fhFnBodyExpr) " { " fh_expr " }" : fh_fn_body
@@ -250,7 +298,7 @@ syntax (name := fhFnBodyNone) ";" : fh_fn_body
 
 Two bodies rather than two `fn` productions: distinct leading tokens (`{` vs `;`) keep
 the grammar backtrack-free, which is Ruling B's scope note. -/
-syntax (name := fhFn) "fn " ident "(" (fh_pat ": " fh_expr),* ")" " -> " fh_expr fh_fn_body : fh_item
+syntax (name := fhFn) "fn " ident (fhGenerics)? "(" (fh_pat ": " fh_expr),* ")" " -> " fh_expr (fhWhere)? fh_fn_body : fh_item
 
 /-- `theorem name(args) -> conclusion { proof }` → `theorem name (args) : conclusion := proof`.
 
@@ -258,11 +306,7 @@ The `theorem` keyword is mandatory and there is no Prop-detection of `fn`s (the 
 review's standing decision, design §3). FH's `theorem` coexists with Lean's own by
 longest-match dispatch at the command boundary — verified on-toolchain, and the reason
 plain Lean `theorem` still parses in an FH file. -/
-syntax (name := fhTheorem) "theorem " ident "(" (fh_pat ": " fh_expr),* ")" " -> " fh_expr fh_fn_body : fh_item
-
-/-- A `+`-separated bound list: `B1 + B2`. Bounds parse at `max` so that `+` stays the
-separator once A1.5 makes it an operator — `B1 + B2` is two bounds, never one sum. -/
-syntax fhBounds := sepBy1(fh_expr:max, " + ")
+syntax (name := fhTheorem) "theorem " ident (fhGenerics)? "(" (fh_pat ": " fh_expr),* ")" " -> " fh_expr (fhWhere)? fh_fn_body : fh_item
 
 /-- `struct S { a: T, b: U }` → `structure S where a : T; b : U`, and
 `struct S: B1 + B2 { … }` → `structure S extends B1, B2 where …` (design §3's trait row,
