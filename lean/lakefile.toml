@@ -40,3 +40,9 @@ supportInterpreter = true
 name = "fh_emit"
 root = "FhEmit"
 supportInterpreter = true
+
+# `fh check` v0 (A1.9 / C1): elaborate an FH file, report JSON with FH-source spans.
+[[lean_exe]]
+name = "fh_check"
+root = "FhCheck"
+supportInterpreter = true

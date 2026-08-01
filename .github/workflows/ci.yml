@@ -60,6 +60,21 @@ jobs:
       - name: emit-lean round-trip
         run: python3 scripts/round-trip.py
 
+      # `fh check` v0 is the agent layer's entry point (C1), so its JSON is a contract:
+      # a corpus fixture must report `ok`, and a complete proof must report no sorry.
+      - name: fh check smoke
+        working-directory: lean
+        run: |
+          lake exe fh_check Tests/corpus/g01_peano.lean > /tmp/fh-check.json
+          python3 - <<'PY'
+          import json
+          d = json.load(open("/tmp/fh-check.json"))
+          assert d["status"] == "ok", d
+          add_comm = next(x for x in d["declarations"] if x["name"] == "add_comm")
+          assert not add_comm["sorry"], add_comm
+          print("fh check: ok")
+          PY
+
   rust:
     name: rust
     runs-on: ubuntu-latest

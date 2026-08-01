@@ -93,6 +93,9 @@ partial def emitFile (path : System.FilePath) : IO String := do
   let mut ps := parserState
   let mut out := emitHeader header
   let mut dropped := 0
+  -- Drained per command: the terminal `eoi` resets the log, so a file's errors vanish if
+  -- you wait for the end to look.
+  let mut collected : Array Message := #[]
   repeat
     let scope := cmdState.scopes.head!
     let pmctx : Parser.ParserModuleContext :=
@@ -105,13 +108,14 @@ partial def emitFile (path : System.FilePath) : IO String := do
       { fileName := path.toString, fileMap := inputCtx.fileMap, snap? := none,
         cancelTk? := none }
     let ((emitted, dropped'), st) ← stepFile input stx ctx cmdState
-    cmdState := st
+    collected := collected ++ st.messages.reportedPlusUnreported.toArray
+    cmdState := { st with messages := {} }
     out := out ++ emitted
     dropped := dropped + dropped'
     if Parser.isTerminalCommand stx then break
   -- An input that does not elaborate has no publication artifact; say so rather than
   -- writing a file that only looks finished.
-  for msg in cmdState.messages.toList do
+  for msg in collected do
     if msg.severity matches .error then
       throw (IO.userError (← msg.toString))
   if dropped > 0 then
