@@ -3,6 +3,7 @@ Copyright (c) 2026 Ferris–Howard contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import FerrisHoward.Emit
+import FerrisHoward.Lint.InstanceShadow
 import FerrisHoward.Lint.Todo
 import FerrisHoward.Report.Sorry
 
