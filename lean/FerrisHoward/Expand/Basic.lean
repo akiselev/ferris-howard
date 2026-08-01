@@ -26,6 +26,24 @@ Never re-parse strings.
 namespace FerrisHoward
 open Lean Lean.Parser.Term
 
+/-- FH identifiers may not end in `?` or `!` (A0.6).
+
+Lean's lexer treats both as identifier characters, so `maybe_val?` is *one* identifier and
+`x?` would never reach FH as `x` followed by the bind operator. FH reserves the two
+suffixes rather than teaching its lexer to split them: the consumers are `?`-as-do (A2.3)
+and `!` (A1.5), and rejecting now keeps the option of splitting later — the reverse would
+be a breaking change.
+
+Checked at expansion time with an exact span, for the same reason F6 is (the parser cannot
+emit custom wording; corpus-review F6 as amended). -/
+def checkIdent (x : Ident) : MacroM Unit := do
+  for c in x.getId.components do
+    if let .str _ s := c then
+      if s.endsWith "?" || s.endsWith "!" then
+        Macro.throwErrorAt x
+          s!"FH: `{s}` — an identifier may not end in `?` or `!`; Lean's lexer would swallow \
+             the operator into the name"
+
 /-- Join a `::` path into a single Lean name: `Nat::Prime::dvd_mul` is the identifier
 `Nat.Prime.dvd_mul`. Design §6's no-mangling policy means this is all the "bridge" a
 Mathlib name needs.
@@ -34,6 +52,7 @@ Only identifiers compose; `f(x)::g` is a syntax-level error rather than a silent
 reinterpretation as field access, which is a different operation with different
 resolution. -/
 private def joinPath (lhs : TSyntax `term) (field : Ident) (ref : Syntax) : MacroM (TSyntax `term) := do
+  checkIdent field
   unless lhs.raw.isIdent do
     Macro.throwErrorAt ref "FH: `::` joins identifiers; for a value's field or method use `.`"
   return mkIdentFrom ref (lhs.raw.getId ++ field.getId)
@@ -48,7 +67,7 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
   withRef e do
     match e with
     -- user syntax, untouched: the ident node keeps the user's span
-    | `(fh_expr| $x:ident) => pure ⟨x.raw⟩
+    | `(fh_expr| $x:ident) => do checkIdent x; pure ⟨x.raw⟩
     | `(fh_expr| $n:num) => pure ⟨n.raw⟩
     | `(fh_expr| ($inner)) => do
         let inner ← expandExpr inner
@@ -58,6 +77,7 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
         let args ← args.getElems.mapM expandExpr
         `($f $args*)
     | `(fh_expr| $recv.$field:ident) => do
+        checkIdent field
         let recv ← expandExpr recv
         `($recv.$field)
     | `(fh_expr| $lhs :: $field:ident) => do
@@ -95,7 +115,7 @@ verbatim — the same rule Rust has, so nothing needs explaining to a Rust reade
 partial def expandPat (p : TSyntax `fh_pat) : MacroM (TSyntax `term) :=
   withRef p do
     match p with
-    | `(fh_pat| $x:ident) => pure ⟨x.raw⟩
+    | `(fh_pat| $x:ident) => do checkIdent x; pure ⟨x.raw⟩
     | `(fh_pat| _) => `(_)
     | `(fh_pat| $n:num) => pure ⟨n.raw⟩
     | `(fh_pat| $lhs :: $field:ident) => do
@@ -113,7 +133,7 @@ Only the two irrefutable forms are legal here; destructuring parameter patterns
 partial def expandBinderPat (p : TSyntax `fh_pat) : MacroM (TSyntax [`ident, ``Lean.Parser.Term.hole]) :=
   withRef p do
     match p with
-    | `(fh_pat| $x:ident) => pure ⟨x.raw⟩
+    | `(fh_pat| $x:ident) => do checkIdent x; pure ⟨x.raw⟩
     | `(fh_pat| _) => do let h ← `(_); pure ⟨h.raw⟩
     | _ => Macro.throwErrorAt p "FH: this pattern is not allowed in binder position"
 

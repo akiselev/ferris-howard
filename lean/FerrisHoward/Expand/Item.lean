@@ -102,11 +102,14 @@ chain (`| Cons : T → E`). Mixing is an error rather than a silent choice. -/
 private def expandVariant (enumName : Ident) (v : TSyntax ``fhEnumVariant) : MacroM (TSyntax ``ctor) :=
   withRef v do
     match v with
-    | `(fhEnumVariant| $c:ident) => `(ctor| | $c:ident : $enumName:ident)
+    | `(fhEnumVariant| $c:ident) => do
+        checkIdent c
+        `(ctor| | $c:ident : $enumName:ident)
     | `(fhEnumVariant| $c:ident($fs,*)) => do
+        checkIdent c
         let fields ← fs.getElems.mapM fun f =>
           match f with
-          | `(fhEnumField| $n:ident : $t) => return (some n, ← expandExpr t)
+          | `(fhEnumField| $n:ident : $t) => do checkIdent n; return (some n, ← expandExpr t)
           | `(fhEnumField| $t:fh_expr) => return (none, ← expandExpr t)
           | _ => Macro.throwErrorAt f "FH: no expansion for this enum field"
         let named := fields.filter (·.1.isSome)
@@ -130,13 +133,16 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
         expandItem inner (← addAttrs attrs g)
 
     | `(fh_item| fn $n:ident($[$ps : $ts],*) -> $ret $body:fh_fn_body) => do
+        checkIdent n
         let binders ← ps.zip ts |>.mapM fun (p, t) => expandParam p t
         let ret ← expandExpr ret
         let (body, sorryValued) ← expandFnBody body
         fhDecl (← withAttrs attrs (← `(command| def $n $binders* : $ret := $body))) sorryValued
 
     | `(fh_item| struct $n:ident $[: $bounds]? { $[$fnames : $ftys],* }) => do
+        checkIdent n
         let fields ← fnames.zip ftys |>.mapM fun (f, t) => do
+          checkIdent f
           let t ← expandExpr t
           `(structSimpleBinder| $f:ident : $t)
         let decl ← match bounds with
@@ -149,10 +155,12 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
         fhDecl (← withAttrs attrs decl)
 
     | `(fh_item| enum $n:ident { $vs,* }) => do
+        checkIdent n
         let ctors ← vs.getElems.mapM (expandVariant n)
         fhDecl (← withAttrs attrs (← `(command| inductive $n:ident where $ctors*)))
 
     | `(fh_item| mod $n:ident { $items* }) => do
+        checkIdent n
         unless attrs.lean.isEmpty && !attrs.defOptOut do
           Macro.throwErrorAt it "FH: attributes are not supported on `mod`"
         let items ← items.mapM (expandItem · {})
@@ -170,6 +178,7 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
         `(command| open $ns:ident)
 
     | `(fh_item| type $n:ident = $val;) => do
+        checkIdent n
         let val ← expandExpr val
         let decl ← if attrs.defOptOut then
             `(command| def $n:ident := $val)

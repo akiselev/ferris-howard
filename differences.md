@@ -38,8 +38,8 @@ is not, which is why they are chosen conservatively (Ruling B).
 
 ## Platform costs (M0 facts — Lean hosting, not design choices)
 
-- **Keyword reservation:** importing FH reserves `fn`, `struct`, `enum`, `trait`, `impl`, `var`, `theorem`, `exists` as tokens in that file — ambient Lean code in the same file cannot use them as identifiers (e.g. `def var := 3` errors). Battery test lands with A0.5.
-- **Identifier `?`/`!`:** Lean identifiers may contain `?`/`!`, so FH splits trailing `?`/`!` off identifiers; bare `x?` as a `?`-bind gets a pinned negative test (A0.6).
+- **Keyword reservation:** importing FH reserves its keywords as tokens in that file — ambient Lean code in the same file cannot use them as identifiers (e.g. `def type := 3` errors). Reserved as of M0: `fn`, `struct`, `enum`, `mod`, `use`, `type`, `todo!`. Later milestones add `trait`, `impl`, `var`, `theorem`, `exists`, `for`. Ambient Lean is otherwise unaffected — plain `def`/`theorem`/`example` parse and elaborate normally in the same file. Battery: `Tests/M0/Lexing.lean` (A0.5), which measures the reservation at *parse* level, since that is where it happens.
+- **Identifier `?`/`!`:** Lean identifiers may contain `?` and `!`, so `x?` is *one* identifier and would never reach FH as `x` followed by the bind operator. As of M0, FH **rejects** identifiers ending in either, with an exact span (A0.6) — rejecting now keeps splitting available at A2.3, whereas allowing them and splitting later would break code. The cost is real and unresolved: Mathlib names like `Option.get!` and `List.head!` are currently unreachable from FH, and the escape (a quoting form, or the split rule arriving with `?`-as-do) is an open question for A2.3.
 - **Comments:** until the M3 standalone `.fh` format, FH lives in `.lean` files — `--` and `/- -/` only; Rust's `//` and `/* */` cannot lex.
 - **Nested generics:** `Poly<Fp<P>>` requires the `>`-splitting lexer (I5); until it lands, write `Poly<Fp<P> >`.
 - **Non-associativity by decree:** `a < b < c`, `a <-> b <-> c`, and `a in b in c` are parse errors — parenthesize (F7 as amended).
