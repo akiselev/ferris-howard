@@ -77,6 +77,16 @@ syntax:max (name := fhExprNum) num : fh_expr
 /-- Parenthesised expression. Also the escape hatch Ruling B keeps insisting on. -/
 syntax:max (name := fhExprParen) "(" fh_expr ")" : fh_expr
 
+/-- Type ascription (F10): `(e: T)` is an elaboration *hint*, and inserts no coercion.
+`e as T` is the coercion, and it is a different operator on purpose — Lean spells the two
+`(e : T)` and `(↑e : T)`, Rust conflates them into `as`, and Mathlib proofs need
+ascription-without-coercion constantly.
+
+The no-coercion half of the promise is not enforced yet: it arrives with A2.0's audit,
+which licenses coercions whose syntax ref is an `as` node and flags every other
+(`coercion-control.md`). Until then this is Lean's ascription, which can coerce. -/
+syntax:max (name := fhExprAscribe) "(" fh_expr ": " fh_expr ")" : fh_expr
+
 /-- Call. `noWs` requires the callee and `(` to be adjacent: FH rejects `f (x)`, which
 Rust accepts. Restriction, not divergence — relaxing it later is non-breaking, the
 reverse is not (Ruling B). Recorded on the differences page. -/
