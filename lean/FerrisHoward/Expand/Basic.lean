@@ -178,8 +178,11 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
         `(($e : $t))
     | `(fh_expr| $f($args,*)) => do
         let f ← expandExpr f
-        let args ← args.getElems.mapM expandExpr
-        `($f $args*)
+        let args ← args.getElems.mapM expandCallArg
+        -- Lean's application node takes `argument`s, which are named arguments *or* terms;
+        -- there is no quotation that mixes the two, so the node is built directly.
+        return ⟨Syntax.node .none ``Lean.Parser.Term.app
+          #[f.raw, mkNullNode (args.map (·.raw))]⟩
     | `(fh_expr| $recv.$field:ident) => do
         checkIdent field
         let recv ← expandExpr recv
@@ -371,6 +374,24 @@ rule would have nowhere to get it. The known cost is the same one A2.3 recorded 
 a statement inside an unascribed closure has no expected type to work from. -/
 partial def isImperative (stx : Syntax) : Bool :=
   stx.isOfKind ``fhExprTry || isStatementKind stx || stx.getArgs.any isImperative
+
+/-- One call argument: positional, or F11's named form.
+
+A named argument's identifier must reach Lean *unhygienically*, because Lean resolves it
+against the callee's parameter names rather than binding it — the same reason the F16
+bridge builds its method names with `mkIdent`. Here it comes straight from source, so
+passing the user's node through is both the correct thing and the span-preserving one. -/
+partial def expandCallArg (a : TSyntax ``fhCallArg) : MacroM (TSyntax ``Lean.Parser.Term.argument) :=
+  withRef a do
+    match a with
+    | `(fhCallArg| $n:ident : $v) => do
+        checkIdent n
+        let v ← expandExpr v
+        `(argument| ($n:ident := $v))
+    | `(fhCallArg| $v:fh_expr) => do
+        let v ← expandExpr v
+        `(argument| $v:term)
+    | _ => Macro.throwErrorAt a "FH: no expansion for this call argument"
 
 /-- Translate an FH pattern to a Lean pattern (which is a term).
 

@@ -11,8 +11,8 @@
 | Divergence | Class | Source |
 |---|---|---|
 | `for<a, b, c: Self>` — ascription distributes over the unascribed prefix (Rust's generic lists bound only `c`) | confined (Rust's `for<>` takes only lifetimes; deliberate divergence, documented loudly per F2). Landed M1 (A1.4) with the negative test F2 asks for: a body using the *first* binder at another type is an error, which is the observable difference between the two readings | F2 |
-| Types in term position: `finrank(K, V)` | extension | F8 |
-| Named arguments: `congruent(x, a, modulus: m)` | extension | F11 |
+| Types in term position: `finrank(K, V)` | extension — free, and by construction: design §4.1 has one expression grammar for both positions, so a type *is* an expression. Pinned M2 (A2.5) rather than built | F8 |
+| Named arguments: `congruent(x, a, modulus: m)` | extension — `ident: expr` in a call is ill-formed Rust, so the syntax was free; brace-delimited struct literals and paren-delimited ascription are the neighbours, and neither collides. Landed M2 (A2.5) | F11 |
 | `in` as a binary operator outside loops | extension | F12 |
 | Comprehension braces `{x: A | P}` (Set/Subtype by expected type) | confined | F13 (as amended) |
 | `if h @ (cond)` hypothesis binding | extension | F15 |

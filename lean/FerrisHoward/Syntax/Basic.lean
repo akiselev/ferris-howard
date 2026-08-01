@@ -104,10 +104,20 @@ which licenses coercions whose syntax ref is an `as` node and flags every other
 (`coercion-control.md`). Until then this is Lean's ascription, which can coerce. -/
 syntax:max (name := fhExprAscribe) "(" fh_expr ": " fh_expr ")" : fh_expr
 
+/-- One argument in a call: positional, or **named** (F11) — `congruent(x, a, modulus: m)`
+is `congruent x a (modulus := m)`.
+
+Rust has no named arguments, so `ident: expr` inside a call is currently ill-formed there
+and the syntax was free (corpus-review F11). It does not collide with a structure literal,
+which is brace-delimited, or with ascription, which is paren-delimited but has no callee
+in front of it. The `atomic` keeps a positional argument that merely *starts* with an
+identifier from committing to the named reading. -/
+syntax fhCallArg := (atomic(ident ": "))? fh_expr
+
 /-- Call. `noWs` requires the callee and `(` to be adjacent: FH rejects `f (x)`, which
 Rust accepts. Restriction, not divergence — relaxing it later is non-breaking, the
 reverse is not (Ruling B). Recorded on the differences page. -/
-syntax:max (name := fhExprCall) fh_expr:max noWs "(" fh_expr,* ")" : fh_expr
+syntax:max (name := fhExprCall) fh_expr:max noWs "(" fhCallArg,* ")" : fh_expr
 
 /-- Field access and method receivers: `p.x`, `x.f(a)`. Maps to Lean's *generalized*
 dot notation, which is namespace-directed and so strictly more powerful than Rust's
