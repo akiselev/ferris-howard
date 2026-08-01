@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref; a full Mathlib-backed build is not cheap.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lean:
+    name: lean (all four test tiers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Our own build products. Mathlib's oleans come from its own cache (below); this
+      # cache is what makes an unchanged FerrisHoward/ rebuild cheap.
+      - name: Cache .lake/build
+        uses: actions/cache@v4
+        with:
+          path: lean/.lake/build
+          key: lake-build-${{ runner.os }}-${{ hashFiles('lean/lean-toolchain', 'lean/lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: |
+            lake-build-${{ runner.os }}-${{ hashFiles('lean/lean-toolchain', 'lean/lake-manifest.json') }}-
+
+      # Installs elan at the pinned toolchain, runs `lake exe cache get`, then builds.
+      # `--wfail` turns a stray warning into a failure: an FH fixture that produces an
+      # uncaptured diagnostic has not been tested, it has been observed.
+      #
+      # All four tiers run here. `#guard_msgs` swallows the diagnostics it matches, so a
+      # negative fixture builds clean and a drifted one fails the build.
+      - name: Build and test
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: lean
+          build-args: --wfail
+          use-mathlib-cache: true
+          test: false
+          lint: false
+
+      # After the build, so that `.lake/packages/mathlib` exists.
+      - name: Toolchain-match assertion
+        run: ./scripts/check-toolchain.sh
+
+      # A drive-by `lake update` rewrites the manifest. Bumps are milestone-boundary PRs
+      # (R6), so an unexpected manifest change is a failure, not a diff to eyeball.
+      - name: Manifest is unchanged
+        run: git diff --exit-code lean/lake-manifest.json
+
+  rust:
+    name: rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # GitHub's ubuntu images ship a current stable Rust with clippy and rustfmt, so
+      # there is no toolchain action to pin here.
+      - name: Toolchain versions
+        run: cargo --version && rustc --version
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - run: cargo fmt --all --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo test --all
+
+  governance:
+    name: governance (Ruling D — advisory)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      # Ruling D asks that every grammar change be classified extension / confined /
+      # violation, and PLAN ground rule 4 makes the classification *human-applied*: this
+      # job reports, it does not gate. A machine cannot tell whether a construct that also
+      # parses as Rust now means something different — that judgement is the review.
+      - uses: actions/checkout@v4
+      - name: Check the Ruling-D field
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          status=ok
+          # The field counts as filled only when it names a classification.
+          if ! printf '%s' "$PR_BODY" | grep -qiE '^- \*\*Ruling D:\*\* *(extension|confined|violation|none)'; then
+            echo "::warning title=Ruling D::The PR description has no filled-in Ruling-D classification (extension / confined / violation / none). See .github/pull_request_template.md."
+            status=missing
+          fi
+          # Ground rule 2: every feature PR states its expansion stage.
+          if ! printf '%s' "$PR_BODY" | grep -qiE '^- \*\*Stage:\*\* *(one|two)'; then
+            echo "::warning title=Stage::The PR description does not state stage one or stage two."
+          fi
+          case "$PR_LABELS" in
+            *ruling-d:*) ;;
+            *) echo "::warning title=Ruling D label::No ruling-d:* label on this PR. The label is applied by a human reviewer; this check is advisory." ;;
+          esac
+          {
+            echo "### Ruling D (advisory)"
+            echo
+            echo "- description field: \`$status\`"
+            echo "- labels: \`${PR_LABELS:-none}\`"
+            echo
+            echo "Automation is advisory here by design (PLAN ground rule 4)."
+          } >> "$GITHUB_STEP_SUMMARY"
