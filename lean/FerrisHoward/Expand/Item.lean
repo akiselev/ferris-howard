@@ -187,7 +187,10 @@ private def expandWhere (w? : Option (TSyntax ``fhWhere)) :
         checkIdent x
         for bound in bounds.raw[0].getSepArgs do
           let c ← expandExpr ⟨bound⟩
-          out := out.push (← `(bracketedBinderF| [$c $x]))
+          -- Through the bound hook, so `use lean::Prime;` can turn `where P: Prime` into
+          -- the binder Mathlib's instances need (design §6). With none in scope the
+          -- default rule is `[C x]`, which is what a bound has always meant.
+          out := out.push (← `(bracketedBinderF| [fh_bound% $c $x]))
     | _ => Macro.throwErrorAt b "FH: no expansion for this `where` bound"
   return out
 

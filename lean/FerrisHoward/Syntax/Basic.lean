@@ -143,6 +143,19 @@ What it *means* is decided by `fh_comprehension%` below — see
 `ident ":" … "|"` shape; longest-match suffices, with no lookahead machinery. -/
 syntax:max (name := fhExprComprehension) "{" ident ": " fh_expr " | " fh_expr "}" : fh_expr
 
+/-- The object-alias hook (design §6): a generic application whose callee is an identifier
+arrives here, so a bridge brought in by `use lean::Fp;` can give the name a Mathlib
+meaning. With none in scope the default rule rebuilds the application unchanged.
+
+Same shape as `fh_dot%` and `fh_comprehension%`, and for the same reason: the decision
+lives in one `macro_rules`, so changing it touches neither the grammar nor the expander. -/
+syntax (name := fhTyTerm) "fh_ty% " term:max term:max* : term
+
+/-- The `where`-bound hook (design §6): `where P: Prime` arrives here so a bridge can turn
+it into the binder Mathlib's instances actually need — `[Fact (Nat.Prime P)]`. The default
+rule applies the class to the carrier, which is what a bound meant before. -/
+syntax (name := fhBoundTerm) "fh_bound% " term:max term:max : term
+
 /-- The election hook for comprehension braces: a `macro_rules` decides whether
 `{x: A | P}` is a `Set` or a `Subtype`.
 

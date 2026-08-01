@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import FerrisHoward.Bridge.Comprehension
 import FerrisHoward.Emit
 import FerrisHoward.Lint.Coercion
+import FerrisHoward.Bridge.Mathlib
 import FerrisHoward.Lint.InstanceShadow
 import FerrisHoward.Lint.VarShadow
 import FerrisHoward.Lint.Todo

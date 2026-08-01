@@ -225,9 +225,12 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
           let lvl := mkIdentFrom u u.getId
           if k == `Sort then `(Sort $lvl) else `(Type $lvl)
         else
-          let f ← expandExpr f
+          let fT ← expandExpr f
           let args ← args.getElems.mapM expandExpr
-          `($f $args*)
+          -- An identifier callee goes through the object-alias hook, so `use lean::Fp;`
+          -- can give `Fp<P>` its Mathlib meaning (design §6). Anything else is an
+          -- application and there is nothing to alias.
+          if f.raw.isOfKind ``fhExprIdent then `(fh_ty% $fT $args*) else `($fT $args*)
     | `(fh_expr| $lhs :: $field:ident) => do
         joinPath (← expandExpr lhs) field e
     | `(fh_expr| match $scrut { $[$pats => $rhss],* }) => do
