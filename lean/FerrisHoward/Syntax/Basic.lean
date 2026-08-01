@@ -153,6 +153,19 @@ syntax (name := fhExprForall) "for" "<" fhGenericParam,+ ">" fh_expr : fh_expr
 four, stage two, and not yet implemented: this production always builds `Exists`. -/
 syntax (name := fhExprExists) "exists" "<" fhGenericParam,+ ">" fh_expr : fh_expr
 
+/-- `if cond { a } else { b }` → Lean's `if`, which for a Prop condition is the
+**decidable** `if` (F14) — Ruling A's one real cost, and Lean's own semantics.
+
+`if h @ (cond) { … } else { … }` binds the hypothesis (F15), reusing Rust's `@`
+pattern-binding: `h : cond` in the first branch, `h : ¬cond` in the second.
+
+The condition needs no restriction against `{`: a brace expression can only *start* an
+expression, never extend one, so a condition that has already parsed cannot swallow the
+block. Rust needs its no-struct-literal rule because struct literals are postfix; FH's
+braces are not. -/
+syntax:max (name := fhExprIf) "if " (atomic(ident " @ "))? fh_expr
+  " { " fh_expr " } " " else " " { " fh_expr " } " : fh_expr
+
 /-- Closure. Closures *are* lambdas (design §3), which is load-bearing for §4.2's
 quantifiers and for big operators (`Finset::range(n).sum(|k| …)`).
 

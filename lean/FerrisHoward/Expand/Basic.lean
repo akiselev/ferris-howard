@@ -221,6 +221,17 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
     | `(fh_expr| $a / $b) => do app2 ``HDiv.hDiv (← expandExpr a) (← expandExpr b)
     | `(fh_expr| $a % $b) => do app2 ``HMod.hMod (← expandExpr a) (← expandExpr b)
     | `(fh_expr| -$a) => do app1 ``Neg.neg (← expandExpr a)
+    | `(fh_expr| if $c { $a } else { $b }) => do
+        let c ← expandExpr c
+        let a ← expandExpr a
+        let b ← expandExpr b
+        `(if $c then $a else $b)
+    | `(fh_expr| if $h:ident @ $c { $a } else { $b }) => do
+        checkIdent h
+        let c ← expandExpr c
+        let a ← expandExpr a
+        let b ← expandExpr b
+        `(if $h:ident : $c then $a else $b)
     | `(fh_expr| lean! { $ts }) => `(by $ts)
     -- `todo!` expands to Lean's own `sorry`, so the declaration carries `sorryAx` and
     -- the emitted artifact stays FH-free (ADR-006). The message is a *diagnostic* and
