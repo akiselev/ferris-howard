@@ -1,6 +1,6 @@
 # Ferris–Howard Implementation Plan
 
-**Status:** Draft 0.3 · 2026-08-01 · Derived from `design.md`, `corpus-review.md`, `agent-interface.md`, `atlas.md`, `atlas-validation.md`. Revised after two adversarial-review rounds: round 1 (completeness audit, execution premortem, Lean-feasibility experiments on the pinned toolchain, prior-art research) and round 2 (50-point fix verification + cold re-read of the revision). **§9 amendment queue fully landed and answer key v1 frozen 2026-08-01 — the next session starts at §7 week 1 (the vertical slice).**
+**Status:** Draft 0.4 · 2026-08-01 · Derived from `design.md`, `corpus-review.md`, `agent-interface.md`, `atlas.md`, `atlas-validation.md`; mini-designs at `statement-hash.md` (I3) and `coercion-control.md` (I6). Revised after two adversarial-review rounds: round 1 (completeness audit, execution premortem, Lean-feasibility experiments on the pinned toolchain, prior-art research) and round 2 (50-point fix verification + cold re-read of the revision). **§9 amendment queue fully landed and answer key v1 frozen 2026-08-01 — the next session starts at §7 week 1 (the vertical slice).** **Week 1 landed 2026-08-01 — §7 week 2 (A0.2–A0.6, I3 implementation) is next.**
 **Decisions in force:** FH-in-`.lean` per-declaration commands through M2 (standalone `.fh` at M3); monorepo `lean/` + `crates/`; Lean `leanprover/lean4:v4.32.2` + Mathlib `v4.32.2`, bumps only at milestone boundaries; Apache-2.0; corpus Rulings A–E and F1–F18 binding; authority order per `design.md` §8. Where this plan deviates from binding doc text, the deviation is queued in §9 and lands as a doc PR **before** its dependent code.
 
 ## 0. Ground rules (non-negotiable, from the docs)
@@ -16,6 +16,8 @@
 
 Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package pinned to Mathlib v4.32.2, olean cache pulled, build green — smoke test verifies `Nat.Prime.dvd_mul`, `ZMod.pow_card` (with its `[Fact (Nat.Prime p)]` binder), `EuclideanDomain`, `RiemannHypothesis`; warm check ≈ 10 s; `crates/fh-atlas` stub compiles. Feasibility experiments archived at `lean/Tests/feasibility/e*.lean` (run via `lake env lean <file>`); I2 promotes them to proper fixtures.
 
+**Week 1 (2026-08-01).** A0.1 categories + the `fn`→`def` slice + the four-tier harness (`882bd84`); CI (`4fc8c38`); the I3 and I6 one-pagers (`statement-hash.md`, `coercion-control.md`). Full `lake build` green in ≈ 13 s warm, all four tiers included. Remaining week-1 item: none — I5 was not started (the spacing stopgap is the plan of record through M1).
+
 ## 2. Verified platform facts this plan relies on (feasibility round, pinned toolchain)
 
 - FH `theorem` **coexists with core `theorem` out of the box** — longest-match dispatch across command parsers sharing a leading token; no priority/lookahead machinery. Cost: malformed input may get the wrong grammar's error (R3); FH slots must use FH categories, never Lean's `term`.
@@ -24,17 +26,20 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 - `?`/`!` are identifier-rest characters (`maybe_val?` is one identifier): FH identifier lexing must split/reject trailing `?`/`!` (A0.6).
 - Rust `//` comments can't lex in `.lean`; fixtures use `--`/`/- -/` until M3 (doc PR §9.4).
 - Pretty-printed expansions carry hygiene daggers; the golden printer sanitizes via `Name.eraseMacroScopes` (verified deterministic).
-- `#guard_msgs` is exact-match with lax-whitespace mode and a re-baseline code action; it strips positions — the span tier is a small position-checking variant.
+- `#guard_msgs` is exact-match with lax-whitespace mode and a re-baseline code action. **Corrected 2026-08-01:** it does *not* strip positions — v4.32.2 has a `positions := true` spec option that reports each message's position relative to the `#guard_msgs` token. It reports them *with* the message text, so FH's span tier (`#fh_spans`) is a variant that reports position and underlined source text *without* the message, keeping span assertions decoupled from message wording (R6). Stock `positions := true` is the fallback if `#fh_spans` ever becomes a liability.
+- `mkCoe` pushes a `CoeExpansionTrace` InfoTree leaf at every coercion insertion, carrying the syntax ref — the mechanism I6 is built on (`coercion-control.md`; fixture `e11`).
+- No cryptographic hash exists in the toolchain (no SHA-256 in core or Lake), which is why I3 splits encoding (Lean) from digest (Rust).
 - Laws-as-fields, `outParam`, `Monad PMF`, `?`-as-do (bodies have declared return types, so the monad is inferable; `?` inside *unascribed closures* fails — documented at A2.3, matches Rust's closure-boundary rule), `in` as an FH binary operator, and the `fh check` Frontend-driver architecture all verified workable. `leanchecker` ships in the toolchain.
 
 ## 3. Phase I — Infrastructure
 
-- **I1. CI.** Pinned `leanprover/lean-action` + `use-mathlib-cache: true` + `actions/cache` on `.lake/build` (LeanProject template); `lake exe mk_all --check`; toolchain-match assertion; rust job; governance job = PR-template Ruling-D field + human-applied label (automation advisory).
-- **I2. Test harness on `#guard_msgs`.** Golden tier: `#fh_expand` logs hygiene-sanitized expansion under `#guard_msgs (whitespace := lax)`. Elaboration tier: zero errors + asserted `sorry` count. Negative tier: **exact pinned messages** (design §8 as amended via §9.3; exact-match is what the mechanism supports and re-baselining is cheap under rule 6). Span tier: position-asserting `#guard_msgs` variant; one span assertion per feature from M0. First negative test is M0-native (unresolved identifier under A0.1's no-auto-bind rule).
-- **I3. Statement-hash mini-design → implement.** Explicit normalization decisions (alpha, universes, `mdata`, literals, binder-info, reducibility); **algorithm-version tag in every hash**. Consumers: C5 freeze, B1/B8 keying. Hash equality substitutes for anti-cheat's "definitionally identical" — stricter, decidable; recorded (doc PR §9.6).
+- ✅ **I1. CI** (`4fc8c38`). Pinned `leanprover/lean-action` + `use-mathlib-cache: true` + `actions/cache` on `.lake/build`; toolchain-match assertion (`scripts/check-toolchain.sh`, plus a manifest-unchanged check); rust job; governance job = PR-template Ruling-D + Stage fields, warnings only (human-applied label). **Deviation:** no `lake exe mk_all --check` — both libs are globbed, so compilation coverage is structural, and `lake exe mk_all` would build Mathlib's executables from source (the olean cache does not cover them). `--wfail` is on, so an uncaptured warning fails the build. Not yet exercised on GitHub.
+- ✅ **I2. Test harness on `#guard_msgs`** (`882bd84`) — `#fh_expand` (golden, hygiene-sanitized, stops at the first non-FH node kind) and `#fh_spans` (span, position + underlined source, no message text). Elaboration tier asserts sorry-freeness via `#print axioms`. First fixture: `lean/Tests/M0/Fn.lean`, all four tiers.
+  Original scope, all met: golden tier: `#fh_expand` logs hygiene-sanitized expansion under `#guard_msgs (whitespace := lax)`. Elaboration tier: zero errors + asserted `sorry` count. Negative tier: **exact pinned messages** (design §8 as amended via §9.3; exact-match is what the mechanism supports and re-baselining is cheap under rule 6). Span tier: position-asserting `#guard_msgs` variant; one span assertion per feature from M0. First negative test is M0-native (unresolved identifier under A0.1's no-auto-bind rule).
+- ◐ **I3. Statement-hash mini-design → implement.** Mini-design **landed 2026-08-01**: `statement-hash.md`. Normalization decided (alpha erased, binder info kept, universes normalized then renamed by first occurrence, `mdata` stripped, literals uncanonicalized, no unfolding); version tag lives *inside* the encoding; **Lean emits a canonical encoding, Rust digests it** (no cryptographic hash exists in the toolchain), so B8 keys on the encoding and never needs SHA-256 in Lean. Hash equality substitutes for anti-cheat's "definitionally identical" — stricter, decidable; recorded (doc PR §9.6). Implementation: week 2.
 - **I4. Numeric-literals mini-design (gates M1).** Inherit `OfNat`/`OfScientific`; Ruling C item five; settle `half` (doc PR §9.5).
 - **I5. Angle-bracket lexing spike (timeboxed, week 1).** `ParserFn` splitting `>>`/`>=`/`>>=` at generic-close + precedence floor above comparisons, fuzzed against a **standalone prototype grammar** (the F6 rule doesn't exist until A1.5). If the timebox expires, **the spacing stopgap is the plan of record** through M1 and the spike resumes before A2.5 (its hard consumer).
-- **I6. F9-mechanism one-pager (new).** How to disable silent unification-driven coercion in FH-elaborated code *without* wrapping every FH term in a stage-two elaborator — the tension with ground rule 2 is real and must be resolved on paper before A2.0 is scheduled work. Options to evaluate: elaborator option/attribute scoping, post-elaboration coercion audit, targeted `elab_rules` at coercion-prone positions only.
+- ✅ **I6. F9-mechanism one-pager** — `coercion-control.md`. **No FH term needs a stage-two wrapper.** Two mechanisms: FH's operator expansion does not use `binop%` (stage one, free), and a declaration-scoped post-elaboration audit reads the `CoeExpansionTrace` InfoTree leaves `mkCoe` already pushes, licensing exactly the insertions whose syntax ref lies inside an FH `as` node. Verified on-toolchain (`e11`): clean code yields no hits, `binop%` insertions *are* visible, and an explicit `↑` is distinguishable by ref. The option-scoping route was checked and does not exist in v4.32.2. R13 resolved; A2.0 is schedulable.
 
 ## 4. Track A — the language (M0 → M3)
 
@@ -100,7 +105,7 @@ Order: B1→B2 after I3; B3 gate before B4; B8 after B1.
 
 ## 7. Sequencing — first three weeks (single implementer assumed; contention is real)
 
-**Week 1 — the vertical slice, serialized:** A0.1 → minimal `fn`→`def` → `#fh_expand` + sanitizer → four tiers on that feature → CI green (I1). ~~Docs in parallel~~ **The §9 queue and the B7 answer key are already done (2026-08-01)** — week 1 is now pure implementation plus the I3 + I6 one-pagers. I5 runs as a strictly timeboxed spike only if slack exists — the stopgap is already the plan of record through M1.
+**Week 1 — the vertical slice, serialized: ✅ done 2026-08-01.** A0.1 → minimal `fn`→`def` → `#fh_expand` + sanitizer → four tiers on that feature → CI (I1), plus the I3 and I6 one-pagers. I5 was not started; the spacing stopgap remains the plan of record through M1, and the spike resumes before A2.5.
 **Week 2:** A0.2–A0.6; I3 implementation.
 **Week 3:** M0 exit gate; B1 extractor; A1.5 matrix begins (§9.1 landed).
 Contention honestly stated: A-items serialize on one grammar and one implementer; B1 contends on the same person (it is Lean-side), hence week 3; C1 is embedded in M1 by design.
@@ -119,7 +124,7 @@ Contention honestly stated: A-items serialize on one grammar and one implementer
 - R10 B4 oracle sculpting/bus factor: property + differential tests; babble/Stitch first.
 - R11 Benchmark credibility: B7 repairs; without held-out targets the "cold" claim is unfalsifiable.
 - R12 `>>` lexing: I5 spike + stopgap-as-plan-of-record; hard consumer is A2.5, not M0/M1.
-- R13 **F9 blast radius** (new): if I6 finds no scoped mechanism, coercion control could force stage-two wrapping of all FH terms, colliding with ground rule 2 — surfacing this is exactly why I6 exists and why A2.0 doesn't start until it lands.
+- R13 **F9 blast radius** — **closed 2026-08-01.** I6 found the scoped mechanism (`coercion-control.md`): no stage-two wrapping of FH terms is needed. Residual risk is narrow and named there: the audit reads `CoeExpansionTrace`, which is not a stability-guaranteed API, and a bump that breaks it costs an error message rather than semantics.
 
 ## 9. Doc-amendment queue — **ALL LANDED 2026-08-01** (retained for audit)
 
