@@ -154,6 +154,11 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
         -- decides what the spelling means; with none in scope this is Lean's generalized
         -- dot notation, unchanged (design §4.7).
         `(fh_dot% $recv $field)
+    | `(fh_expr| {$x:ident : $ty | $body}) => do
+        checkIdent x
+        let ty ← expandExpr ty
+        let body ← expandParenthesised body
+        `(fh_comprehension% (fun ($x : $ty) => $body))
     | `(fh_expr| { $inner }) => expandParenthesised inner
     | `(fh_expr| $f<$args,*>) => do
         let f ← expandExpr f

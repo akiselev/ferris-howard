@@ -119,6 +119,23 @@ Nested generics need a space until I5's `>`-splitting lexer lands: `Poly<Fp<P> >
 `>>` is a maximal-munch token. Recorded on the differences page. -/
 syntax:max (name := fhExprGeneric) fh_expr:max noWs "<" fh_expr:51,+ ">" : fh_expr
 
+/-- Comprehension braces (F13): `{x: A | P(x)}`.
+
+What it *means* is decided by `fh_comprehension%` below — see
+`FerrisHoward/Bridge/Comprehension.lean`. Distinguished from the brace escape by the
+`ident ":" … "|"` shape; longest-match suffices, with no lookahead machinery. -/
+syntax:max (name := fhExprComprehension) "{" ident ": " fh_expr " | " fh_expr "}" : fh_expr
+
+/-- The election hook for comprehension braces: a `macro_rules` decides whether
+`{x: A | P}` is a `Set` or a `Subtype`.
+
+The indirection is the point. F13 was amended to elect by *expected type*, which stage one
+cannot see, and there are three ways to get there — a stage-two elaborator, a class with
+an `outParam`, or an explicit import. They differ in what they cost, not in what they do,
+and all three are one `macro_rules` on this node. Swapping the decision does not touch the
+grammar, the expander, or any fixture that does not test the decision itself. -/
+syntax (name := fhComprehensionTerm) "fh_comprehension% " term:max : term
+
 /-- The brace escape: `Vector<T, {n*2}>` (design §4.1, Rust's const-generic braces, which
 Rust programmers already know).
 
