@@ -22,6 +22,7 @@
 | `use lean::C;` brings a class's F16 method spellings into scope (`p.dvd(a)` is `p ∣ a` only after `use lean::Dvd;`) | confined — Rust has trait imports and this is the same rule applied to notation spellings; outside the import `.` is plain dot notation, unchanged | F16, design §6 |
 | Per-variant return types on `enum` (indexed families) | extension | design §4.5 |
 | `extern "axiom" { ... }` | extension | design §4.6 |
+| `e as T` is a *coercion* between mathematical types, not Rust's primitive cast; a coercion FH did not write is an error | confined — Rust's `as` has no meaning to preserve here, and F10's `(e: T)` keeps ascription separate. Enforced by a post-elaboration audit (A2.0), switchable with `linter.fh.silentCoercion` | F9 |
 | No coherence or orphan rule: several `impl`s may cover one class and carrier | confined — FH adopts Lean's permissiveness, which Mathlib depends on. The divergence is the *absence* of Rust's rule, and it is diagnosed rather than prohibited: `linter.fh.instanceShadow` names the instances a new `impl` joins | design §4.4 |
 
 ## Restrictions (legal Rust that FH rejects)

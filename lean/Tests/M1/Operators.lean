@@ -114,31 +114,41 @@ theorem zero_in(s: NatList) -> member(0, List::cons(0, s)) {
 #guard_msgs in
 #print axioms implies_trans_holds
 
-/-! ## `!` on a `Bool`, pinned rather than fixed
+/-! ## `!` on a `Bool`, now an error
 
-The deferred-decisions ledger wants `!` on a `Bool` to be a hard error, forcing `.bnot()`.
-It currently is not — and the reason is worth seeing, because it is F9 in miniature:
+The deferred-decisions ledger wanted `!` on a `Bool` to be a hard error, forcing
+`.bnot()`. A2.0 delivers it, and not by a bespoke check — this *is* F9, in miniature.
 
-Lean coerces `b : Bool` to the Prop `b = true`, applies `¬`, then coerces *back* with
-`decide` to meet the declared `Bool`. Two silent coercions, no diagnostic, and a
-`decide ¬b = true` where the author wrote `!b`.
+Lean coerces `b : Bool` to the Prop `b = true`, applies `¬`, then coerces back with
+`decide` to meet the declared `Bool`. Two silent insertions where the author wrote `!b`,
+and the coercion audit reports both. Stage one could never have caught it: `!` expands
+before any type is known.
 
-Stage one cannot catch this: `!` expands before any type is known. But I6's audit does,
-exactly and without a bespoke check — both insertions go through `mkCoe`, neither has a
-syntax ref inside an `as` node, so both are unlicensed (`coercion-control.md`). The ledger
-item therefore resolves as "A2.0 delivers it", and the golden below is what changes when
-it does.
+The expansion is unchanged — `Not b`, exactly Ruling A — and it is *elaboration* that
+refuses.
 -/
 
 /-- info: set_option autoImplicit false in def bool_not (b : Bool) : Bool := Not b -/
 #guard_msgs (whitespace := lax) in
 #fh_expand fn bool_not(b: Bool) -> Bool { !b }
 
+/--
+error: FH: this coercion is Lean's, not yours. F9 says coercions are written — spell it `… as T`, or change the types so none is needed.
+
+Note: this check can be disabled with `set_option linter.fh.silentCoercion false`.
+---
+error: FH: this coercion is Lean's, not yours. F9 says coercions are written — spell it `… as T`, or change the types so none is needed.
+
+Note: this check can be disabled with `set_option linter.fh.silentCoercion false`.
+-/
+#guard_msgs in
 fn bool_not(b: Bool) -> Bool { !b }
 
-/-- info: def bool_not : Bool → Bool := fun b => decide ¬b = true -/
-#guard_msgs (whitespace := lax) in
-#print bool_not
+/-! Ruling A's answer is the one the ledger named: `Bool` algebra goes through methods. -/
+
+fn bool_not_ok(b: Bool) -> Bool { b.not() }
+
+example : bool_not_ok true = false := rfl
 
 /-! ## Tier 3 — negative
 

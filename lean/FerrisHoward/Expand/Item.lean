@@ -57,7 +57,7 @@ private def addAttr (s : AttrSet) (a : TSyntax `fh_attr) : MacroM AttrSet :=
 /-- Fold an attribute group into the set. -/
 private def addAttrs (s : AttrSet) (g : TSyntax ``fhAttrs) : MacroM AttrSet := do
   match g with
-  | `(fhAttrs| #[$as,*]) => as.getElems.foldlM addAttr s
+  | `(fhAttrs| #[$items,*]) => items.getElems.foldlM addAttr s
   | _ => Macro.throwErrorAt g "FH: no expansion for this attribute group"
 
 /-- Attach `@[…]` to a generated declaration.

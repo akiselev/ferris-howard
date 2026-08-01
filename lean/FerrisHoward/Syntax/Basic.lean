@@ -251,6 +251,17 @@ syntax:50 (name := fhExprGt) fh_expr:51 " > " fh_expr:51 : fh_expr
 headers, and FH's quantifiers are bracketed, so the spelling is free. -/
 syntax:50 (name := fhExprIn) fh_expr:51 " in " fh_expr:51 : fh_expr
 
+/-- Coercion (F9): `e as T` is `(↑e : T)`, and it is the **only** licensed way for a
+coercion to appear in FH-elaborated code — A2.0's audit flags every other one.
+
+Distinct from ascription on purpose (F10): `(e: T)` hints, `e as T` converts. Lean spells
+them `(e : T)` and `(↑e : T)`; Rust conflates both into `as`; FH keeps them separable
+because Mathlib proofs need ascription-without-coercion constantly.
+
+Precedence follows Rust — tighter than `*`, looser than unary `-` — which the F7 table did
+not cover, since `as` is not one of its rows. -/
+syntax:72 (name := fhExprAs) fh_expr:72 " as " fh_expr:73 : fh_expr
+
 /-- Addition. -/
 syntax:65 (name := fhExprAdd) fh_expr:65 " + " fh_expr:66 : fh_expr
 

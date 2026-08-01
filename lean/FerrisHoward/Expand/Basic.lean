@@ -209,6 +209,12 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
     | `(fh_expr| $a > $b) => do app2 ``GT.gt (← expandExpr a) (← expandExpr b)
     -- `Membership.mem` takes the container first, the element second
     | `(fh_expr| $a in $b) => do app2 ``Membership.mem (← expandExpr b) (← expandExpr a)
+    | `(fh_expr| $e as $t) => do
+        let e ← expandExpr e
+        let t ← expandExpr t
+        -- `↑` under the `as` node's ref, so the audit can tell this coercion from one
+        -- Lean inserted on its own (`coercion-control.md`).
+        `((↑$e : $t))
     | `(fh_expr| $a + $b) => do app2 ``HAdd.hAdd (← expandExpr a) (← expandExpr b)
     | `(fh_expr| $a - $b) => do app2 ``HSub.hSub (← expandExpr a) (← expandExpr b)
     | `(fh_expr| $a * $b) => do app2 ``HMul.hMul (← expandExpr a) (← expandExpr b)

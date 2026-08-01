@@ -74,7 +74,7 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 - ✅ **Exit gate met 2026-08-01:** `euclids_lemma` (design §3, text unchanged) elaborates and checks — `∀ {p a b : ℕ}, Nat.Prime p → p ∣ a * b → p ∣ a ∨ p ∣ b`, interderivable with `Nat.Prime.dvd_mul` in both directions (`Tests/M1/ExitGate.lean`) — **and** corpus Group 2 (`Tests/corpus/g02_group.lean`); full F7 matrix green; F10 ascription golden present.
 
 ### M2 — The conversation file (Ruling E order: Groups 8, 11, 12 → 9 → 5, 6, 7, 10; Group 2 was pulled into M1)
-- A2.0 **F9 coercion control** (per I6's mechanism): `as` coercion, `as!`, silent-coercion disable. Lands before A2.1/A2.5 (Group 6's `choose(n,k) as R` and Group 12's subtype introduction consume it). Gate: F9 negative golden — a silently-coercing expression must error.
+- ◐ **A2.0 F9 coercion control** (2026-08-01): `e as T` → `(↑e : T)`, and the audit I6 designed — `mkCoe` pushes an info leaf at every insertion, and FH errors on any whose position is not inside an `as` the author wrote. **Gate met:** a silently-coercing expression errors (`Tests/M2/Coercion.lean`). No elaborator under FH terms, which is what R13 was about. It also *delivered the `!`-on-Bool ledger item*, exactly as predicted: `!b` on a `Bool` is two silent coercions and now reports both. Corpus Group 6's `choose(n,k) as R` shape elaborates. **Remaining:** `as!` for lossy conversions.
 - A2.1 Prop-first consequences: set-builder/subtype (F13 as amended: expected-type election, stage two, Ruling C item six, default `Set<A>`); decidable-`if` (negative tests pin Lean's real wording; friendly F14 wording in `fh check`, per the landed §9.3 amendment); `if h @ (cond)` (F15); F16 canonical-spelling policy recorded (mechanism since A0.2).
 - A2.2 Indexed enums; nested + `mutual` inductives; termination attributes; `#[partial]`, `#[noncomputable]`, `#[opaque]`, `extern "axiom"`.
 - A2.3 `?`-do (four-monad golden set; the unascribed-closure boundary documented on the differences page), explicit `pure`, structure literals, do-block `for`/`while`/`if`/`let mut` — loop-header `in` is a positional keyword per the landed §9.1 amendment (top-level membership in the iteree parenthesized).
@@ -140,7 +140,7 @@ Contention honestly stated: A-items serialize on one grammar and one implementer
 - R11 Benchmark credibility: B7 repairs; without held-out targets the "cold" claim is unfalsifiable.
 - R12 `>>` lexing: I5 spike + stopgap-as-plan-of-record; hard consumer is A2.5, not M0/M1.
 - R14 **Emittability drift** (new, ADR-006): a construct that cannot expand to Lean surface syntax makes its file unpublishable. Mitigated by the emittable lint firing at authoring time, the round-trip gate in CI, and the standing rule that a stage-two construct is a decision to defend rather than a convenience.
-- R13 **F9 blast radius** — **closed 2026-08-01.** I6 found the scoped mechanism (`coercion-control.md`): no stage-two wrapping of FH terms is needed. Residual risk is narrow and named there: the audit reads `CoeExpansionTrace`, which is not a stability-guaranteed API, and a bump that breaks it costs an error message rather than semantics.
+- R13 **F9 blast radius** — **closed 2026-08-01, and the mechanism shipped at A2.0.** I6 found the scoped mechanism (`coercion-control.md`): no stage-two wrapping of FH terms is needed. Residual risk is narrow and named there: the audit reads `CoeExpansionTrace`, which is not a stability-guaranteed API, and a bump that breaks it costs an error message rather than semantics.
 
 ## 9. Doc-amendment queue — **ALL LANDED 2026-08-01** (retained for audit)
 
@@ -161,7 +161,7 @@ Harness on `#guard_msgs` with **exact-message** negatives (§9.3); **span tier a
 
 | Decision | Default | Due |
 |---|---|---|
-| `!` on Bool | **resolved 2026-08-01: A2.0's coercion audit delivers it.** Stage one cannot: `!` expands before any type is known. Lean currently coerces `b : Bool` to `b = true`, applies `¬`, and coerces back with `decide` — two silent insertions, which is F9 in miniature, and both are unlicensed under I6's audit. Today's behaviour is pinned as a golden in `Tests/M1/Operators.lean`, so the change is a visible re-baseline | done |
+| `!` on Bool | ✅ **delivered 2026-08-01 by A2.0's coercion audit.** Stage one cannot: `!` expands before any type is known. Lean currently coerces `b : Bool` to `b = true`, applies `¬`, and coerces back with `decide` — two silent insertions, which is F9 in miniature, and both are unlicensed under I6's audit. Today's behaviour is pinned as a golden in `Tests/M1/Operators.lean`, so the change is a visible re-baseline | done |
 | F9 mechanism | I6 one-pager decides | pre-A2.0 |
 | `<explicit T>` override | not needed | M2, if friction |
 | Turbofish `f::<T>(x)` | deferred: no sound stage-one lowering (see A1.3). Decide with `<explicit T>` — both are the same question, and both are stage two | M2 |
