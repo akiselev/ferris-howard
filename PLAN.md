@@ -14,7 +14,7 @@
 
 ## 1. Done (as of 2026-08-01)
 
-Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package pinned to Mathlib v4.32.2, olean cache pulled, build green — smoke test verifies `Nat.Prime.dvd_mul`, `ZMod.pow_card` (with its `[Fact (Nat.Prime p)]` binder), `EuclideanDomain`, `RiemannHypothesis`; warm check ≈ 10 s; `crates/fh-atlas` stub compiles. Feasibility experiments archived at `lean/Tests/feasibility/e*.lean` (run via `lake env lean <file>`); I2 promotes them to proper fixtures.
+Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package pinned to Mathlib v4.32.2, olean cache pulled, build green — smoke test verifies `Nat.Prime.dvd_mul`, `ZMod.pow_card` (with its `[Fact (Nat.Prime p)]` binder), `EuclideanDomain`, `RiemannHypothesis`; warm check ≈ 10 s; `crates/fh-atlas` stub compiles. Feasibility experiments archived at `lean/spikes/e*.lean` (run via `lake env lean spikes/<file>.lean`); I2 promotes them to proper fixtures.
 
 **Week 1 (2026-08-01).** A0.1 categories + the `fn`→`def` slice + the four-tier harness (`882bd84`); CI (`4fc8c38`); the I3 and I6 one-pagers (`statement-hash.md`, `coercion-control.md`). I5 was not started — the spacing stopgap is the plan of record through M1.
 
@@ -84,7 +84,7 @@ Doc reconciliation (`bf857ba`); Apache-2.0; scaffold (`5775190`): Lake package p
 
 ## 5. Track B — the Atlas (parallel; needs only I3 + pinned Mathlib)
 
-- B1. Extractor v0 (Lean metaprogram): JSONL (name, kind, versioned statement-hash, used-constants, module). Blocked only on I3.
+- ✅ **B1. Extractor v0** (2026-08-01): `FerrisHoward/Atlas/Extract.lean` + `lake exe atlas_extract`. JSONL rows carry name, kind, module, the versioned statement *encoding* (I3 — the digest is computed Rust-side), and **two** used-constant lists: `uses_statement` (what the claim rests on) and `uses_proof` (what the argument rests on), which `atlas why` and foundations/impact need kept apart. Declarations whose statement cannot be encoded carry `stmt_error` rather than being dropped. Verified over `Mathlib.Logic.Basic` (268 rows). Fixture: `Tests/Atlas/Extract.lean`.
 - B2. Dependency graph (petgraph) + `atlas why` + foundations/impact + bridge centrality; Mathlib slice, then full.
 - B3. **`atlas home`**: carrier abstraction + lattice walk. Gate: seeded over-hypothesized suite incl. ≥ 2 carrier-abstraction cases **plus ≥ 5 historical linter hits mined from Mathlib git history** (scheduled work — the pinned snapshot has fixed them).
 - B4. Skeleton index + `atlas similar`: evaluate babble/Stitch before bespoke AU; higher-order-pattern LGG is linear-time; Gauthier–Kaliszyk normalization-level knob as the precision/recall parameter; property tests (subsumption, idempotence, commutativity) + differential vs a naive reference — correctness oracle independent of the V-suite.
@@ -109,7 +109,7 @@ Order: B1→B2 after I3; B3 gate before B4; B8 after B1.
 
 **Week 1 — the vertical slice, serialized: ✅ done 2026-08-01.** A0.1 → minimal `fn`→`def` → `#fh_expand` + sanitizer → four tiers on that feature → CI (I1), plus the I3 and I6 one-pagers. I5 was not started; the spacing stopgap remains the plan of record through M1, and the spike resumes before A2.5.
 **Week 2:** A0.2–A0.6; I3 implementation.
-**Week 3:** M0 exit gate; B1 extractor; A1.5 matrix begins (§9.1 landed).
+**Week 3:** M0 exit gate; ✅ B1 extractor (2026-08-01); A1.5 matrix begins (§9.1 landed).
 Contention honestly stated: A-items serialize on one grammar and one implementer; B1 contends on the same person (it is Lean-side), hence week 3; C1 is embedded in M1 by design.
 
 ## 8. Risks

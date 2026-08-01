@@ -26,3 +26,10 @@ globs = ["FerrisHoward", "FerrisHoward.+"]
 [[lean_lib]]
 name = "Tests"
 globs = ["Tests", "Tests.+"]
+
+# The B1 extractor as a program. Its own imports are `Lean` only; the environment it walks
+# is loaded at runtime, so building this does not drag Mathlib through the linker.
+[[lean_exe]]
+name = "atlas_extract"
+root = "AtlasExtract"
+supportInterpreter = true
