@@ -1,11 +1,24 @@
 name = "FerrisHoward"
 version = "0.1.0"
-defaultTargets = ["FerrisHoward"]
+defaultTargets = ["FerrisHoward", "Tests"]
 
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"
 rev = "v4.32.2"
 
+# The language. Globbed rather than rooted: `lake build` compiles every module under
+# `FerrisHoward/`, so a file that no one imports still has to compile. That is what
+# Mathlib's `mk_all --check` buys with an import-completeness check, obtained here
+# structurally instead (PLAN I1).
 [[lean_lib]]
 name = "FerrisHoward"
+globs = ["FerrisHoward.+"]
+
+# Fixtures. Deliberate errors are legal here as long as every one of them is captured by
+# `#guard_msgs`; an uncaptured error fails the build, which is the point.
+# `Tests/feasibility/` is excluded on purpose: those are archived spikes, run by hand with
+# `lake env lean <file>`, and several fail by design (I2 promotes them to fixtures).
+[[lean_lib]]
+name = "Tests"
+globs = ["Tests", "Tests.M0.*", "Tests.Smoke"]

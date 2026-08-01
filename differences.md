@@ -22,6 +22,16 @@
 | Per-variant return types on `enum` (indexed families) | extension | design §4.5 |
 | `extern "axiom" { ... }` | extension | design §4.6 |
 
+## Restrictions (legal Rust that FH rejects)
+
+Not Ruling-D divergences — no construct changes meaning — but a Rust reader can still be
+surprised, so they are tracked. Relaxing a restriction later is non-breaking; adding one
+is not, which is why they are chosen conservatively (Ruling B).
+
+| Restriction | Rationale | Landed |
+|---|---|---|
+| Call syntax admits no space before `(`: `f(x)`, never `f (x)` | FH has no juxtaposition application, so this is not needed *yet*; keeping it reserves the freedom to parse statement bodies (A2.3) without a Rust-style ambiguity, and relaxing it later breaks nothing | M0 (A0.1) |
+
 ## Platform costs (M0 facts — Lean hosting, not design choices)
 
 - **Keyword reservation:** importing FH reserves `fn`, `struct`, `enum`, `trait`, `impl`, `var`, `theorem`, `exists` as tokens in that file — ambient Lean code in the same file cannot use them as identifiers (e.g. `def var := 3` errors). Battery test lands with A0.5.
