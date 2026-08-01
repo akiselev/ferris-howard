@@ -93,11 +93,15 @@ info: FH sorry report: 3 declaration(s) depend on `sorryAx`
 #guard_msgs in
 #[name(other)] fn renamed() -> Nat { 1 }
 
+/-! An attribute FH does not consume yet says so precisely, rather than passing an
+argument list through to a Lean attribute that would not understand it. (`terminates_by`
+used to be this example; it is A2.2's now.) -/
+
 /--
-error: FH: `#[terminates_by(…)]` takes arguments, which are not supported yet; attributes with arguments arrive with the features that use them
+error: FH: `#[universes(…)]` takes arguments, which are not supported yet; attributes with arguments arrive with the features that use them
 -/
 #guard_msgs in
-#[terminates_by(n)] fn measured(n: Nat) -> Nat { n }
+#[universes(u)] fn universed(n: Nat) -> Nat { n }
 
 /-! ## Tier 4 — span
 

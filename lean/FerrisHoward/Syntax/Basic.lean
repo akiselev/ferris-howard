@@ -331,6 +331,10 @@ syntax (name := fhAttrDef) "def" : fh_attr
 /-- `#[instance]`, passed through as `@[instance]`. -/
 syntax (name := fhAttrInstance) "instance" : fh_attr
 
+/-- `#[decreasing_by(lean! { … })]` (design §4.6). Its own production because
+`decreasing_by` is a Lean keyword and so never arrives as an identifier. -/
+syntax (name := fhAttrDecreasingBy) "decreasing_by" "(" fh_expr ")" : fh_attr
+
 /-- An attribute group: `#[simp]`, `#[simp, ext]`. -/
 syntax fhAttrs := "#[" fh_attr,*,? "]"
 

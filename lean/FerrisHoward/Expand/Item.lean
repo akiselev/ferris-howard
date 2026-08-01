@@ -23,6 +23,10 @@ pass through to Lean. -/
 structure AttrSet where
   /-- `#[def]`: `type X = e;` becomes a `def` rather than an `abbrev`. -/
   defOptOut : Bool := false
+  /-- `#[terminates_by(e)]`: the well-founded measure (design §4.6). -/
+  terminationBy? : Option (TSyntax `term) := none
+  /-- `#[decreasing_by(lean! { … })]`: the proof that it decreases. -/
+  decreasingBy? : Option (TSyntax ``Lean.Parser.Tactic.tacticSeq) := none
   /-- `#[name(n)]`: the name an otherwise-anonymous `impl` instance takes. -/
   name? : Option Ident := none
   /-- Attributes passed through verbatim (design §3's `#[attr]` → `@[attr]` row). -/
@@ -38,8 +42,21 @@ private def addAttr (s : AttrSet) (a : TSyntax `fh_attr) : MacroM AttrSet :=
         return { s with «lean» := s.lean.push (← `(attrInstance| instance)) }
     | `(fh_attr| $n:ident) =>
         return { s with «lean» := s.lean.push (← `(attrInstance| $n:ident)) }
+    | `(fh_attr| decreasing_by($e)) => do
+        let `(fh_expr| lean! { $ts }) := e
+          | Macro.throwErrorAt e
+              "FH: `#[decreasing_by(…)]` takes a tactic block, as in \
+               `#[decreasing_by(lean! { omega })]`"
+        return { s with decreasingBy? := some ts }
+    -- Branch on the *name* rather than pattern-matching a literal identifier: a literal
+    -- ident in a quotation pattern carries hygiene information that source idents do not,
+    -- so it never matches.
     | `(fh_attr| $n:ident($_args,*)) =>
-        if n.getId == `name then
+        if n.getId == `terminates_by then
+          match _args.getElems with
+          | #[e] => do return { s with terminationBy? := some (← expandExpr e) }
+          | _ => Macro.throwErrorAt a "FH: `#[terminates_by(…)]` takes one measure expression"
+        else if n.getId == `name then
           -- design §3: `#[name(…)]` names the instance an `impl` would otherwise leave
           -- anonymous.
           match _args.getElems with
@@ -282,7 +299,16 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
         let binders ← allBinders gs wh ps ts
         let ret ← expandExpr ret
         let (body, sorryValued) ← expandFnBody body
-        fhDecl (← withAttrs attrs (← `(command| def $n $binders* : $ret := $body))) sorryValued
+        let decl ← match attrs.terminationBy?, attrs.decreasingBy? with
+          | none, none => `(command| def $n $binders* : $ret := $body)
+          | some m, none => `(command| def $n $binders* : $ret := $body
+              termination_by $m)
+          | none, some t => `(command| def $n $binders* : $ret := $body
+              decreasing_by $t)
+          | some m, some t => `(command| def $n $binders* : $ret := $body
+              termination_by $m
+              decreasing_by $t)
+        fhDecl (← withAttrs attrs decl) sorryValued
 
     | `(fh_item| theorem $n:ident $[$gs]? ($[$ps : $ts],*) -> $concl $[$wh]? $body:fh_fn_body) => do
         checkIdent n
