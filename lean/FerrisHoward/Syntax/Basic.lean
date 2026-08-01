@@ -559,6 +559,39 @@ syntax (name := fhMod) "mod " ident " { " fh_item* " } " : fh_item
 /-- `use a::b;` → `open a.b`. Rust-style renaming at use sites is M2 bridge work. -/
 syntax (name := fhUse) "use " fh_expr ";" : fh_item
 
+/-! ### Ambient variables (A2.4, F17, design §4.8)
+
+`var eps: Real;` is Lean's `variable`, which *is* F17's mention-based inclusion: a
+declaration gets an ambient variable exactly when it mentions it, and `include` is the
+escape for a hypothesis that is needed but unmentioned. Both are Lean commands, so both
+are stage one and free.
+
+**The annotation decides the binder.** A *carrier* — a kind (`Space`, `Sort`, `Prop`) or a
+structure (`impl Grp`) — is implicit, matching what `fn f<G>(…)` already produces and what
+Mathlib writes; anything else is an explicit value or hypothesis. That rule is what makes
+design §4.8's "inline generics shadow ambient `var`s" mean the same thing on both sides.
+
+**One deviation from design §4.8, and it is reversible.** Design writes the structure form
+as `var G: Grp;` and disambiguates it from `var eps: Real;` "by what the name resolves
+to". Name resolution needs the environment, which is stage two, and ADR-006 makes stage
+one load-bearing — so FH asks for the marker instead. `impl Grp` is Rust's own vocabulary
+with its actual Rust meaning ("some type implementing `Grp`"), design §5 having dropped
+`impl Trait` from return position, so the token was free. When a resolution mechanism
+exists the marker becomes *optional* rather than required, which is a non-breaking change
+— Ruling B's test, and the reason to require it now rather than guess.
+-/
+
+/-- `var x: T;` — an ambient variable. The annotation is a type expression or a kind. -/
+syntax (name := fhVar) "var " ident ": " fh_expr ";" : fh_item
+
+/-- `var G: impl Grp;` / `var R: impl CommRing + Finite;` — an ambient *carrier* with
+structure: `variable {G : Type _} [Grp G]`. -/
+syntax (name := fhVarImpl) "var " ident ": " "impl " fhBounds ";" : fh_item
+
+/-- `include h;` — F17's escape, for a hypothesis a declaration needs but does not
+mention. Lean's own command, with Lean's own rule. -/
+syntax (name := fhInclude) "include " ident,+ ";" : fh_item
+
 /-- `type X = e;` → `abbrev X := e`, or `def` under `#[def]` (design §3). -/
 syntax (name := fhType) "type " ident " = " fh_expr ";" : fh_item
 

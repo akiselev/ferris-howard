@@ -16,7 +16,8 @@
 | `in` as a binary operator outside loops | extension | F12 |
 | Comprehension braces `{x: A | P}` (Set/Subtype by expected type) | confined | F13 (as amended) |
 | `if h @ (cond)` hypothesis binding | extension | F15 |
-| Ambient `var` declarations, mention-based inclusion, `include` | confined | F17 |
+| Ambient `var` declarations, mention-based inclusion, `include` | confined — Rust has no ambient-declaration form. Landed M2 (A2.4) as Lean's own `variable`/`include`, whose mention rule *is* F17's. The annotation decides the binder: a carrier (a kind, or `impl C`) is implicit, matching what `fn f<G>(…)` produces; anything else is an explicit value or hypothesis | F17 |
+| `var G: impl Grp;` for the structure form, where design §4.8 writes `var G: Grp;` | confined — `impl Trait` is Rust's own vocabulary with its actual Rust meaning, and design §5 had already dropped it from return position. Telling `var G: Grp;` from `var eps: Real;` is name resolution, which is stage two, and ADR-006 makes stage one load-bearing. **Reversible:** when a resolution mechanism exists the marker becomes optional rather than required, which is non-breaking (Ruling B) | F17, design §4.8 |
 | `Space` kind vocabulary (`Space`, `Space<u>`, `Sort`, `Sort<u>`); trait names in annotation position (`var G: Grp;`) | confined — neither is Rust syntax in that position, so nothing that also parses as Rust changes meaning. `Space` is recognised by *name* rather than given a production, so no token is reserved; `Sort` needs one because Lean's lexer already makes it a keyword. Landed M2 (A2.4) for the kind half | F18 |
 | `theorem` as an item keyword | confined | standing decision |
 | `use lean::C;` brings a class's F16 method spellings into scope (`p.dvd(a)` is `p ∣ a` only after `use lean::Dvd;`) | confined — Rust has trait imports and this is the same rule applied to notation spellings; outside the import `.` is plain dot notation, unchanged | F16, design §6 |

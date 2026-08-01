@@ -6,6 +6,7 @@ import FerrisHoward.Bridge.Comprehension
 import FerrisHoward.Emit
 import FerrisHoward.Lint.Coercion
 import FerrisHoward.Lint.InstanceShadow
+import FerrisHoward.Lint.VarShadow
 import FerrisHoward.Lint.Todo
 import FerrisHoward.Report.Sorry
 

@@ -563,6 +563,37 @@ partial def expandItem (it : TSyntax `fh_item) (attrs : AttrSet := {}) : MacroM 
         let ns := usePath? ⟨path.raw⟩
         `(command| open $ns:ident)
 
+    | `(fh_item| var $x:ident : impl $bs;) => do
+        checkIdent x
+        unless attrs.lean.isEmpty && !attrs.defOptOut do
+          Macro.throwErrorAt it "FH: attributes are not supported on `var`"
+        -- "let G be a group": one declaration folding the carrier and its structure, which
+        -- is both the mathematician's phrasing and Mathlib's `variable {G : Type*}
+        -- [Group G]` house style (design §4.8).
+        let bounds ← bs.raw[0].getSepArgs.mapM fun b => do
+          let b ← expandExpr ⟨b⟩
+          `(bracketedBinderF| [$b $x])
+        `(command| variable {$x : Type _} $bounds*)
+
+    | `(fh_item| var $x:ident : $t;) => do
+        checkIdent x
+        unless attrs.lean.isEmpty && !attrs.defOptOut do
+          Macro.throwErrorAt it "FH: attributes are not supported on `var`"
+        -- The annotation decides the binder: a *kind* names a carrier, which is inferable
+        -- from the things that live in it and so implicit — the same binder `fn f<G>(…)`
+        -- produces, which is what makes design §4.8's shadowing rule mean one thing.
+        -- Anything else is a value or a hypothesis, and those are explicit.
+        let isCarrier := (kindOf? t).isSome || t.raw.isOfKind ``fhExprProp
+        let ty ← expandExpr t
+        if isCarrier then `(command| variable {$x : $ty}) else `(command| variable ($x : $ty))
+
+    | `(fh_item| include $xs,*;) => do
+        unless attrs.lean.isEmpty && !attrs.defOptOut do
+          Macro.throwErrorAt it "FH: attributes are not supported on `include`"
+        for x in xs.getElems do checkIdent x
+        let xs := xs.getElems
+        `(command| include $xs*)
+
     | `(fh_item| type $n:ident = $val;) => do
         checkIdent n
         let val ← expandExpr val
