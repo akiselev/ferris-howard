@@ -35,6 +35,10 @@ structure AttrSet where
   decreasingBy? : Option (TSyntax ``Lean.Parser.Tactic.tacticSeq) := none
   /-- `#[name(n)]`: the name an otherwise-anonymous `impl` instance takes. -/
   name? : Option Ident := none
+  /-- `#[universes(u, v)]`: the universe names `Space<u>` and `Sort<u>` may then use
+  (F18). Without one, `Space` takes a hole and Lean binds the universe itself, which is
+  the common case; this is for when a declaration needs to *name* the level. -/
+  universes : Array Ident := #[]
   /-- Attributes passed through verbatim (design §3's `#[attr]` → `@[attr]` row). -/
   «lean» : TSyntaxArray ``attrInstance := #[]
   deriving Inhabited
@@ -65,6 +69,17 @@ private def addAttr (s : AttrSet) (a : TSyntax `fh_attr) : MacroM AttrSet :=
           match _args.getElems with
           | #[e] => do return { s with terminationBy? := some (← expandExpr e) }
           | _ => Macro.throwErrorAt a "FH: `#[terminates_by(…)]` takes one measure expression"
+        else if n.getId == `universes then
+          -- F18's explicit-universe escape. FH turns off `autoImplicit`, which turns off
+          -- universe auto-binding too, so a *named* level has to be declared — this is
+          -- the declaration.
+          let us ← _args.getElems.mapM fun arg => do
+            let `(fh_expr| $u:ident) := arg
+              | Macro.throwErrorAt arg "FH: `#[universes(…)]` takes universe names"
+            pure u
+          if us.isEmpty then
+            Macro.throwErrorAt a "FH: `#[universes(…)]` takes at least one universe name"
+          return { s with universes := s.universes ++ us }
         else if n.getId == `name then
           -- design §3: `#[name(…)]` names the instance an `impl` would otherwise leave
           -- anonymous.
@@ -100,7 +115,13 @@ private def withAttrs (attrs : AttrSet) (d : TSyntax `command) : MacroM (TSyntax
   if let some n := attrs.name? then
     Macro.throwErrorAt n
       "FH: `#[name(…)]` names an `impl`'s instance; every other item already has a name"
-  if attrs.lean.isEmpty && !attrs.isPartial && !attrs.isNoncomputable then return d
+  -- `#[universes(u, v)]` is a `universe … in` wrapper rather than a modifier: it declares
+  -- names, and the declaration it wraps then uses them.
+  let withUniverses (d : TSyntax `command) : MacroM (TSyntax `command) := do
+    if attrs.universes.isEmpty then pure d
+    else `(command| universe $(attrs.universes)* in $d)
+  if attrs.lean.isEmpty && !attrs.isPartial && !attrs.isNoncomputable then
+    return ← withUniverses d
   unless d.raw.getKind == ``Lean.Parser.Command.declaration do
     Macro.throwError "FH: attributes are not supported on this item"
   -- `declModifiers` is a fixed-shape node: [doc, attributes, _, _, noncomputable, unsafe,
@@ -119,7 +140,7 @@ private def withAttrs (attrs : AttrSet) (d : TSyntax `command) : MacroM (TSyntax
     if attrs.isNoncomputable then m := m.setArg 4 km[4]
     if attrs.isPartial then m := m.setArg 6 km[6]
     pure m
-  return ⟨d.raw.setArg 0 mods⟩
+  withUniverses ⟨d.raw.setArg 0 mods⟩
 
 /-! ## Binders -/
 

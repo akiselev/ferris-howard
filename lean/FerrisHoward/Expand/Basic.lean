@@ -27,6 +27,24 @@ Never re-parse strings.
 namespace FerrisHoward
 open Lean Lean.Parser.Term
 
+/-- The kind vocabulary (F18): `Space` for "a space of things", `Sort` for the
+full-generality escape. `Prop` is a Lean keyword and has its own production.
+
+Words rather than keywords — recognised by name at expansion time, so no token is
+reserved and nothing in Lean's or Mathlib's namespace is shadowed. The cost is that a
+declaration *named* `Space` is unreachable from FH, which is the same trade `Prop` already
+makes and is recorded on the differences page. -/
+def kindWord? (x : Ident) : Option Name :=
+  if x.getId == `Space then some `Space else none
+
+/-- The same question asked of an expression: `Space` is an identifier, `Sort` is a
+keyword with its own node. -/
+def kindOf? (e : TSyntax `fh_expr) : Option Name :=
+  if e.raw.isOfKind ``fhExprSort then some `Sort
+  -- `fhExprIdent` is a node wrapping the ident, not the ident itself
+  else if e.raw.isOfKind ``fhExprIdent then kindWord? ⟨e.raw[0]⟩
+  else none
+
 /-- The statement forms, each of which is a Lean `doElem` and so also makes its block a
 `do` block (A2.3). Kept beside `?` rather than folded into it because the two ask
 different questions: this one decides whether to open a `do`, and `containsTry` polices
@@ -120,6 +138,13 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
     match e with
     -- user syntax, untouched: the ident node keeps the user's span
     | `(fh_expr| $x:ident) => do
+        -- The kind vocabulary (F18). `Space` replaces `Type` — "let A be a space of
+        -- things" rather than a prover-internals term. Unapplied it takes a hole, and
+        -- Lean binds the universe for the declaration, which is what
+        -- "universe-polymorphic" means in practice and what Mathlib's `Type*` does. FH
+        -- spells it with a hole so the core library needs no Mathlib import; the
+        -- elaborated result is identical.
+        if kindWord? x |>.isSome then return ← `(Type _)
         checkIdent x
         -- Lean's lexer takes `p.dvd` as a *single* identifier, so the `.` production below
         -- never sees it and the F16 table has to apply here too. Splitting the last
@@ -184,10 +209,22 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
         -- ascription is a coercion site, and F9 says coercions are written
         | none => `({ $fields:structInstField,* : $ty })
     | `(fh_expr| { $inner }) => expandParenthesised inner
+    | `(fh_expr| Sort) => `(Sort _)
     | `(fh_expr| $f<$args,*>) => do
-        let f ← expandExpr f
-        let args ← args.getElems.mapM expandExpr
-        `($f $args*)
+        -- `Space<u>` / `Sort<u>`: the explicit-universe forms, which `#[universes(u)]`
+        -- declares. Everything else is ordinary application.
+        if let some k := kindOf? f then
+          let #[u] := args.getElems
+            | Macro.throwErrorAt f s!"FH: `{k}<…>` takes one universe name"
+          let `(fh_expr| $u:ident) := u
+            | Macro.throwErrorAt u
+                s!"FH: `{k}<…>` takes a universe name, which `#[universes(…)]` declares"
+          let lvl := mkIdentFrom u u.getId
+          if k == `Sort then `(Sort $lvl) else `(Type $lvl)
+        else
+          let f ← expandExpr f
+          let args ← args.getElems.mapM expandExpr
+          `($f $args*)
     | `(fh_expr| $lhs :: $field:ident) => do
         joinPath (← expandExpr lhs) field e
     | `(fh_expr| match $scrut { $[$pats => $rhss],* }) => do

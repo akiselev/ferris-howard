@@ -67,9 +67,16 @@ syntax:max (name := fhExprIdent) ident : fh_expr
 
 /-- `Prop`, the kind of claims. It needs its own production because `Prop` is a Lean
 *keyword* and so never arrives as an identifier. Design §4.3 keeps the spelling as-is: it
-already says what it means. (`Space`, F18's replacement for `Type`, is an ordinary
-identifier and arrives with A2.4.) -/
+already says what it means.
+
+`Space` and `Sort`, the other two kind words (F18), are ordinary identifiers and are
+recognised in `expandExpr` rather than here — see the note there. -/
 syntax:max (name := fhExprProp) "Prop" : fh_expr
+
+/-- `Sort`, the full-generality kind (F18). Like `Prop` it is a Lean keyword and so never
+arrives as an identifier, which is why it needs a production; `Space`, which is not, does
+not. `Sort<u>` is the applied form and goes through generic application. -/
+syntax:max (name := fhExprSort) "Sort" : fh_expr
 
 /-- A numeric literal. FH introduces no literal syntax of its own: elaboration is
 Lean's `OfNat` (Ruling C item five, the landed §9.5 amendment). -/
