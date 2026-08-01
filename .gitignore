@@ -1,0 +1,9 @@
+# Lean / Lake
+lean/.lake/
+
+# Rust
+target/
+
+# Editors
+.vscode/
+.idea/
