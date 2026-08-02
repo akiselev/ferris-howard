@@ -18,6 +18,7 @@ use std::process::ExitCode;
 use fh_atlas::dict::{Transported, dictionary, frontier, transport};
 use fh_atlas::equiv::EquivIndex;
 use fh_atlas::graph::{Graph, Lens};
+use fh_atlas::logical::LogicalGraph;
 use fh_atlas::skel::erase::Level;
 use fh_atlas::skel::index::{IndexConfig, SkeletonIndex};
 
@@ -33,6 +34,8 @@ queries:
                       whitelist; exits non-zero if any are found
   equivalent <decl>   declarations whose statements normalize to the same thing
   classes             every equivalence class of size > 1, largest first
+  relations [d|a b]   proved Iff/implication edges: densest heads, one theorem's
+                      edges, or a chain of proved steps between two `Head/arity`
   dictionary <A> <B>  skeleton-matched rows between two theories, plus what is unmatched
   transport <l> <r> <s>  apply the row (l ~ r) to statement s
   frontier            theory pairs that look alike and do not cite each other
@@ -204,6 +207,74 @@ fn run(args: &[String]) -> Result<Report, String> {
             let mut out = String::new();
             for m in members {
                 out.push_str(&format!("{:<52} {}\n", m, idx.module_of(&m).unwrap_or("")));
+            }
+            Ok(out.into())
+        }
+        // The proved layer, kept separate from `equivalent`'s structural one on purpose:
+        // one reports equality of a canonical form, the other reports that somebody
+        // proved something. Merging the two output shapes would merge the claims.
+        "relations" => {
+            let idx = EquivIndex::build(&input).map_err(|e| e.to_string())?;
+            let g = LogicalGraph::build(&idx);
+            let s = g.stats();
+            let mut out = format!(
+                "{} proved edges over {} heads — {} Iff, {} implication\n\
+                 {} sides unsupported (flex head), {} rejected as non-Prop\n\n",
+                g.len(),
+                g.heads(),
+                s.iff_edges,
+                s.implication_edges,
+                s.flex_head_sides,
+                s.non_prop_sides
+            );
+            match rest {
+                // No argument: where the corpus's logical structure is densest.
+                [] => {
+                    for ((h, arity), n) in g.busiest(top) {
+                        out.push_str(&format!("{n:>6}  {h}/{arity}\n"));
+                    }
+                }
+                // A declaration name: the edges that theorem itself proves.
+                [decl] => {
+                    let edges = g.edges_of(decl);
+                    if edges.is_empty() {
+                        out.push_str(&format!(
+                            "`{decl}` states neither an `Iff` nor an implication between \
+                             propositions, so it contributes no proved edge\n"
+                        ));
+                    }
+                    for r in edges {
+                        out.push_str(&format!("{}\n", r.explain()));
+                    }
+                }
+                // Two heads: a chain of proved steps, with its caveat attached.
+                [from, to] => {
+                    let parse = |s: &str| -> Result<(String, usize), String> {
+                        let (h, a) = s.rsplit_once('/').ok_or_else(|| {
+                            format!("`{s}` must be a head and arity, e.g. `LE.le/4`")
+                        })?;
+                        Ok((
+                            h.to_string(),
+                            a.parse().map_err(|_| "arity must be a number")?,
+                        ))
+                    };
+                    let (a, b) = (parse(from)?, parse(to)?);
+                    match g.path(&a, &b) {
+                        None => out.push_str("no chain of proved edges in this slice\n"),
+                        Some(c) if c.is_empty() => out.push_str("the same head\n"),
+                        Some(chain) => {
+                            for r in &chain {
+                                out.push_str(&format!("{}\n", r.explain()));
+                            }
+                            out.push_str(
+                                "\nEach step is proved. The chain is not: heads are \
+                                 carrier-blind, so the steps need not share a carrier. \
+                                 Read the witnesses' namespaces.\n",
+                            );
+                        }
+                    }
+                }
+                _ => return Err("relations takes zero, one, or two arguments".into()),
             }
             Ok(out.into())
         }

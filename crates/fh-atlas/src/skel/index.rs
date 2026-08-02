@@ -125,6 +125,7 @@ impl Postings {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct IndexConfig {
     pub min_concrete_closed: u32,
     pub min_concrete_open: u32,
@@ -137,6 +138,11 @@ pub struct IndexConfig {
     pub lgg_level: Level,
     pub min_common: u32,
     pub min_retention: f32,
+    /// Ablation knob: query source B with the raw root instead of the `Presentation`
+    /// erasure the postings are keyed at. `true` is the repaired behaviour; `false`
+    /// reproduces the defect, which is the only honest way to measure what the repair was
+    /// worth without reverting it.
+    pub source_b_at_build_level: bool,
 }
 
 impl Default for IndexConfig {
@@ -151,6 +157,7 @@ impl Default for IndexConfig {
             lgg_level: Level::Carriers,
             min_common: 6,
             min_retention: 0.30,
+            source_b_at_build_level: true,
         }
     }
 }
@@ -185,10 +192,17 @@ pub struct SkeletonIndex {
     by_name: HashMap<String, DeclId>,
     roots: Vec<TermId>,
     shape: Vec<TermId>,
+    /// The `Presentation` erasure of each root — the level source B's postings are keyed
+    /// at. Kept rather than recomputed because `candidates` takes `&self` and erasure
+    /// needs `&mut Arena`; discarding it is what let the query drift to the raw root.
+    pres: Vec<TermId>,
     shape_bucket: HashMap<TermId, Vec<DeclId>>,
     concrete: Postings,
     shape_sub: Postings,
     degraded_spines: u64,
+    /// The config the postings were built with. Kept so a diagnostic can reproduce the
+    /// size floors, and so a result can name the scorer that produced it.
+    build_cfg: IndexConfig,
 }
 
 impl SkeletonIndex {
@@ -243,6 +257,7 @@ impl SkeletonIndex {
         let mut cache = EraseCache::new();
 
         let mut shape = Vec::with_capacity(n);
+        let mut pres_of = Vec::with_capacity(n);
         let mut shape_bucket: HashMap<TermId, Vec<DeclId>> = HashMap::new();
         let mut concrete_pairs = Vec::new();
         let mut shape_pairs = Vec::new();
@@ -253,6 +268,7 @@ impl SkeletonIndex {
             let pres = erase(&mut arena, &sigs, &mut cache, t, Level::Presentation);
             let sh = erase(&mut arena, &sigs, &mut cache, t, Level::Shape);
             shape.push(sh);
+            pres_of.push(pres);
             shape_bucket.entry(sh).or_default().push(id);
 
             let mut subs = BTreeSet::new();
@@ -303,10 +319,12 @@ impl SkeletonIndex {
             by_name,
             roots,
             shape,
+            pres: pres_of,
             shape_bucket,
             concrete,
             shape_sub,
             degraded_spines,
+            build_cfg: cfg.clone(),
         })
     }
 
@@ -324,6 +342,16 @@ impl SkeletonIndex {
     }
     pub fn name_of(&self, d: DeclId) -> &str {
         &self.names[d.0 as usize]
+    }
+    /// Positional kind and module, so a caller can restrict a sample to *claims* before
+    /// measuring anything over it. A uniform sample of a working slice is two-thirds
+    /// `Init`/`Std`/`Lean` and half non-theorems, which is how a recall figure ends up
+    /// describing Lean's metaprogramming API rather than mathematics.
+    pub fn kind_of_at(&self, i: usize) -> &str {
+        &self.kinds[i]
+    }
+    pub fn module_of_at(&self, i: usize) -> &str {
+        &self.modules[i]
     }
     pub fn signature_count(&self) -> usize {
         self.sigs.len()
@@ -389,10 +417,21 @@ impl SkeletonIndex {
 
         // B and C — subterm overlap. Rarest keys first, so the budget is spent on the
         // most informative overlaps rather than on whatever came first.
-        let root = self.roots[q.0 as usize];
+        // Source B is keyed on subterms of the *presentation erasure* (see `build`), so
+        // it must be queried with the same. Querying with the raw root instead made the
+        // lookup miss almost always — the arena is hash-consed, so a term that differs at
+        // all differs in its `TermId`. Measured on the 131k algebra slice: 6.7% of a
+        // query's subterms hit a posting, and 60.6% of declarations got no source-B
+        // candidate whatsoever. At the level the postings were actually built at, 88.2%
+        // and 6.9%.
+        let pres = if cfg.source_b_at_build_level {
+            self.pres[q.0 as usize]
+        } else {
+            self.roots[q.0 as usize]
+        };
         let mut keyed: Vec<(f32, &[DeclId], u8)> = Vec::new();
         for (post, src, term) in [
-            (&self.concrete, Sources::SUBTERM, root),
+            (&self.concrete, Sources::SUBTERM, pres),
             (&self.shape_sub, Sources::SHAPE_SUBTERM, sh),
         ] {
             let mut subs = BTreeSet::new();
@@ -466,9 +505,64 @@ impl SkeletonIndex {
                 score,
             });
         }
-        out.sort_by(|a, b| b.score.total_cmp(&a.score).then(a.name.cmp(&b.name)));
+        // Ties are the normal case, not the exception — the score is a product of a few
+        // coarse factors, so whole families land on the same value. Breaking straight to
+        // the name meant ASCII decided the top of the list: `dvd_trans` sits in a
+        // four-way tie for `le_trans` and lowercase sorts after every capitalised name,
+        // so the flagship pair fell out of the top five and took a gate with it.
+        //
+        // So spend the content-bearing signals first. `common` prefers the candidate
+        // sharing more actual structure; `vars` prefers the one that needed fewer
+        // abstractions to get there. The name remains last, because a total order has to
+        // end somewhere and a deterministic one is worth more than a prettier tie-break.
+        out.sort_by(|a, b| {
+            b.score
+                .total_cmp(&a.score)
+                .then(b.common.cmp(&a.common))
+                .then(a.vars.cmp(&b.vars))
+                .then(a.name.cmp(&b.name))
+        });
         out.truncate(top);
         Ok(out)
+    }
+
+    /// Diagnostic for the normalization-symmetry question: how many of a declaration's
+    /// subterms actually hit a posting, computed both the way `candidates` asks today
+    /// (subterms of the raw root) and the way the postings were built (subterms of the
+    /// presentation erasure). Returns `((keys, hits), (keys, hits))`.
+    ///
+    /// Exists because "the query and the index disagree about normalization" is a claim
+    /// that should be measured before it is repaired.
+    pub fn subterm_key_hits(&mut self, i: usize) -> ((usize, usize), (usize, usize)) {
+        let root = self.roots[i];
+        let pres = erase(
+            &mut self.arena,
+            &self.sigs,
+            &mut self.cache,
+            root,
+            Level::Presentation,
+        );
+        let count = |term: TermId| {
+            let mut subs = BTreeSet::new();
+            self.arena.subterms(term, &mut subs);
+            let (mut keys, mut hits) = (0, 0);
+            for s in subs {
+                let floor = if self.arena.is_closed(s) {
+                    self.build_cfg.min_concrete_closed
+                } else {
+                    self.build_cfg.min_concrete_open
+                };
+                if self.arena.size(s) < floor {
+                    continue;
+                }
+                keys += 1;
+                if self.concrete.get(s).is_some() {
+                    hits += 1;
+                }
+            }
+            (keys, hits)
+        };
+        (count(root), count(pres))
     }
 
     fn level_term(&mut self, d: DeclId, level: Level) -> TermId {

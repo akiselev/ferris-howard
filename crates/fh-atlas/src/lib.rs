@@ -7,5 +7,7 @@ pub mod dict;
 pub mod equiv;
 pub mod graph;
 pub mod json;
+pub mod logical;
+pub mod relation;
 pub mod skel;
 pub mod statement;

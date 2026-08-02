@@ -167,6 +167,25 @@ impl EquivIndex {
         self.is_prop.iter().filter(|&&p| p).count()
     }
 
+    /// Positional access, for a consumer that walks the whole slice rather than asking
+    /// about a name. `logical.rs` builds a second graph over these terms and would
+    /// otherwise have to re-parse the corpus into an arena of its own.
+    pub fn arena(&self) -> &Arena {
+        &self.arena
+    }
+    pub fn stmt_at(&self, i: usize) -> TermId {
+        self.stmts[i]
+    }
+    pub fn name_at(&self, i: usize) -> &str {
+        &self.names[i]
+    }
+    pub fn kind_at(&self, i: usize) -> &str {
+        &self.kinds[i]
+    }
+    pub fn is_prop_at(&self, i: usize) -> bool {
+        self.is_prop[i]
+    }
+
     fn id_of(&self, name: &str) -> Result<usize, Unknown> {
         self.by_name
             .get(name)

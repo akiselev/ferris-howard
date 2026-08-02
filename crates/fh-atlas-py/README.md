@@ -8,7 +8,7 @@ import fh_atlas as fa
 corpus = fa.Corpus.load("/tmp/mathlib-algebra.jsonl")    # ~5 s, once
 len(corpus)                                              # 131062
 corpus.walls(lens="proof", top=3)                        # [('Eq', 53282), ('Nat', 39552), …]
-[n.name for n in corpus.similar("le_trans", top=4)]      # ['Dvd.dvd.trans', …, 'dvd_trans']
+[n.name for n in corpus.similar("le_trans", top=4)]      # ['LE.le.trans', "ge_trans'", 'Dvd.dvd.trans', …]
 corpus.equivalent("le_antisymm", level="exact")          # ['LE.le.antisymm', 'eq_of_le_of_ge']
 corpus.transport("le_trans", "dvd_trans", "le_trans")    # Transported(exists=True, name="Dvd.dvd.trans")
 ```

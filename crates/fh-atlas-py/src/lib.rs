@@ -58,6 +58,8 @@ use std::sync::{Mutex, MutexGuard};
 use ::fh_atlas::dict::{self, Row as CoreRow, TransportError, Transported as CoreTransported};
 use ::fh_atlas::equiv::{EquivIndex, Unknown};
 use ::fh_atlas::graph::{Decl as CoreDecl, Graph, Lens};
+use ::fh_atlas::logical::LogicalGraph;
+use ::fh_atlas::relation::{Evidence, Relation as CoreRelation, Warrant};
 use ::fh_atlas::skel::erase::{EraseCache, Level, Signatures, erase};
 use ::fh_atlas::skel::index::{IndexConfig, Neighbour as CoreNeighbour, SkeletonIndex, Sources};
 use ::fh_atlas::skel::lgg;
@@ -185,7 +187,7 @@ pub struct Generalization {
     /// Variables standing for something with loose de Bruijn indices. Such a row reads fine
     /// and is **not** transportable; reported, never hidden.
     pub scoped_vars: u32,
-    /// `common / max(|x|,|y|)`, in `[0,1]`; exactly 1 when the statements are equal.
+    /// `common / max(concrete(x), concrete(y))`, in `[0,1]`; exactly 1 when the inputs are equal.
     pub retention: f32,
 }
 
@@ -203,6 +205,128 @@ impl Generalization {
     }
 }
 
+/// One typed edge of the theory map (Engine 1 §5).
+///
+/// `warrant` is the field to branch on, and it is derived from `kind` rather than stored
+/// beside it: `"proved"` means a Lean theorem says so and its name is in `evidence`,
+/// `"structural"` means two canonical encodings compared equal, `"heuristic"` means a
+/// ranking produced it. Engine 1's fifth non-goal is that these must not share a result
+/// type, so a caller writing `if r.warrant == "proved"` is doing the thing the design
+/// asks for, and a caller ignoring the field is making a claim the engine did not.
+#[pyclass(module = "fh_atlas", frozen, get_all)]
+pub struct Relation {
+    pub left: String,
+    pub right: String,
+    /// One of the fifteen versioned kinds, e.g. `"ProvedIff"`.
+    pub kind: String,
+    /// `"both"`, `"left_to_right"` or `"right_to_left"`.
+    pub direction: String,
+    /// `"proved"`, `"structural"` or `"heuristic"`.
+    pub warrant: String,
+    /// Which sort of evidence, e.g. `"lean_theorem"`.
+    pub evidence: String,
+    /// The theorem's name when `evidence == "lean_theorem"`, else `None`. `None` exactly
+    /// when the edge is not witnessed by a named declaration.
+    pub witness: Option<String>,
+    /// Which code produced this edge, so a stored map can be re-derived or distrusted.
+    pub generator: String,
+    pub schema_version: u32,
+}
+
+#[pymethods]
+impl Relation {
+    /// An explanation built from the stored evidence, never from free prose — Engine 1
+    /// §10's response to "agent explanations exceed evidence".
+    fn explain(&self) -> String {
+        let arrow = match self.direction.as_str() {
+            "left_to_right" => "->",
+            "right_to_left" => "<-",
+            _ => "~",
+        };
+        match &self.witness {
+            Some(w) => format!(
+                "{} {arrow} {} [{}, {}]: proved by `{w}`",
+                self.left, self.right, self.kind, self.warrant
+            ),
+            None => format!(
+                "{} {arrow} {} [{}, {}]: {}",
+                self.left, self.right, self.kind, self.warrant, self.evidence
+            ),
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Relation({} {} {}, kind={:?}, warrant={:?}, witness={:?})",
+            self.left,
+            match self.direction.as_str() {
+                "left_to_right" => "->",
+                "right_to_left" => "<-",
+                _ => "~",
+            },
+            self.right,
+            self.kind,
+            self.warrant,
+            self.witness
+        )
+    }
+}
+
+/// What the proved-edge extraction actually saw. Reported rather than summarised: a
+/// graph built from 4,330 `Iff`s and one built from twelve support different claims.
+#[pyclass(module = "fh_atlas", frozen, get_all)]
+pub struct LogicalStats {
+    pub edges: usize,
+    pub heads: usize,
+    pub theorems_scanned: usize,
+    pub iff_edges: usize,
+    pub implication_edges: usize,
+    /// Sides whose head is a bound variable, needing higher-order matching. Surfaced
+    /// because "we did not look" and "there is nothing there" are different answers.
+    pub flex_head_sides: usize,
+    /// Non-dependent `Pi`s rejected because a side does not head a proposition.
+    pub non_prop_sides: usize,
+    pub prop_heads: usize,
+}
+
+#[pymethods]
+impl LogicalStats {
+    fn __repr__(&self) -> String {
+        format!(
+            "LogicalStats(edges={}, heads={}, iff={}, implication={}, flex_head={}, \
+             non_prop={})",
+            self.edges,
+            self.heads,
+            self.iff_edges,
+            self.implication_edges,
+            self.flex_head_sides,
+            self.non_prop_sides
+        )
+    }
+}
+
+fn to_py_relation(r: &CoreRelation) -> Relation {
+    Relation {
+        left: r.left.clone(),
+        right: r.right.clone(),
+        kind: r.kind.as_str().to_string(),
+        direction: r.direction.as_str().to_string(),
+        warrant: match r.warrant() {
+            Warrant::Proved => "proved",
+            Warrant::Structural => "structural",
+            Warrant::Heuristic => "heuristic",
+        }
+        .to_string(),
+        evidence: r.evidence.tag().to_string(),
+        witness: match &r.evidence {
+            Evidence::LeanTheorem { name } => Some(name.clone()),
+            _ => None,
+        },
+        generator: r.generator.clone(),
+        schema_version: r.schema_version,
+    }
+}
+
 fn truncate(s: &str, n: usize) -> String {
     match s.char_indices().nth(n) {
         Some((i, _)) => format!("{}…", &s[..i]),
@@ -217,7 +341,7 @@ pub struct Neighbour {
     pub name: String,
     pub module: String,
     pub kind: String,
-    /// `common / max(|x|,|y|)` of the anti-unification against the query.
+    /// `common / max(concrete(x), concrete(y))` of the anti-unification against the query.
     pub retention: f32,
     pub common: u32,
     pub vars: u32,
@@ -468,6 +592,9 @@ pub struct Corpus {
     skel: Mutex<Option<Skel>>,
     index: Mutex<Option<SkeletonIndex>>,
     equiv: Mutex<Option<EquivIndex>>,
+    /// The proved-edge layer (Engine 1 §6 C3). Built on top of `equiv`'s arena, so it is
+    /// cheap once that exists — 0.2 s against the equivalence index's 6.3 s.
+    logical: Mutex<Option<LogicalGraph>>,
 }
 
 /// The statement layer: built lazily, mutated by every erasure and every generalization.
@@ -603,6 +730,7 @@ impl Corpus {
             skel: Mutex::new(None),
             index: Mutex::new(None),
             equiv: Mutex::new(None),
+            logical: Mutex::new(None),
         })
     }
 
@@ -817,6 +945,86 @@ impl Corpus {
             idx.similar_brute(name, top, &cfg)
                 .map_err(|_| self.not_indexed(name))
         })?)
+    }
+
+    // -----------------------------------------------------------------------
+    // The proved layer — Engine 1 §6 C3 / B5's E2
+    // -----------------------------------------------------------------------
+
+    /// What the proved-edge extraction saw over this slice.
+    fn logical_stats(&self, py: Python<'_>) -> PyResult<LogicalStats> {
+        py.detach(|| -> Result<LogicalStats, SkelFail> {
+            let guard = self.logical()?;
+            let g = guard.as_ref().expect("logical() builds it");
+            let s = g.stats();
+            Ok(LogicalStats {
+                edges: g.len(),
+                heads: g.heads(),
+                theorems_scanned: s.theorems_scanned,
+                iff_edges: s.iff_edges,
+                implication_edges: s.implication_edges,
+                flex_head_sides: s.flex_head_sides,
+                non_prop_sides: s.non_prop_sides,
+                prop_heads: s.prop_heads,
+            })
+        })
+        .map_err(Into::into)
+    }
+
+    /// The proved `Iff` and implication edges a theorem contributes.
+    ///
+    /// Empty for a theorem stating neither — which is most of them, and is an answer
+    /// rather than a failure.
+    fn relations(&self, py: Python<'_>, theorem: &str) -> PyResult<Vec<Relation>> {
+        self.known(theorem)?;
+        py.detach(|| -> Result<Vec<Relation>, SkelFail> {
+            let guard = self.logical()?;
+            let g = guard.as_ref().expect("logical() builds it");
+            Ok(g.edges_of(theorem).iter().map(to_py_relation).collect())
+        })
+        .map_err(Into::into)
+    }
+
+    /// The heads carrying the most proved edges — where reformulations accumulate.
+    #[pyo3(signature = (top = 20))]
+    fn busiest_heads(&self, py: Python<'_>, top: usize) -> PyResult<Vec<(String, usize, usize)>> {
+        py.detach(|| -> Result<Vec<(String, usize, usize)>, SkelFail> {
+            let guard = self.logical()?;
+            let g = guard.as_ref().expect("logical() builds it");
+            Ok(g.busiest(top)
+                .into_iter()
+                .map(|((h, arity), n)| (h, arity, n))
+                .collect())
+        })
+        .map_err(Into::into)
+    }
+
+    /// A shortest chain of proved edges between two `(head, arity)` nodes.
+    ///
+    /// **Each step is proved; the chain is not.** Heads are carrier-blind, so a chain may
+    /// compose a theorem about `BitVec` with one about `Nat` — measured, not
+    /// hypothetical. Read `witness` on each step: differing namespaces mean the chain
+    /// does not compose, and establishing that it does is elaboration (Engine 1 C6).
+    /// Returns `None` when no chain exists, which is a complete answer rather than a
+    /// budget running out.
+    fn relation_path(
+        &self,
+        py: Python<'_>,
+        from_head: &str,
+        from_arity: usize,
+        to_head: &str,
+        to_arity: usize,
+    ) -> PyResult<Option<Vec<Relation>>> {
+        py.detach(|| -> Result<Option<Vec<Relation>>, SkelFail> {
+            let guard = self.logical()?;
+            let g = guard.as_ref().expect("logical() builds it");
+            Ok(g.path(
+                &(from_head.to_string(), from_arity),
+                &(to_head.to_string(), to_arity),
+            )
+            .map(|c| c.iter().map(to_py_relation).collect()))
+        })
+        .map_err(Into::into)
     }
 
     // -----------------------------------------------------------------------
@@ -1059,6 +1267,20 @@ impl Corpus {
         Ok(guard)
     }
 
+    /// The proved-edge layer. Built from [`Corpus::equivalences`] rather than from the
+    /// source, so it inherits that arena instead of parsing the slice a fourth time —
+    /// and so a session that asks for a relation pays the equivalence index's 6.3 s
+    /// first, whether or not it asked for one.
+    fn logical(&self) -> Result<MutexGuard<'_, Option<LogicalGraph>>, SkelFail> {
+        let mut guard = self.logical.lock().map_err(|_| SkelFail::Poisoned)?;
+        if guard.is_none() {
+            let equiv = self.equivalences()?;
+            let idx = equiv.as_ref().expect("equivalences() builds it");
+            *guard = Some(LogicalGraph::build(idx));
+        }
+        Ok(guard)
+    }
+
     /// Why a name the graph knows is absent from an index.
     ///
     /// The indexes skip rows whose statement is missing or unparseable; the graph keeps
@@ -1131,6 +1353,8 @@ fn fh_atlas(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Corpus>()?;
     m.add_class::<Decl>()?;
     m.add_class::<Generalization>()?;
+    m.add_class::<Relation>()?;
+    m.add_class::<LogicalStats>()?;
     m.add_class::<Neighbour>()?;
     m.add_class::<Row>()?;
     m.add_class::<Dictionary>()?;

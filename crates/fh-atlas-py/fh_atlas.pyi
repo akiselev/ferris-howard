@@ -86,6 +86,73 @@ class Decl:
 
     def __repr__(self) -> str: ...
 
+class Relation:
+    """One typed edge of the theory map (Engine 1 §5).
+
+    Branch on `warrant`. `"proved"` means a Lean theorem says so and `witness` names it;
+    `"structural"` means two canonical encodings compared equal; `"heuristic"` means a
+    ranking produced it. Engine 1's fifth non-goal is that these must not share a result
+    type, so ignoring this field is making a claim the engine did not.
+    """
+
+    @property
+    def left(self) -> str: ...
+    @property
+    def right(self) -> str: ...
+    @property
+    def kind(self) -> str:
+        """One of the fifteen versioned kinds, e.g. `"ProvedIff"`."""
+
+    @property
+    def direction(self) -> str:
+        """`"both"`, `"left_to_right"` or `"right_to_left"`."""
+
+    @property
+    def warrant(self) -> str:
+        """`"proved"`, `"structural"` or `"heuristic"`."""
+
+    @property
+    def evidence(self) -> str:
+        """Which sort of evidence, e.g. `"lean_theorem"`."""
+
+    @property
+    def witness(self) -> str | None:
+        """The theorem's name when `evidence == "lean_theorem"`, else `None`."""
+
+    @property
+    def generator(self) -> str: ...
+    @property
+    def schema_version(self) -> int: ...
+    def explain(self) -> str:
+        """An explanation built from the stored evidence, never from free prose."""
+
+
+class LogicalStats:
+    """What the proved-edge extraction actually saw over a slice."""
+
+    @property
+    def edges(self) -> int: ...
+    @property
+    def heads(self) -> int: ...
+    @property
+    def theorems_scanned(self) -> int: ...
+    @property
+    def iff_edges(self) -> int: ...
+    @property
+    def implication_edges(self) -> int: ...
+    @property
+    def flex_head_sides(self) -> int:
+        """Sides whose head is a bound variable, needing higher-order matching. Surfaced
+        because "we did not look" and "there is nothing there" are different answers."""
+
+    @property
+    def non_prop_sides(self) -> int:
+        """Non-dependent `Pi`s rejected because a side does not head a proposition."""
+
+    @property
+    def prop_heads(self) -> int: ...
+
+
 class Generalization:
     """The least general generalization of two statements, with the numbers that rank it."""
 
@@ -109,7 +176,7 @@ class Generalization:
 
     @property
     def retention(self) -> float:
-        """`common / max(|x|,|y|)`, in `[0,1]`; exactly 1 when the statements are equal."""
+        """`common / max(concrete(x), concrete(y))`, in `[0,1]`; exactly 1 when the inputs are equal."""
 
     def __repr__(self) -> str: ...
 
@@ -124,7 +191,7 @@ class Neighbour:
     def kind(self) -> str: ...
     @property
     def retention(self) -> float:
-        """`common / max(|x|,|y|)` of the anti-unification against the query."""
+        """`common / max(concrete(x), concrete(y))` of the anti-unification against the query."""
 
     @property
     def common(self) -> int: ...
@@ -387,6 +454,31 @@ class Corpus:
         prefilter that shares the prefilter's blind spots is not a measurement. Ranked by
         retention alone, where `similar` ranks by score, so the two orders differ on
         purpose. Costs one anti-unification per declaration in the slice.
+        """
+
+    def logical_stats(self) -> LogicalStats:
+        """What the proved-edge extraction saw over this slice."""
+
+    def relations(self, theorem: str) -> list[Relation]:
+        """The proved `Iff` and implication edges a theorem contributes.
+
+        Empty for a theorem stating neither — which is most of them, and is an answer
+        rather than a failure.
+        """
+
+    def busiest_heads(self, top: int = 20) -> list[tuple[str, int, int]]:
+        """`(head, arity, edge count)`, densest first — where reformulations accumulate."""
+
+    def relation_path(
+        self, from_head: str, from_arity: int, to_head: str, to_arity: int
+    ) -> list[Relation] | None:
+        """A shortest chain of proved edges between two `(head, arity)` nodes.
+
+        **Each step is proved; the chain is not.** Heads are carrier-blind, so a chain may
+        compose a theorem about `BitVec` with one about `Nat` — measured, not
+        hypothetical. Read `witness` on each step: differing namespaces mean it does not
+        compose. `None` means no chain exists, which is complete rather than a budget
+        running out.
         """
 
     def equivalent(self, name: str, level: Level = "instances") -> list[str]:

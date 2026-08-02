@@ -46,6 +46,7 @@ Everything below must be green before a commit. They are slow; run them anyway.
 | Atlas experiments | `uv run scripts/atlas-mathlib-experiment.py` | Needs a slice (§4) and `uv sync` (§6). ~40 s, two thirds of it the three index builds. |
 | Python binding | `uv run crates/fh-atlas-py/tests/smoke.py` | Differential against `target/release/atlas`; ~12 min, nearly all of it the CLI side. |
 | Rust | `cargo test -p fh-atlas && cargo clippy -p fh-atlas --all-targets && cargo fmt -p fh-atlas -- --check` | Zero warnings, not "few". |
+| Ranking golden | `FH_SLICE=/tmp/mathlib-algebra.jsonl cargo test -p fh-atlas --test golden` | **Skips silently without `FH_SLICE`** — a plain `cargo test` does not run it. ~95 s. |
 
 Read a gate's **own** exit status, not the status of whatever you piped it into.
 `gate.py > log; tail log` exits with `tail`'s status, which is always 0 — a red gate read
@@ -184,6 +185,24 @@ binaries rather than scripts.
   frontier pairs are `Aesop ~ ProofWidgets` and `Aesop ~ Qq`, metaprogramming siblings that
   share shapes because they are all Lean code over syntax trees. A working slice is
   two-thirds `Init`/`Std`/`Lean`, so this is not a corner case.
+- **A ranking change needs a golden pinned *before* it.** Recomputing a score from the
+  factors the refactor just recorded is an identity, not a regression test; what moves is
+  neighbour *order*. `tests/golden.rs` pins top-k for seven queries, and it took a fix to
+  the tie-break to keep `dvd_trans` in `le_trans`'s top five at all.
+- **Ties are the normal case, so tie-breaks carry information.** The score is a product of
+  a few coarse factors, so whole families land on one value — `dvd_trans` sat in a four-way
+  tie and lowercase sorts after every capitalised name, which silently took a named gate
+  red. Break on `common`, then `vars`, and only then the name.
+- **A denominator must count what its numerator counts.** `retention` divided
+  `concrete_nodes` (holes score 0) by `Arena::size` (holes score 1), so it could not reach
+  1 on any erased term and penalised a pair in proportion to how much the erasure had done
+  — backwards for exactly the cross-carrier analogies B4 exists to find. The unit test
+  missed it for eight months by using hole-free inputs.
+- **Measure a repair by ablation, not by before-and-after.** `similar_brute` is not an
+  independent oracle: it ranks *by* retention and filters by `min_retention`, so changing
+  the retention formula moves the truth set as well as the prediction and the delta is
+  unattributable. `IndexConfig::source_b_at_build_level` exists so the defect can be
+  reproduced on demand; that is what turned a meaningless +1.4pp into a real +10.1pp.
 - **A carrier is often an *explicit* binder.** `Nat.add_comm` binds `(n m : ℕ)` explicitly;
   a rule that only looks at implicit binders leaves the carrier in place and the whole
   normalization knob does nothing.

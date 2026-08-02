@@ -117,24 +117,46 @@ pub struct Generalization {
     /// abstracts *a locally bound thing*, so the row reads fine but is **not
     /// transportable** — B6 must refuse it. Reported per neighbour, never hidden.
     pub scoped_vars: u32,
-    /// `common / max(|x|,|y|)`, in `[0,1]`; exactly 1 when the inputs are equal.
+    /// `common / max(concrete(x), concrete(y))`, in `[0,1]`; exactly 1 when the inputs
+    /// are equal — including when they contain holes, which is the case this promise used
+    /// to quietly exclude.
     pub retention: f32,
 }
 
 pub fn generalize(a: &mut Arena, x: TermId, y: TermId) -> Generalization {
-    let (sx, sy) = (a.size(x), a.size(y));
+    // The denominator counts what the numerator counts. `common` is `concrete_nodes`,
+    // which scores a hole 0; `Arena::size` scores a hole 1. Mixing them made `retention`
+    // unable to reach 1 on any term containing holes — and the inputs here are *erased*
+    // terms, so holes are the normal case, not the exception.
+    //
+    // Measured before the fix: `Nat.mul_comm` and `Int.mul_comm` have byte-identical
+    // `carriers` skeletons and `vars 0` — literally the same term — and scored 0.686
+    // rather than 1. The distortion is not a constant offset; it grows with how much the
+    // erasure did, so it is worst for exactly the abstract cross-carrier analogies this
+    // index exists to find, and it rescaled every threshold sitting on top of it.
+    let (cx, cy) = (a.concrete(x), a.concrete(y));
     let (skeleton, vars, scoped_vars) = {
         let mut lgg = Lgg::new(a);
         let s = lgg.run(x, y);
         (s, lgg.next_var, lgg.scoped_vars)
     };
-    let common = concrete_nodes(a, skeleton);
+    let common = a.concrete(skeleton);
+    // Two terms with no concrete structure at all. `0/0` is not 0: a term is identical to
+    // itself whether or not anything is left of it. Guarded defensively rather than on
+    // evidence — a review claimed 4.6% of the slice reaches it at `Shape` and I could not
+    // reproduce that (a bare `Hole` is needed, and `Nat` erases to `s(*)`, which counts
+    // one). It costs a comparison and removes an undefined case; that is enough.
+    let retention = if cx == 0 && cy == 0 {
+        if x == y { 1.0 } else { 0.0 }
+    } else {
+        common as f32 / cx.max(cy) as f32
+    };
     Generalization {
         skeleton,
         common,
         vars,
         scoped_vars,
-        retention: common as f32 / sx.max(sy).max(1) as f32,
+        retention,
     }
 }
 
@@ -328,7 +350,7 @@ pub fn naive(a: &mut Arena, x: TermId, y: TermId) -> TermId {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::skel::term::Arena;
+    use crate::skel::term::{Arena, Node};
 
     fn p(a: &mut Arena, s: &str) -> TermId {
         a.parse(&format!("fh-stmt-v1;{s}")).expect("parse")
@@ -391,6 +413,74 @@ mod tests {
         assert_eq!(generalize(&mut a, x, x).vars, 0);
         assert!(generalize(&mut a, x, y).vars > 0);
         assert_eq!(generalize(&mut a, x, x).retention, 1.0);
+    }
+
+    #[test]
+    fn retention_reaches_one_on_a_term_that_already_contains_holes() {
+        // `p6` above cannot catch the denominator bug, because `pair` builds hole-free
+        // terms and `Arena::size` and `concrete_nodes` only disagree on holes. But the
+        // real inputs to `generalize` are *erased* terms, where holes are the normal
+        // case: `Nat.mul_comm` against `Int.mul_comm` — byte-identical carrier skeletons,
+        // no variables — scored 0.69 rather than 1.0.
+        // Holes are produced by erasure, never parsed — the I3 grammar has no `_`
+        // production — so the term is built rather than read.
+        let mut a = Arena::new();
+        let eq = p(&mut a, "c(2:Eq,0)");
+        let hole = a.intern(Node::Hole);
+        let holey = a.intern(Node::App(eq, hole));
+        let g = generalize(&mut a, holey, holey);
+        assert_eq!(g.vars, 0, "a term against itself abstracts nothing");
+        assert_eq!(
+            g.retention, 1.0,
+            "retention must be 1 for identical inputs whether or not they contain holes"
+        );
+    }
+
+    #[test]
+    fn a_term_with_no_concrete_structure_still_matches_itself() {
+        // The case the two tests above cannot reach, because both build terms with at
+        // least one concrete node. 4.6% of the algebra slice erases to pure holes at
+        // `Shape`, and dividing 0 by 0 reported those as scoring 0.0 against their own
+        // exact twins — so `similar(…, level="shape")` came back empty for them.
+        // Only a *bare* hole or variable has no concrete structure: `App(Hole, Hole)`
+        // counts 1, because the application node itself is structure.
+        let mut a = Arena::new();
+        let hole = a.intern(Node::Hole);
+        let var = a.intern(Node::Var(0));
+        assert_eq!(a.concrete(hole), 0);
+        assert_eq!(a.concrete(var), 0);
+        assert_eq!(
+            generalize(&mut a, hole, hole).retention,
+            1.0,
+            "a term is identical to itself whether or not anything is left of it"
+        );
+        // Two *different* structureless terms must not both score 1.0 — the guard has to
+        // distinguish them rather than blanket-return 1.
+        assert_ne!(hole, var);
+        assert_eq!(generalize(&mut a, hole, var).retention, 0.0);
+    }
+
+    #[test]
+    fn retention_does_not_shrink_as_erasure_does_more() {
+        // The failure mode the denominator bug caused, as a property: adding holes to
+        // *both* sides equally must not lower the score, or the ranker penalises pairs in
+        // proportion to how abstract their shared structure is — backwards for exactly
+        // the cross-carrier analogies this index exists to find.
+        let mut a = Arena::new();
+        let concrete = p(&mut a, "a(a(c(2:Eq,0),c(3:Nat,0)),c(3:Nat,0))");
+        let eq = p(&mut a, "c(2:Eq,0)");
+        let hole = a.intern(Node::Hole);
+        let inner = a.intern(Node::App(eq, hole));
+        let holed = a.intern(Node::App(inner, hole));
+        let (rc, rh) = (
+            generalize(&mut a, concrete, concrete).retention,
+            generalize(&mut a, holed, holed).retention,
+        );
+        assert_eq!(rc, 1.0);
+        assert_eq!(
+            rh, 1.0,
+            "erasing more of both sides must not cost retention"
+        );
     }
 
     #[test]

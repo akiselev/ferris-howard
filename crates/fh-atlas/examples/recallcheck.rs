@@ -34,48 +34,128 @@ fn main() {
         t0.elapsed().as_secs_f64()
     );
 
-    // A deterministic spread through the corpus, so a regression is reproducible.
+    // A deterministic spread, so a regression is reproducible — but through the
+    // *claims*, not through the slice.
+    //
+    // Sampling raw declaration order put one Mathlib theorem in thirty queries. The slice
+    // is two-thirds `Init`/`Std`/`Lean` and half of it is not a theorem at all, so the
+    // number this harness reported was a statement about Lean's metaprogramming API. That
+    // is CLAUDE.md §5's "restrict to claims, or you are measuring Lean rather than
+    // mathematics", for the fourth recorded time; the unrestricted figure is still printed
+    // below, labelled, because the gap between the two is itself the evidence.
     let n = idx.len();
-    let names: Vec<String> = (0..40)
-        .map(|k| {
-            idx.name_of(fh_atlas::skel::index::DeclId(((k * 3187 + 11) % n) as u32))
-                .to_string()
-        })
+    let claims: Vec<usize> = (0..n)
+        .filter(|&i| idx.kind_of_at(i) == "theorem" && idx.module_of_at(i).starts_with("Mathlib."))
         .collect();
-
-    let (mut found, mut total, mut queries) = (0usize, 0usize, 0usize);
-    let mut worst: Option<(f64, String)> = None;
-    let t1 = std::time::Instant::now();
-    for name in &names {
-        let Ok(brute) = idx.similar_brute(name, 5, &cfg) else {
-            continue;
-        };
-        if brute.is_empty() {
-            continue;
-        }
-        let truth: HashSet<&str> = brute.iter().map(|(n, _)| n.as_str()).collect();
-        let Ok(fast) = idx.similar(name, 50, &cfg) else {
-            continue;
-        };
-        let got: HashSet<&str> = fast.iter().map(|n| n.name.as_str()).collect();
-        let hit = truth.iter().filter(|t| got.contains(*t)).count();
-        found += hit;
-        total += truth.len();
-        queries += 1;
-        let r = hit as f64 / truth.len() as f64;
-        if worst.as_ref().is_none_or(|(w, _)| r < *w) {
-            worst = Some((r, name.clone()));
-        }
-    }
-    let recall = found as f64 / total.max(1) as f64;
+    let pick = |pool: &[usize], k: usize| -> Vec<String> {
+        (0..k)
+            .map(|j| {
+                let i = pool[(j * 3187 + 11) % pool.len()];
+                idx.name_of(fh_atlas::skel::index::DeclId(i as u32))
+                    .to_string()
+            })
+            .collect()
+    };
+    let names = pick(&claims, 40);
+    let unrestricted = pick(&(0..n).collect::<Vec<_>>(), 40);
     println!(
-        "recall over {queries} queries: {found}/{total} = {:.1}%   ({:.1}s, brute included)",
-        100.0 * recall,
-        t1.elapsed().as_secs_f64()
+        "query population: {} Mathlib theorems of {} declarations ({:.1}%)",
+        claims.len(),
+        n,
+        100.0 * claims.len() as f64 / n as f64
     );
-    if let Some((r, n)) = worst {
-        println!("worst query: {n} at {:.0}%", 100.0 * r);
-    }
+
+    // Measured per population, because a single figure over the whole slice is a figure
+    // about Lean. `skipped` is printed rather than swallowed: the loop used to `continue`
+    // past queries with no brute-force neighbours while the header still said 40.
+    let mut run = |names: &[String], label: &str| -> f64 {
+        let (mut found, mut total, mut queries, mut skipped) = (0usize, 0usize, 0usize, 0usize);
+        let mut worst: Option<(f64, String)> = None;
+        let t1 = std::time::Instant::now();
+        for name in names {
+            let Ok(brute) = idx.similar_brute(name, 5, &cfg) else {
+                skipped += 1;
+                continue;
+            };
+            if brute.is_empty() {
+                skipped += 1;
+                continue;
+            }
+            let truth: HashSet<&str> = brute.iter().map(|(n, _)| n.as_str()).collect();
+            let Ok(fast) = idx.similar(name, 50, &cfg) else {
+                skipped += 1;
+                continue;
+            };
+            let got: HashSet<&str> = fast.iter().map(|n| n.name.as_str()).collect();
+            let hit = truth.iter().filter(|t| got.contains(*t)).count();
+            found += hit;
+            total += truth.len();
+            queries += 1;
+            let r = hit as f64 / truth.len() as f64;
+            if worst.as_ref().is_none_or(|(w, _)| r < *w) {
+                worst = Some((r, name.clone()));
+            }
+        }
+        let recall = found as f64 / total.max(1) as f64;
+        println!(
+            "\n{label}: {found}/{total} = {:.1}% over {queries} queries \
+             ({skipped} of {} had no brute-force neighbours and were excluded; {:.1}s)",
+            100.0 * recall,
+            names.len(),
+            t1.elapsed().as_secs_f64()
+        );
+        if let Some((r, n)) = worst {
+            println!("  worst query: {n} at {:.0}%", 100.0 * r);
+        }
+        recall
+    };
+
+    let recall = run(&names, "recall over Mathlib theorems");
+    run(
+        &unrestricted,
+        "recall over the whole slice (measures Lean, kept for contrast)",
+    );
+
+    // The ablation, on the population the gate is about. This is what source B is worth:
+    // the same index, the same truth set, the same retention formula on both arms — only
+    // the level source B is queried at differs. A before/after taken across the retention
+    // fix could not have answered this, because that fix moves `similar_brute`'s ranking
+    // and its filter, and so moves the truth set too.
+    let mut broken = cfg.clone();
+    broken.source_b_at_build_level = false;
+    let ablated = {
+        let (mut found, mut total) = (0usize, 0usize);
+        for name in &names {
+            let Ok(brute) = idx.similar_brute(name, 5, &cfg) else {
+                continue;
+            };
+            if brute.is_empty() {
+                continue;
+            }
+            let truth: HashSet<&str> = brute.iter().map(|(n, _)| n.as_str()).collect();
+            let Ok(fast) = idx.similar(name, 50, &broken) else {
+                continue;
+            };
+            let got: HashSet<&str> = fast.iter().map(|n| n.name.as_str()).collect();
+            found += truth.iter().filter(|t| got.contains(*t)).count();
+            total += truth.len();
+        }
+        found as f64 / total.max(1) as f64
+    };
+    println!(
+        "\nablation — source B queried at the raw root (the defect): {:.1}%\n\
+         source B repaired: {:.1}%   =>  the level fix is worth {:+.1}pp on Mathlib theorems",
+        100.0 * ablated,
+        100.0 * recall,
+        100.0 * (recall - ablated)
+    );
+
+    // The gate is the restricted number. Both sides of this comparison use the same
+    // `generalize`, so `similar_brute` is not an independent oracle: it ranks *by*
+    // retention and filters by `min_retention`, which means a change to the retention
+    // formula moves the truth set as well as the prediction. A single before/after delta
+    // across such a change is therefore not attributable to the retrieval fix, and must be
+    // reported as a decomposition or not at all.
     println!("floor: {:.0}%", 100.0 * floor);
     if recall < floor {
         eprintln!(

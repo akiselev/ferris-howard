@@ -152,6 +152,9 @@ pub struct Arena {
     /// this `looseBVarRange`. Computed at intern time and load-bearing for both the
     /// anti-unifier's scope handling and the index's choice of posting keys.
     loose: Vec<u32>,
+    /// Nodes that are neither a hole nor a variable, per subtree. The denominator of
+    /// `retention`, kept here so it costs an array read rather than a DAG traversal.
+    concrete: Vec<u32>,
     levels: Vec<LevelNode>,
     level_intern: HashMap<LevelNode, LevelId>,
     level_lists: Vec<Box<[LevelId]>>,
@@ -175,31 +178,44 @@ impl Arena {
         if let Some(&id) = self.intern.get(&n) {
             return id;
         }
-        let (size, loose) = self.measure(&n);
+        let (size, loose, concrete) = self.measure(&n);
         let id = TermId(self.nodes.len() as u32);
         self.nodes.push(n);
         self.size.push(size);
         self.loose.push(loose);
+        self.concrete.push(concrete);
         self.intern.insert(n, id);
         id
     }
 
-    fn measure(&self, n: &Node) -> (u32, u32) {
+    /// `(size, loose, concrete)`.
+    ///
+    /// `concrete` counts nodes that are neither a hole nor a variable. It is computed
+    /// here, at intern time and in O(1) from the children, rather than by a recursion at
+    /// query time: the arena is a hash-consed DAG, so walking it counts the *tree*
+    /// unfolding and re-walks shared subterms once per parent. `similar_brute` needs this
+    /// value once per candidate over 131,062 candidates, which is where the difference
+    /// between an array read and a traversal stops being academic.
+    fn measure(&self, n: &Node) -> (u32, u32, u32) {
         let sz = |t: TermId| self.size[t.0 as usize];
         let lo = |t: TermId| self.loose[t.0 as usize];
+        let co = |t: TermId| self.concrete[t.0 as usize];
         match *n {
-            Node::BVar(k) => (1, k + 1),
-            Node::Sort(_) | Node::Const(..) | Node::NatLit(_) | Node::StrLit(_) => (1, 0),
-            Node::Hole | Node::Var(_) => (1, 0),
-            Node::App(a, b) => (1 + sz(a) + sz(b), lo(a).max(lo(b))),
-            Node::Lam(_, d, b) | Node::Pi(_, d, b) => {
-                (1 + sz(d) + sz(b), lo(d).max(lo(b).saturating_sub(1)))
-            }
+            Node::BVar(k) => (1, k + 1, 1),
+            Node::Sort(_) | Node::Const(..) | Node::NatLit(_) | Node::StrLit(_) => (1, 0, 1),
+            Node::Hole | Node::Var(_) => (1, 0, 0),
+            Node::App(a, b) => (1 + sz(a) + sz(b), lo(a).max(lo(b)), 1 + co(a) + co(b)),
+            Node::Lam(_, d, b) | Node::Pi(_, d, b) => (
+                1 + sz(d) + sz(b),
+                lo(d).max(lo(b).saturating_sub(1)),
+                1 + co(d) + co(b),
+            ),
             Node::Let(t, v, b) => (
                 1 + sz(t) + sz(v) + sz(b),
                 lo(t).max(lo(v)).max(lo(b).saturating_sub(1)),
+                1 + co(t) + co(v) + co(b),
             ),
-            Node::Proj(_, _, e) => (1 + sz(e), lo(e)),
+            Node::Proj(_, _, e) => (1 + sz(e), lo(e), 1 + co(e)),
         }
     }
 
@@ -212,6 +228,12 @@ impl Arena {
     pub fn loose(&self, t: TermId) -> u32 {
         self.loose[t.0 as usize]
     }
+    /// Nodes that are neither a hole nor a variable — the shared structure `retention`
+    /// is a fraction of.
+    pub fn concrete(&self, t: TermId) -> u32 {
+        self.concrete[t.0 as usize]
+    }
+
     pub fn is_closed(&self, t: TermId) -> bool {
         self.loose(t) == 0
     }

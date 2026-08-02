@@ -146,20 +146,37 @@ def experiment_similar_crosses_theories(corpus: fa.Corpus) -> Experiment:
         "transitivity of `≤` reaches transitivity of `∣` — the cross-theory analogy the "
         "index exists for, and the one no name- or keyword-search finds",
     )
-    top = [n.name for n in corpus.similar("le_trans", top=5)]
+    top5 = [n.name for n in corpus.similar("le_trans", top=5)]
+    top8 = [n.name for n in corpus.similar("le_trans", top=8)]
     # Divisibility is a different theory with a different carrier and no shared concrete
     # subterm: `le_trans` reaches it only through source C, the `Shape`-subterm postings.
-    e.check("dvd_trans" in top, f"`dvd_trans` in the top 5 (got {top})")
-    e.check("Dvd.dvd.trans" in top, f"`Dvd.dvd.trans` in the top 5 (got {top})")
+    #
+    # The claim is about reaching *divisibility transitivity*, which Mathlib spells twice —
+    # `dvd_trans` and `Dvd.dvd.trans` are one theorem under two names, as this file's own
+    # transport experiment already says. So the top-5 assertion is on the theorem, and the
+    # two spellings are asserted inside a wider window.
+    #
+    # The window widened from 5 to 8 deliberately, and the reason is a fix rather than a
+    # regression: repairing `retention`'s denominator promoted `LE.le.trans` and
+    # `ge_trans'` — restatements of `le_trans` itself, retention exactly 1.00 — to ranks 1
+    # and 2, where they belong and where they now consume two slots. Ranks 3-6 are then an
+    # exact four-way tie on score, `common` and `vars` alike, so which of them lands at 5
+    # and which at 6 is alphabetical and carries no information.
+    dvd = {"dvd_trans", "Dvd.dvd.trans"}
+    e.check(
+        bool(dvd & set(top5)),
+        f"divisibility transitivity in the top 5 (got {top5})",
+    )
+    e.check(dvd <= set(top8), f"both spellings within the top 8 (got {top8})")
 
     # The failure mode, asserted rather than assumed. If the answer were `Nat.le_trans`,
     # `Int.le_trans`, `UInt8.le_trans` … the index would be ranking along the *carrier*
     # axis — the same theorem re-instantiated — which means the erasure levels are not
     # firing and the whole normalization knob is decoration.
-    carrier_axis = [n for n in top if n.rsplit(".", 1)[-1] in ("le_trans", "trans")]
+    carrier_axis = [n for n in top5 if n.rsplit(".", 1)[-1] in ("le_trans", "trans")]
     e.check(
-        len(carrier_axis) < len(top),
-        f"the top 5 is not the carrier axis alone: {carrier_axis} of {top}",
+        len(carrier_axis) < len(top5),
+        f"the top 5 is not the carrier axis alone: {carrier_axis} of {top5}",
     )
 
     # The differential: brute force is a different algorithm — every declaration, no
@@ -272,9 +289,17 @@ def experiment_dictionary(corpus: fa.Corpus) -> Experiment:
         f"the unmatched side dominates ({len(d.missing_left)} vs {len(d.rows)}) — the "
         "dictionary is partial, which is what makes it a research object",
     )
-    # Every row is a real anti-unification, not a bucket collision.
-    weak = [r for r in d.rows if r.retention < 0.30]
-    e.check(not weak, f"every row clears the retention floor ({len(weak)} below 0.30)")
+    # Not "no row is below the floor" — `similar` discards those before a row is ever
+    # built, so that check cannot fail and CLAUDE.md §3 asks a negative control to be able
+    # to find something. What is worth asserting is that the floor *binds*: the weakest
+    # surviving row sits near it. A minimum far above the floor would mean the threshold is
+    # inert and the row set is being decided by something else entirely.
+    lowest = min(r.retention for r in d.rows)
+    e.check(
+        lowest < 0.50,
+        f"the retention floor binds — weakest row at {lowest:.3f}, near the 0.30 floor "
+        "rather than far above it",
+    )
     return e
 
 
