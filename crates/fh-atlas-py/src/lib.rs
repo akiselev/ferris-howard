@@ -56,8 +56,8 @@ use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
 use ::fh_atlas::dict::{
-    self, Coherence as CoreCoherence, Row as CoreRow, ShuffleControl as CoreShuffle,
-    TransportError, Transported as CoreTransported,
+    self, Coherence as CoreCoherence, LeftState, Policy, Row as CoreRow,
+    ShuffleControl as CoreShuffle, TransportError, Transported as CoreTransported,
 };
 use ::fh_atlas::equiv::{EquivIndex, Unknown};
 use ::fh_atlas::graph::{Decl as CoreDecl, Graph, Lens};
@@ -367,6 +367,31 @@ pub struct Neighbour {
     /// The score factor by factor, so a caller can audit or ablate the rank rather than
     /// trust it. Engine 1 §6 C2's "complete feature vector".
     pub factors: ScoreFactors,
+}
+
+/// One operating point of the coverage/coherence trade-off.
+#[pyclass(module = "fh_atlas", frozen, get_all, skip_from_py_object)]
+#[derive(Clone)]
+pub struct PolicyPoint {
+    /// `"unconstrained"`, `"many_to_one_2"`, …, `"injective"`.
+    pub policy: String,
+    pub rows: usize,
+    pub lefts: usize,
+    /// 0.0 exactly when the selection is a map.
+    pub collision_rate: f32,
+    pub mean_score: f32,
+    /// Lefts whose partner cleared every floor and lost it to a better claim.
+    pub unmatched: usize,
+}
+
+#[pymethods]
+impl PolicyPoint {
+    fn __repr__(&self) -> String {
+        format!(
+            "PolicyPoint({}, rows={}, collision={:.3}, mean={:.3}, unmatched={})",
+            self.policy, self.rows, self.collision_rate, self.mean_score, self.unmatched
+        )
+    }
 }
 
 /// How far a dictionary is from the map it claims to be.
@@ -1321,6 +1346,67 @@ impl Corpus {
         .map_err(Into::into)
     }
 
+    /// The coverage/coherence trade-off, as a frontier rather than one chosen answer.
+    ///
+    /// §6 C5 asks for several Pareto-optimal dictionaries where the ambiguity is real, and
+    /// never for manufactured uniqueness. These are the operating points: tightening the
+    /// cap raises per-row quality and costs coverage, and on the algebra slice a 1:1
+    /// dictionary is capped by how many distinct partners the index finds at all.
+    #[pyo3(signature = (left, right, per_decl = 1, theorems_only = true))]
+    fn dictionary_policies(
+        &self,
+        py: Python<'_>,
+        left: &str,
+        right: &str,
+        per_decl: usize,
+        theorems_only: bool,
+    ) -> PyResult<Vec<PolicyPoint>> {
+        py.detach(|| -> Result<Vec<PolicyPoint>, SkelFail> {
+            let cfg = IndexConfig::default();
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            let d = dict::dictionary(
+                idx,
+                left,
+                right,
+                &cfg,
+                &dict::DictOptions {
+                    per_decl,
+                    theorems_only,
+                    ..dict::DictOptions::default()
+                },
+            );
+            let mut out = Vec::new();
+            for (label, policy) in [
+                ("unconstrained", Policy::Unconstrained),
+                ("many_to_one_3", Policy::ManyToOne { cap: 3 }),
+                ("many_to_one_2", Policy::ManyToOne { cap: 2 }),
+                ("injective", Policy::Injective),
+            ] {
+                let (sel, states) = dict::select(&d, policy);
+                let c = dict::coherence(idx, &sel, 0);
+                let mean = if sel.rows.is_empty() {
+                    0.0
+                } else {
+                    sel.rows.iter().map(|r| r.score).sum::<f32>() / sel.rows.len() as f32
+                };
+                out.push(PolicyPoint {
+                    policy: label.to_string(),
+                    rows: sel.rows.len(),
+                    lefts: c.distinct_lefts,
+                    collision_rate: c.collision_rate(),
+                    mean_score: mean,
+                    unmatched: states
+                        .values()
+                        .filter(|s| matches!(s, LeftState::Unmatched { .. }))
+                        .count(),
+                });
+            }
+            Ok(out)
+        })
+        .map_err(Into::into)
+    }
+
     /// Design §9's control: re-pair each left with a different right and compare. If
     /// genuine pairs do not separate from shuffled ones, the floors are admitting
     /// coincidence and nothing computed from this dictionary is about analogy.
@@ -1619,6 +1705,7 @@ fn fh_atlas(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Relation>()?;
     m.add_class::<ScoreFactors>()?;
     m.add_class::<Coherence>()?;
+    m.add_class::<PolicyPoint>()?;
     m.add_class::<ShuffleControl>()?;
     m.add_class::<ScorerId>()?;
     m.add_class::<LogicalStats>()?;

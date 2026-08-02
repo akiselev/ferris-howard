@@ -153,6 +153,28 @@ class LogicalStats:
     def prop_heads(self) -> int: ...
 
 
+class PolicyPoint:
+    """One operating point of the coverage/coherence trade-off."""
+
+    @property
+    def policy(self) -> str:
+        """`"unconstrained"`, `"many_to_one_3"`, `"many_to_one_2"` or `"injective"`."""
+
+    @property
+    def rows(self) -> int: ...
+    @property
+    def lefts(self) -> int: ...
+    @property
+    def collision_rate(self) -> float:
+        """0.0 exactly when the selection is a map."""
+
+    @property
+    def mean_score(self) -> float: ...
+    @property
+    def unmatched(self) -> int:
+        """Lefts whose partner cleared every floor and lost it to a better claim."""
+
+
 class Coherence:
     """How far a dictionary is from the map it claims to be.
 
@@ -610,6 +632,19 @@ class Corpus:
         the largest class is the 1,859 declarations whose type is literally `Type`.
         `theorems_only` additionally drops Prop-valued *definitions* — dozens of typeclass
         definitions have identical statements and bury the reformulation families.
+        """
+
+    def dictionary_policies(
+        self,
+        left: str,
+        right: str,
+        per_decl: int = 1,
+        theorems_only: bool = True,
+    ) -> list[PolicyPoint]:
+        """The coverage/coherence trade-off as a frontier, not one chosen answer.
+
+        §6 C5 asks for several Pareto-optimal dictionaries where ambiguity is real and
+        never for manufactured uniqueness.
         """
 
     def dictionary_coherence(

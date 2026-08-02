@@ -73,6 +73,10 @@ pub struct Row {
     pub right: String,
     pub skeleton: String,
     pub retention: f32,
+    /// The full ranking score, not just retention. They differ: `retention` omits
+    /// `scoped_penalty`, so weighting a solver by retention alone would systematically
+    /// prefer rows that cannot be transported — 47.5% of the rows on the first slice.
+    pub score: f32,
     pub status: Status,
     /// True when no variable abstracts a locally bound thing. `transport` refuses the
     /// rest: a row whose hole stands for something under a binder cannot be instantiated
@@ -208,6 +212,7 @@ pub fn dictionary(
                 right: n.name.clone(),
                 skeleton: n.skeleton,
                 retention: n.retention,
+                score: n.score,
                 status,
                 transportable: n.transportable,
             });
@@ -655,5 +660,321 @@ pub fn shuffle_control(
         shuffled_mean: ssum / n.max(1) as f32,
         shuffled_admitted: admitted,
         separation: wins as f32 / n.max(1) as f32,
+    }
+}
+
+/// How many lefts a single right may serve.
+///
+/// A choice, not an assumption. Genuine many-to-one correspondences exist in mathematics —
+/// several order-theoretic facts really do collapse onto one divisibility fact — so
+/// forcing 1:1 manufactures a distinction the evidence does not support. Measured on the
+/// first slice, `Injective` deleted 232 of 680 rows including correspondences scoring
+/// 0.919, and moved 172 lefts onto partners the anti-unifier ranked *lower*. Hence the
+/// default below, and hence the naming: a constrained result is a **selection**, not a
+/// correspondence.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Policy {
+    /// Every candidate row survives. What greedy assembly produces, and the default.
+    #[default]
+    Unconstrained,
+    /// At most one left per right.
+    Injective,
+    /// At most `cap` lefts per right.
+    ManyToOne { cap: usize },
+}
+
+/// Why a left-hand declaration has no row.
+///
+/// Design §9 asks that a dictionary "distinguish absent, unsupported, low-ranked, and
+/// contradicted". Those four are here. `Unmatched` is a fifth the document does not name
+/// because it cannot arise without an assignment — it is the state the solver creates.
+#[derive(Clone, Debug, PartialEq)]
+pub enum LeftState {
+    /// No candidate in the right theory was proposed at all. The index never reached it.
+    Absent,
+    /// Candidates existed and every one fell below the floors. Carries the best seen, so a
+    /// reader can tell "nearly" from "nothing".
+    LowRanked { best_retention: f32 },
+    /// The engine declined rather than answered.
+    Unsupported { reason: &'static str },
+    /// A candidate cleared the floors and lost the assignment: this concept has a partner,
+    /// but another concept had a better claim on it. Only reachable under a constrained
+    /// policy — under `Unconstrained` it is unreachable by construction.
+    Unmatched { best: String },
+    /// A candidate exists and is refuted.
+    ///
+    /// **Not emittable yet.** Refutation is C6's falsification route, which M4 builds; the
+    /// variant is present so the vocabulary is the document's rather than a subset of it,
+    /// and so that adding the producer later is not also a schema change.
+    Contradicted,
+}
+
+impl LeftState {
+    pub fn name(&self) -> &'static str {
+        match self {
+            LeftState::Absent => "absent",
+            LeftState::LowRanked { .. } => "low-ranked",
+            LeftState::Unsupported { .. } => "unsupported",
+            LeftState::Unmatched { .. } => "unmatched",
+            LeftState::Contradicted => "contradicted",
+        }
+    }
+}
+
+/// Exact max-flow-then-min-cost over the candidate rows.
+///
+/// Coverage first, score second, and that order is deliberate: a dictionary that partners
+/// more concepts at slightly lower mean quality is more useful than a smaller one with a
+/// better sum, and "maximize the total score" is a proxy that would happily drop a left
+/// entirely to raise an average. Costs are negated scores; the network is a DAG, so
+/// Bellman-Ford shortest-path augmentation terminates without a negative-cycle check.
+fn assign(rows: &[Row], policy: Policy) -> Vec<usize> {
+    let cap_right = match policy {
+        Policy::Unconstrained => return (0..rows.len()).collect(),
+        Policy::Injective => 1,
+        Policy::ManyToOne { cap } => cap.max(1),
+    };
+
+    let lefts: Vec<&str> = rows
+        .iter()
+        .map(|r| r.left.as_str())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    let rights: Vec<&str> = rows
+        .iter()
+        .map(|r| r.right.as_str())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    let li: HashMap<&str, usize> = lefts.iter().enumerate().map(|(i, n)| (*n, i)).collect();
+    let ri: HashMap<&str, usize> = rights.iter().enumerate().map(|(i, n)| (*n, i)).collect();
+
+    let (nl, nr) = (lefts.len(), rights.len());
+    let (src, snk) = (nl + nr, nl + nr + 1);
+    let n = nl + nr + 2;
+
+    // (to, capacity, cost, index of the reverse arc)
+    let mut g: Vec<Vec<(usize, i64, i64, usize)>> = vec![Vec::new(); n];
+    let add = |g: &mut Vec<Vec<(usize, i64, i64, usize)>>, u: usize, v: usize, c: i64, w: i64| {
+        let (iu, iv) = (g[u].len(), g[v].len());
+        g[u].push((v, c, w, iv));
+        g[v].push((u, 0, -w, iu));
+    };
+    for i in 0..nl {
+        add(&mut g, src, i, 1, 0);
+    }
+    for j in 0..nr {
+        add(&mut g, nl + j, snk, cap_right as i64, 0);
+    }
+    // Costs are scaled to integers; f32 scores in [0, ~2] keep four decimals at 1e4.
+    for (k, r) in rows.iter().enumerate() {
+        let _ = k;
+        add(
+            &mut g,
+            li[r.left.as_str()],
+            nl + ri[r.right.as_str()],
+            1,
+            -((r.score * 10_000.0) as i64),
+        );
+    }
+
+    // Successive shortest augmenting path, one unit at a time (each left supplies one).
+    loop {
+        let mut dist = vec![i64::MAX; n];
+        let mut prev: Vec<Option<(usize, usize)>> = vec![None; n];
+        dist[src] = 0;
+        for _ in 0..n {
+            let mut changed = false;
+            for u in 0..n {
+                if dist[u] == i64::MAX {
+                    continue;
+                }
+                for (ei, &(v, c, w, _)) in g[u].iter().enumerate() {
+                    if c > 0 && dist[u] + w < dist[v] {
+                        dist[v] = dist[u] + w;
+                        prev[v] = Some((u, ei));
+                        changed = true;
+                    }
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+        if dist[snk] == i64::MAX {
+            break;
+        }
+        let mut v = snk;
+        while let Some((u, ei)) = prev[v] {
+            g[u][ei].1 -= 1;
+            let rev = g[u][ei].3;
+            g[v][rev].1 += 1;
+            v = u;
+        }
+    }
+
+    // A row is kept when its arc carries flow: capacity 1 spent to 0.
+    let mut kept = Vec::new();
+    for (k, r) in rows.iter().enumerate() {
+        let (u, v) = (li[r.left.as_str()], nl + ri[r.right.as_str()]);
+        if let Some(pos) = g[u].iter().position(|&(t, c, _, _)| t == v && c == 0) {
+            g[u][pos].1 = -1; // consume, so two rows for one (left,right) are not both kept
+            kept.push(k);
+        }
+    }
+    kept.sort_unstable();
+    kept
+}
+
+/// Apply a selection policy to an assembled dictionary, and say what happened to the
+/// lefts that lost.
+pub fn select(d: &Dictionary, policy: Policy) -> (Dictionary, BTreeMap<String, LeftState>) {
+    let keep = assign(&d.rows, policy);
+    let keep_set: BTreeSet<usize> = keep.iter().copied().collect();
+    let mut best_lost: BTreeMap<String, (f32, String)> = BTreeMap::new();
+    for (i, r) in d.rows.iter().enumerate() {
+        if !keep_set.contains(&i) {
+            let e = best_lost
+                .entry(r.left.clone())
+                .or_insert((f32::MIN, String::new()));
+            if r.score > e.0 {
+                *e = (r.score, r.right.clone());
+            }
+        }
+    }
+    let rows: Vec<Row> = keep.into_iter().map(|i| d.rows[i].clone()).collect();
+    let survivors: BTreeSet<&str> = rows.iter().map(|r| r.left.as_str()).collect();
+
+    let mut states: BTreeMap<String, LeftState> = BTreeMap::new();
+    for (left, (_, best)) in best_lost {
+        if !survivors.contains(left.as_str()) {
+            states.insert(left, LeftState::Unmatched { best });
+        }
+    }
+    for l in &d.missing_left {
+        // Without per-candidate history the honest reading of "no row at all" is `Absent`.
+        // `LowRanked` needs the best sub-threshold score, which assembly does not retain;
+        // producing it is a change to `dictionary`, not to this function, and claiming it
+        // here would be inventing a distinction the data does not carry.
+        states.insert(l.clone(), LeftState::Absent);
+    }
+
+    (
+        Dictionary {
+            left_theory: d.left_theory.clone(),
+            right_theory: d.right_theory.clone(),
+            rows,
+            missing_left: d.missing_left.clone(),
+            missing_right: d.missing_right.clone(),
+        },
+        states,
+    )
+}
+
+#[cfg(test)]
+mod select_tests {
+    use super::*;
+
+    fn row(left: &str, right: &str, score: f32) -> Row {
+        Row {
+            left: left.into(),
+            right: right.into(),
+            skeleton: String::new(),
+            retention: score,
+            score,
+            status: Status::BothProven,
+            transportable: true,
+        }
+    }
+
+    fn dict(rows: Vec<Row>) -> Dictionary {
+        Dictionary {
+            left_theory: "L".into(),
+            right_theory: "R".into(),
+            rows,
+            missing_left: Vec::new(),
+            missing_right: Vec::new(),
+        }
+    }
+
+    /// Three lefts all preferring one right, each with a weaker second choice.
+    fn contested() -> Dictionary {
+        dict(vec![
+            row("a", "x", 0.90),
+            row("a", "p", 0.50),
+            row("b", "x", 0.80),
+            row("b", "q", 0.40),
+            row("c", "x", 0.70),
+            row("c", "r", 0.30),
+        ])
+    }
+
+    #[test]
+    fn unconstrained_keeps_every_row() {
+        let (d, states) = select(&contested(), Policy::Unconstrained);
+        assert_eq!(d.rows.len(), 6);
+        assert!(
+            states.is_empty(),
+            "no left loses an assignment that was never made"
+        );
+    }
+
+    #[test]
+    fn injective_gives_each_right_to_at_most_one_left() {
+        let (d, _) = select(&contested(), Policy::Injective);
+        let rights: Vec<&str> = d.rows.iter().map(|r| r.right.as_str()).collect();
+        let distinct: BTreeSet<&str> = rights.iter().copied().collect();
+        assert_eq!(
+            rights.len(),
+            distinct.len(),
+            "a right was reused: {rights:?}"
+        );
+    }
+
+    #[test]
+    fn many_to_one_respects_its_cap() {
+        let (d, _) = select(&contested(), Policy::ManyToOne { cap: 2 });
+        let mut per_right: BTreeMap<&str, usize> = BTreeMap::new();
+        for r in &d.rows {
+            *per_right.entry(r.right.as_str()).or_default() += 1;
+        }
+        assert!(
+            per_right.values().all(|&n| n <= 2),
+            "cap exceeded: {per_right:?}"
+        );
+    }
+
+    #[test]
+    fn the_solver_prefers_coverage_over_the_score_sum() {
+        // `a` is the only left that can reach `x`, and its alternative is poor. A
+        // sum-maximising solver would happily drop `b` to keep a fractionally better
+        // arrangement; a dictionary that partners more concepts is the more useful object,
+        // so coverage is maximised first and the score decides among equal-coverage
+        // solutions.
+        let d = dict(vec![
+            row("a", "x", 0.95),
+            row("b", "x", 0.94),
+            row("b", "y", 0.10),
+        ]);
+        let (out, _) = select(&d, Policy::Injective);
+        assert_eq!(out.rows.len(), 2, "both lefts should be partnered");
+        let lefts: BTreeSet<&str> = out.rows.iter().map(|r| r.left.as_str()).collect();
+        assert!(lefts.contains("a") && lefts.contains("b"));
+    }
+
+    #[test]
+    fn a_displaced_left_is_unmatched_and_names_what_it_lost() {
+        // The state the solver creates: `c` had a partner that cleared every floor and
+        // lost it to a better claim. Reporting that as `Absent` — which is all the
+        // pre-solver vocabulary could say — would tell a researcher to go looking for a
+        // correspondence that was found and then given away.
+        let d = dict(vec![row("a", "x", 0.90), row("c", "x", 0.70)]);
+        let (out, states) = select(&d, Policy::Injective);
+        assert_eq!(out.rows.len(), 1);
+        match states.get("c") {
+            Some(LeftState::Unmatched { best }) => assert_eq!(best, "x"),
+            other => panic!("expected `c` to be Unmatched, got {other:?}"),
+        }
     }
 }

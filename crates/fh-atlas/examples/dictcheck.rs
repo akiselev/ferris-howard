@@ -5,8 +5,8 @@
 //! of read.
 
 use fh_atlas::dict::{
-    DictOptions, Transported, coherence, dictionary, frontier, shuffle_control, theory_of,
-    transport,
+    DictOptions, LeftState, Policy, Transported, coherence, dictionary, frontier, select,
+    shuffle_control, theory_of, transport,
 };
 use fh_atlas::graph::Graph;
 use fh_atlas::skel::erase::Level;
@@ -198,6 +198,49 @@ fn main() {
          the incoherence was contamination rather than greedy selection and M3a should be \
          re-planned around the exclusions instead of around a policy",
         100.0 * cohc.collision_rate()
+    );
+
+    // The policy sweep. Reported as a frontier rather than resolved into one answer:
+    // §6 C5 asks for several Pareto-optimal dictionaries where the ambiguity is real, and
+    // the operating points here are exactly that — coverage against coherence.
+    println!("\npolicy sweep (the Pareto frontier C5 asks for, not one chosen answer):");
+    for policy in [
+        Policy::Unconstrained,
+        Policy::ManyToOne { cap: 3 },
+        Policy::ManyToOne { cap: 2 },
+        Policy::Injective,
+    ] {
+        let (sel, states) = select(&d, policy);
+        let c = coherence(&mut idx, &sel, 0);
+        let unmatched = states
+            .values()
+            .filter(|s| matches!(s, LeftState::Unmatched { .. }))
+            .count();
+        let mean = if sel.rows.is_empty() {
+            0.0
+        } else {
+            sel.rows.iter().map(|r| r.score).sum::<f32>() / sel.rows.len() as f32
+        };
+        println!(
+            "  {:<20} {:>5} rows  {:>5} lefts  collision {:>5.1}%  mean score {:.3}  \
+             {:>4} unmatched",
+            format!("{policy:?}"),
+            sel.rows.len(),
+            c.distinct_lefts,
+            100.0 * c.collision_rate(),
+            mean,
+            unmatched
+        );
+    }
+
+    // Injective must actually be injective on real data, not only on the unit fixture.
+    let (inj, _) = select(&d, Policy::Injective);
+    let rights: Vec<&str> = inj.rows.iter().map(|r| r.right.as_str()).collect();
+    let distinct: std::collections::BTreeSet<&str> = rights.iter().copied().collect();
+    assert_eq!(
+        rights.len(),
+        distinct.len(),
+        "Injective reused a right on the real dictionary"
     );
 
     println!("\nnegative control: shuffled mappings must be rejected (design §9):");
