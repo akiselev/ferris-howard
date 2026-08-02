@@ -146,41 +146,63 @@ elab "#fh_home " n:ident : command => do
   liftTermElabM do
     let reached ← reachedClasses env ci
     let levels ← ci.levelParams.mapM fun _ => mkFreshLevelMVar
-    let (lines, candidates) ←
+    let (lines, candidates, carriers) : Array String × Nat × Array String ←
       forallTelescopeReducing (ci.instantiateTypeLevelParams levels) fun xs _ => do
       let mut lines : Array String := #[]
       let mut candidates := 0
+      let mut carriers : Array String := #[]
       for x in xs do
         let d ← x.fvarId!.getDecl
         unless d.binderInfo == .instImplicit do continue
-        let .const cls _ := (← whnf d.type).getAppFn | continue
+        let ty ← whnf d.type
+        let .const cls _ := ty.getAppFn | continue
+        -- The carrier the constraint is *about*. `instanceClasses`'s own doc comment has
+        -- always promised this pairing; the implementation returned a bare `NameSet` and
+        -- dropped it, which is what "home loses carrier identity" means concretely.
+        let carrier : String ← match ty.getAppArgs.back? with
+          | some c => do pure (toString (← ppExpr c))
+          | none => pure "?"
+        carriers := carriers.push carrier
         let v := walk env cls reached
         -- Asked first, and about the declared class itself: if some *lemma* requires it
         -- at this carrier, nothing weaker covers the use and the walk has no verdict to
         -- give. Asking this after the lattice walk reported an at-home binder as unused,
         -- because the walk deliberately looks only at strict ancestors.
         if reached.contains cls then
-          lines := lines.push s!"  [{cls}] — at home"
+          lines := lines.push s!"  [{cls} {carrier}] — at home"
         else match v.home with
         | some h =>
             candidates := candidates + 1
             lines := lines.push
-              s!"  [{cls}] — CANDIDATE: reaches only {h}; weaken and re-check"
+              s!"  [{cls} {carrier}] — CANDIDATE: reaches only {h}; weaken and re-check"
         | none =>
             if v.reached.isEmpty then
               -- The strongest finding there is: nothing needs this binder at all.
               candidates := candidates + 1
               lines := lines.push
-                s!"  [{cls}] — CANDIDATE: unused; nothing in the statement or proof needs it"
+                s!"  [{cls} {carrier}] — CANDIDATE: unused; nothing in the statement or proof needs it"
             else
               lines := lines.push
-                s!"  [{cls}] — reaches {v.reached.toList}, no single weakest ancestor"
-      return (lines, candidates)
+                s!"  [{cls} {carrier}] — reaches {v.reached.toList}, no single weakest ancestor"
+      return (lines, candidates, carriers)
     let header :=
       if candidates == 0 then s!"FH home: `{name}` is at home"
       else s!"FH home: `{name}` has {candidates} over-hypothesis candidate(s) — \
              a candidate is confirmed by moving the declaration and re-checking it"
-    logInfo (header ++ "\n" ++ String.intercalate "\n" lines.toList)
+    -- The verdicts above share one `reached` set, which is a set of class *names* with no
+    -- carrier attached. That is sound only while every binder is about the same carrier:
+    -- with two, a class reached at `R` is indistinguishable from one reached at `S`, and a
+    -- binder can be told it is over-strong on evidence belonging to its neighbour. Said
+    -- rather than left for a reader to discover, because the walk's own comment already
+    -- claims "a class reached at another carrier says nothing about this binder" — which
+    -- the evidence cannot currently support.
+    let distinct := carriers.toList.eraseDups
+    let caveat :=
+      if distinct.length > 1 then
+        s!"\n  ⚠ binders span {distinct.length} carriers ({distinct}); the reached set is \
+           carrier-blind, so these verdicts are approximate"
+      else ""
+    logInfo (header ++ "\n" ++ String.intercalate "\n" lines.toList ++ caveat)
 
 
 /-! ## Confirmation — C4's second stage

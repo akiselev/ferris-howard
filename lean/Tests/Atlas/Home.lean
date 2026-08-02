@@ -53,7 +53,7 @@ theorem overh {R : Type} [CommRing R] (a b : R) : a + b = b + a := add_comm a b
 
 /--
 info: FH home: `overh` has 1 over-hypothesis candidate(s) — a candidate is confirmed by moving the declaration and re-checking it
-  [CommRing] — CANDIDATE: reaches only AddCommMagma; weaken and re-check
+  [CommRing R] — CANDIDATE: reaches only AddCommMagma; weaken and re-check
 -/
 #guard_msgs (whitespace := lax) in
 #fh_home overh
@@ -66,7 +66,7 @@ theorem overh_confirmed {R : Type} [AddCommMagma R] (a b : R) : a + b = b + a :=
 
 /--
 info: FH home: `overh_confirmed` is at home
-  [AddCommMagma] — at home
+  [AddCommMagma R] — at home
 -/
 #guard_msgs (whitespace := lax) in
 #fh_home overh_confirmed
@@ -83,8 +83,8 @@ theorem unusedbinder {R : Type} [CommRing R] [Fintype R] (a b : R) : a * b = b *
 
 /--
 info: FH home: `unusedbinder` has 2 over-hypothesis candidate(s) — a candidate is confirmed by moving the declaration and re-checking it
-  [CommRing] — CANDIDATE: reaches only CommMagma; weaken and re-check
-  [Fintype] — CANDIDATE: unused; nothing in the statement or proof needs it
+  [CommRing R] — CANDIDATE: reaches only CommMagma; weaken and re-check
+  [Fintype R] — CANDIDATE: unused; nothing in the statement or proof needs it
 -/
 #guard_msgs (whitespace := lax) in
 #fh_home unusedbinder
@@ -96,7 +96,7 @@ theorem unusedbinder_confirmed {R : Type} [CommMagma R] (a b : R) : a * b = b * 
 
 /--
 info: FH home: `unusedbinder_confirmed` is at home
-  [CommMagma] — at home
+  [CommMagma R] — at home
 -/
 #guard_msgs (whitespace := lax) in
 #fh_home unusedbinder_confirmed
@@ -112,7 +112,7 @@ theorem genuinely {R : Type} [CommRing R] (a b : R) : (a + b) * (a - b) = a * a 
 
 /--
 info: FH home: `genuinely` is at home
-  [CommRing] — at home
+  [CommRing R] — at home
 -/
 #guard_msgs (whitespace := lax) in
 #fh_home genuinely
@@ -131,3 +131,33 @@ theorem nobinders (a b : Nat) : a + b = b + a := Nat.add_comm a b
 /-- error: Unknown constant `no_such_thing` -/
 #guard_msgs in
 #fh_home no_such_thing
+
+/-! ## The limit of a carrier-blind reached set
+
+`#fh_home` now names the carrier each binder constrains, which `instanceClasses`'s own doc
+comment always promised and its `NameSet` return type always discarded.
+
+Naming the carrier is not the same as *using* it, and this fixture pins the difference.
+`R` is used only additively and `S` only multiplicatively, so each binder has a clean home —
+`AddCommMagma` and `CommMagma` respectively. The reached set is a flat set of class names
+with no carrier attached, so both classes are attributed to both binders, neither has a
+single weakest ancestor, and **two genuine findings are lost**.
+
+That is a false negative, not a false positive, which is the safe direction — but it is
+still the walk's own comment ("a class reached at *another* carrier says nothing about this
+binder") describing evidence the data cannot supply. The tool now says so on the line where
+it matters rather than leaving a reader to infer it. Fixing it is C4's D3: an `Expr`
+traversal that records the carrier each reached class was reached *at*.
+-/
+
+theorem twocarrier {R S : Type} [CommRing R] [CommRing S] (a b : R) (x y : S) :
+    a + b = b + a ∧ x * y = y * x := ⟨add_comm a b, mul_comm x y⟩
+
+/--
+info: FH home: `twocarrier` is at home
+  [CommRing R] — reaches [AddCommMagma, CommMagma], no single weakest ancestor
+  [CommRing S] — reaches [AddCommMagma, CommMagma], no single weakest ancestor
+  ⚠ binders span 2 carriers ([R, S]); the reached set is carrier-blind, so these verdicts are approximate
+-/
+#guard_msgs (whitespace := lax) in
+#fh_home twocarrier
