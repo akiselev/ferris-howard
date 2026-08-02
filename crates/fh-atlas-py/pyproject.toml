@@ -19,3 +19,16 @@ module-name = "fh_atlas"
 features = ["pyo3/abi3-py310"]
 # `fh_atlas.pyi` and `py.typed` beside this file are picked up by maturin on their own;
 # listing them under `include` as well puts a second, unimported copy at the wheel root.
+
+[tool.uv]
+# What makes uv rebuild this package. Without it uv keys a path dependency on its
+# `pyproject.toml` alone, so every edit to the Rust — here *or* in the engine crate this one
+# wraps — leaves `uv run` cheerfully reinstalling the wheel it built the first time. The
+# failure is silent and looks like the compiler ignoring you.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "src/**/*.rs" },
+    { file = "../fh-atlas/Cargo.toml" },
+    { file = "../fh-atlas/src/**/*.rs" },
+]

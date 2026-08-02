@@ -14,11 +14,14 @@ CLAUDE.md §4 first: `Mathlib.Logic.Basic` sounds like Mathlib and is 37% Lean m
 
 The experiments run against one `fh_atlas.Corpus` handle. They used to shell out to the
 `atlas` CLI, which re-parses the whole 131k-row slice per question — eight questions, eight
-re-parses, ~48 s of pure re-reading. Build the binding first:
+re-parses, ~48 s of pure re-reading. From a clean clone:
 
-    pip install maturin && maturin develop --release -m crates/fh-atlas-py/Cargo.toml
+    uv sync
+    uv run scripts/atlas-mathlib-experiment.py
 
-Run from the repository root:  python3 scripts/atlas-mathlib-experiment.py
+Most of the wall clock is three index builds, each charged to the first query that needs it:
+the statement arena, B5's equivalence index and B4/B6's skeleton index cost 4.3 s, 6.3 s and
+13.7 s on the algebra slice. The CLI pays those, plus the slice re-parse, *per invocation*.
 """
 
 from __future__ import annotations
@@ -32,8 +35,8 @@ try:
     import fh_atlas as fa
 except ImportError:
     sys.exit(
-        "fh_atlas is not importable — build the binding with:\n"
-        "  maturin develop --release -m crates/fh-atlas-py/Cargo.toml\n"
+        "fh_atlas is not importable — this script runs under the repository's venv:\n"
+        "  uv sync && uv run scripts/atlas-mathlib-experiment.py\n"
         "(see crates/fh-atlas-py/README.md)"
     )
 
@@ -133,7 +136,254 @@ def experiment_honesty(corpus: fa.Corpus) -> Experiment:
     return e
 
 
-EXPERIMENTS = [experiment_proof_edges, experiment_walls, experiment_honesty]
+# ---------------------------------------------------------------------------
+# B4 — the skeleton index. Does squinting find analogies a keyword search cannot?
+# ---------------------------------------------------------------------------
+
+def experiment_similar_crosses_theories(corpus: fa.Corpus) -> Experiment:
+    e = Experiment(
+        "B4 similar",
+        "transitivity of `≤` reaches transitivity of `∣` — the cross-theory analogy the "
+        "index exists for, and the one no name- or keyword-search finds",
+    )
+    top = [n.name for n in corpus.similar("le_trans", top=5)]
+    # Divisibility is a different theory with a different carrier and no shared concrete
+    # subterm: `le_trans` reaches it only through source C, the `Shape`-subterm postings.
+    e.check("dvd_trans" in top, f"`dvd_trans` in the top 5 (got {top})")
+    e.check("Dvd.dvd.trans" in top, f"`Dvd.dvd.trans` in the top 5 (got {top})")
+
+    # The failure mode, asserted rather than assumed. If the answer were `Nat.le_trans`,
+    # `Int.le_trans`, `UInt8.le_trans` … the index would be ranking along the *carrier*
+    # axis — the same theorem re-instantiated — which means the erasure levels are not
+    # firing and the whole normalization knob is decoration.
+    carrier_axis = [n for n in top if n.rsplit(".", 1)[-1] in ("le_trans", "trans")]
+    e.check(
+        len(carrier_axis) < len(top),
+        f"the top 5 is not the carrier axis alone: {carrier_axis} of {top}",
+    )
+
+    # The differential: brute force is a different algorithm — every declaration, no
+    # prefilter — so a prefilter that quietly dropped the head of the ranking shows up here
+    # and nowhere else. The index may *reorder* (it ranks by score, brute by retention);
+    # it must not lose.
+    brute = [n for n, _ in corpus.similar_brute("le_trans", top=10)]
+    wide = {n.name for n in corpus.similar("le_trans", top=50)}
+    kept = [n for n in brute if n in wide]
+    e.check(
+        len(kept) == len(brute),
+        f"the index's top 50 keeps all {len(brute)} of brute force's top 10 "
+        f"(kept {len(kept)}; lost {[n for n in brute if n not in wide]})",
+    )
+    return e
+
+
+def experiment_similar_level_selects_the_family(corpus: fa.Corpus) -> Experiment:
+    e = Experiment(
+        "B4 level knob",
+        "the erasure level *selects* which analogy is returned: at `presentation` the "
+        "neighbours of `Nat.add_comm` keep the carrier and vary the operator, at `carriers` "
+        "they keep the operator and vary the carrier — and the two families do not mix",
+    )
+    pres = [n.name for n in corpus.similar("Nat.add_comm", top=8, level="presentation")]
+    carr = [n.name for n in corpus.similar("Nat.add_comm", top=8, level="carriers")]
+    e.check("Nat.mul_comm" in pres and "Nat.or_comm" in pres, f"presentation: {pres}")
+    e.check("Int.add_comm" in carr, f"carriers: {carr}")
+
+    # "Selected by the level, not interleaved" is the sharp claim, and it is the one that
+    # distinguishes a working knob from a ranking that happens to contain both families:
+    # every member of the level's own family must rank above every member of the other.
+    def separated(names: list[str], in_family) -> tuple[bool, str]:
+        mine = [i for i, n in enumerate(names) if in_family(n)]
+        theirs = [i for i, n in enumerate(names) if not in_family(n)]
+        if not mine:
+            return False, "the level's own family is absent"
+        if not theirs:
+            return True, "the whole list is the level's own family"
+        return max(mine) < min(theirs), f"last own at {max(mine)}, first other at {min(theirs)}"
+
+    ok, why = separated(pres, lambda n: n.startswith("Nat."))
+    e.check(ok, f"presentation ranks same-carrier above cross-carrier ({why}): {pres}")
+    ok, why = separated(carr, lambda n: n.rsplit(".", 1)[-1] == "add_comm")
+    e.check(ok, f"carriers ranks same-operator above different-operator ({why}): {carr}")
+    return e
+
+
+# ---------------------------------------------------------------------------
+# B5 — the equivalence graph. When are two theorems one theorem?
+# ---------------------------------------------------------------------------
+
+def experiment_equivalence(corpus: fa.Corpus) -> Experiment:
+    e = Experiment(
+        "B5 equivalent",
+        "two spellings of antisymmetry are recognised as one claim, and asking the question "
+        "of a non-proposition is refused rather than answered",
+    )
+    # `le_antisymm : a ≤ b → b ≤ a → a = b` and `eq_of_le_of_ge` are the same theorem under
+    # two names. At `exact` — no erasure at all — so this is statement identity, not
+    # squinting.
+    members = corpus.equivalent("le_antisymm", level="exact")
+    e.check("eq_of_le_of_ge" in members, f"`eq_of_le_of_ge` in the class (got {members[:5]})")
+
+    # The Prop guard. Without it the query answers "everything whose type is `Type`" and
+    # calls that an equivalence class, which is a type index wearing a relation's name.
+    try:
+        answer = corpus.equivalent("Nat.succ")
+    except fa.NotAProposition as err:
+        e.check("Nat.succ" in str(err), f"`Nat.succ` refused, naming itself: {err!s:.60}")
+    else:
+        e.check(False, f"`Nat.succ` was answered with {len(answer)} 'equivalents'")
+
+    # And the class list must be reformulation families, not the corpus's type structure.
+    # Measured without the restriction, the largest class is 1,859 declarations whose type
+    # is literally `Type`; a class of that order here means the restriction is off.
+    classes = corpus.classes(top=5)
+    e.check(bool(classes) and classes[0][0] > 1, f"largest class: {classes[0] if classes else None}")
+    e.check(
+        classes[0][0] < 100,
+        f"the largest class is a reformulation family ({classes[0][0]} members: "
+        f"{classes[0][1][:3]}), not the `Type` bucket",
+    )
+    return e
+
+
+# ---------------------------------------------------------------------------
+# B6 — dictionaries, transport, the frontier
+# ---------------------------------------------------------------------------
+
+def experiment_dictionary(corpus: fa.Corpus) -> Experiment:
+    e = Experiment(
+        "B6 dictionary",
+        "order theory and algebra have a *partial* dictionary: matched rows where the "
+        "analogy has been made, and a larger unmatched list where it has not",
+    )
+    d = corpus.dictionary("Mathlib.Order", "Mathlib.Algebra")
+    e.check(len(d.rows) > 50, f"{len(d.rows)} rows between {d.left_theory} and {d.right_theory}")
+    # The missing entries are the point of the exercise (atlas.md §2's Frobenius row). A
+    # *total* dictionary would mean every order concept already has an algebraic partner,
+    # which would say the analogy is exhausted — and would be evidence the matcher is
+    # matching on nothing.
+    e.check(
+        bool(d.missing_left) and bool(d.missing_right),
+        f"unmatched: {len(d.missing_left)} in {d.left_theory}, "
+        f"{len(d.missing_right)} in {d.right_theory}",
+    )
+    e.check(
+        len(d.missing_left) > len(d.rows),
+        f"the unmatched side dominates ({len(d.missing_left)} vs {len(d.rows)}) — the "
+        "dictionary is partial, which is what makes it a research object",
+    )
+    # Every row is a real anti-unification, not a bucket collision.
+    weak = [r for r in d.rows if r.retention < 0.30]
+    e.check(not weak, f"every row clears the retention floor ({len(weak)} below 0.30)")
+    return e
+
+
+def experiment_transport(corpus: fa.Corpus) -> Experiment:
+    e = Experiment(
+        "B6 transport",
+        "transporting `le_trans` along the row `le_trans ~ dvd_trans` lands on a theorem "
+        "that already exists — the outcome that *verifies* a dictionary row",
+    )
+    t = corpus.transport("le_trans", "dvd_trans", "le_trans")
+    e.check(t.exists, f"the image exists: {t!r}")
+    # `dvd_trans` and `Dvd.dvd.trans` have the same statement, so which name comes back is
+    # a tie-break; either is the right answer and neither is `None`.
+    e.check(
+        t.name in ("dvd_trans", "Dvd.dvd.trans"),
+        f"the image is named as divisibility transitivity: {t.name}",
+    )
+    # `.exists` and `.name` are one fact, and a caller branching on the first must be able
+    # to read the second without a None check that never fires.
+    e.check((t.name is not None) == t.exists, f"name={t.name!r} agrees with exists={t.exists}")
+    # Cross-layer: the image is rendered from the skeleton index's arena, the comparison
+    # from the plain statement arena. Equal strings mean the two agree about what the
+    # transported statement *is*, which no single-arena check can establish.
+    e.check(
+        t.image == corpus.skeleton(t.name, level="carriers"),
+        "the image renders as the existing declaration's own carriers-level statement",
+    )
+    # And the answer must not depend on which level was asked for. `exists` is TermId
+    # equality inside the engine, and the index seals its arena after precomputing exact /
+    # presentation / shape — so for a while those three reported an *open target* for a
+    # lemma the slice already had, while instances and carriers were right by accident.
+    # Checking the default level alone is what let that stand; the sweep is the gate.
+    open_at = [
+        lv
+        for lv in ("exact", "presentation", "instances", "carriers", "shape")
+        if not corpus.transport("le_trans", "dvd_trans", "le_trans", level=lv).exists
+    ]
+    e.check(
+        not open_at,
+        f"every level finds it: open at {open_at} would be the engine inventing research",
+    )
+    return e
+
+
+# Infrastructure namespaces. Excluded not to flatter the result but to ask the question
+# meant: CLAUDE.md §5's third repetition of "restrict to claims, or you are measuring Lean
+# rather than mathematics". The negative control below asserts they *would* have dominated.
+INFRASTRUCTURE = [
+    "Init", "Std", "Lean", "Aesop", "Batteries", "Qq", "ProofWidgets", "Plausible",
+    "Cli", "ImportGraph", "LeanSearchClient", "Mathlib.Tactic", "Mathlib.Lean",
+    "Mathlib.Util", "Mathlib.Control", "Mathlib.Testing", "Mathlib.Deprecated",
+]
+
+
+def experiment_frontier(corpus: fa.Corpus) -> Experiment:
+    e = Experiment(
+        "B6 frontier",
+        "the frontier ranking is dominated by metaprogramming siblings until infrastructure "
+        "is excluded, and the exclusion is what turns it from a refactoring list into a "
+        "mathematical one",
+    )
+    # The documented failure mode, asserted as a *positive* control: it must still happen,
+    # or the exclusion knob below is being credited with a problem that no longer exists.
+    unfiltered = corpus.frontier(top=5)
+    infra_hits = [f for f in unfiltered if f.left in INFRASTRUCTURE or f.right in INFRASTRUCTURE]
+    e.check(
+        len(infra_hits) >= 3,
+        f"unfiltered, the top 5 is mostly infrastructure: "
+        f"{[(f.left, f.right) for f in unfiltered]}",
+    )
+    e.check(
+        any(f.cross_citations == 0 for f in unfiltered),
+        "and the pairs it ranks first do not cite each other at all — similarity without "
+        "traffic, which is exactly what the score rewards",
+    )
+
+    filtered = corpus.frontier(top=8, exclude=INFRASTRUCTURE)
+    e.check(
+        all(f.left not in INFRASTRUCTURE and f.right not in INFRASTRUCTURE for f in filtered),
+        f"excluded, nothing infrastructural survives: {[(f.left, f.right) for f in filtered]}",
+    )
+    # What is left is the honest reading of *this* slice, and it is a negative result worth
+    # recording rather than hiding: every mathematical theory pair big enough to rank
+    # already cites the other, so this slice has no unexplored interface. A pair here with
+    # zero traffic would be the interesting case; there is none.
+    quiet = [f for f in filtered if f.cross_citations == 0]
+    e.check(
+        bool(filtered),
+        f"{len(filtered)} mathematical pairs clear the size floor; "
+        f"{len(quiet)} of them have no cross-citations at all",
+    )
+    e.check(
+        all(f.similarity <= 1.0 for f in filtered),
+        "similarity is a fraction of the smaller theory's shape buckets",
+    )
+    return e
+
+
+EXPERIMENTS = [
+    experiment_proof_edges,
+    experiment_walls,
+    experiment_honesty,
+    experiment_similar_crosses_theories,
+    experiment_similar_level_selects_the_family,
+    experiment_equivalence,
+    experiment_dictionary,
+    experiment_transport,
+    experiment_frontier,
+]
 
 
 def main() -> None:

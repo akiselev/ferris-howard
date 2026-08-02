@@ -1,12 +1,14 @@
 """Type stubs for the Atlas Python binding.
 
-The `Corpus` namespace of `research/python-api.md` §2. Nothing else is bound yet — see
+The `Corpus` namespace of `research/python-api.md` §2 — B2's graph, B4's skeleton index,
+B5's equivalence graph and B6's dictionaries. Nothing outside `Corpus` is bound yet; see
 `crates/fh-atlas-py/README.md` for what is missing and why.
 """
 
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from typing import Literal
 
 Lens = Literal["statement", "proof", "both"]
@@ -31,6 +33,27 @@ class UnknownDeclaration(AtlasError):
 
 class NoStatement(AtlasError):
     """The declaration is in the slice but carries no usable I3 statement encoding."""
+
+class NotAProposition(AtlasError):
+    """Equivalence was asked of something that is not a claim.
+
+    Raised rather than answered: without the guard the query returns every declaration
+    whose type is literally `Type`, which is a type index wearing a relation's name.
+    """
+
+class NoMatch(AtlasError):
+    """The subject does not match the dictionary row's left-hand pattern.
+
+    A failure of applicability, not of transport — the row simply says nothing about this
+    statement.
+    """
+
+class ScopedRow(AtlasError):
+    """The row has a variable standing for something under a binder.
+
+    It cannot be instantiated independently of that binder, so the image would be a
+    different statement than the one the row promises.
+    """
 
 class Decl:
     """One declaration, as B1's extractor emitted it."""
@@ -90,11 +113,157 @@ class Generalization:
 
     def __repr__(self) -> str: ...
 
+class Neighbour:
+    """One neighbour from `Corpus.similar`, with the numbers that rank it."""
+
+    @property
+    def name(self) -> str: ...
+    @property
+    def module(self) -> str: ...
+    @property
+    def kind(self) -> str: ...
+    @property
+    def retention(self) -> float:
+        """`common / max(|x|,|y|)` of the anti-unification against the query."""
+
+    @property
+    def common(self) -> int: ...
+    @property
+    def vars(self) -> int: ...
+    @property
+    def scoped_vars(self) -> int:
+        """Variables abstracting something locally bound. Positive means not transportable."""
+
+    @property
+    def rarity(self) -> float:
+        """The rarest shared index key's IDF — how surprising the overlap is."""
+
+    @property
+    def sources(self) -> list[str]:
+        """Which of the index's three sources found this: `shape`, `subterm`,
+        `shape-subterm`. `shape-subterm` is the one that carries cross-theory analogies.
+        """
+
+    @property
+    def skeleton(self) -> str:
+        """The rendered anti-unification. This *is* the candidate dictionary row."""
+
+    @property
+    def transportable(self) -> bool:
+        """`scoped_vars == 0`. `Corpus.transport` refuses the rest."""
+
+    @property
+    def score(self) -> float:
+        """Retention weighted by rarity and a cross-theory bonus. A ranking key, not a
+        probability — comparable within one query's results and nowhere else.
+        """
+
+    def __repr__(self) -> str: ...
+
+class Row:
+    """One candidate dictionary row: two declarations that anti-unify, and how far."""
+
+    @property
+    def left(self) -> str: ...
+    @property
+    def right(self) -> str: ...
+    @property
+    def skeleton(self) -> str: ...
+    @property
+    def retention(self) -> float: ...
+    @property
+    def status(self) -> Literal["both-proven", "one-proven", "neither-proven"]:
+        """Whether each half of the row is a theorem or merely a definition."""
+
+    @property
+    def transportable(self) -> bool: ...
+    def __repr__(self) -> str: ...
+
+class Dictionary:
+    """A dictionary between two theory fragments: the rows, and what has no partner."""
+
+    @property
+    def left_theory(self) -> str: ...
+    @property
+    def right_theory(self) -> str: ...
+    @property
+    def rows(self) -> list[Row]:
+        """The matched rows, best retention first."""
+
+    @property
+    def missing_left(self) -> list[str]:
+        """Declarations on the left with no partner on the right.
+
+        **The point of the exercise.** A missing entry is where the analogy has not been
+        made, which is where the research is; a total dictionary would mean there is none.
+        """
+
+    @property
+    def missing_right(self) -> list[str]: ...
+    def __repr__(self) -> str: ...
+
+class Transported:
+    """What transporting a statement along a dictionary row produced.
+
+    One class with a boolean discriminant rather than two: `if t.exists:` is what every
+    caller writes, and `name` is `None` exactly when `exists` is `False`.
+    """
+
+    @property
+    def exists(self) -> bool:
+        """True when the image is already a declaration in the slice — the outcome that
+        turns a candidate row into a verified one.
+        """
+
+    @property
+    def name(self) -> str | None:
+        """The declaration the image turned out to be; `None` exactly when it is open."""
+
+    @property
+    def image(self) -> str:
+        """The image statement in the I3 grammar. When it does not exist this is the
+        directed target — falsify it before proving it, because refutation is cheap and
+        locates the analogy's boundary.
+        """
+
+    def __repr__(self) -> str: ...
+
+class FrontierPair:
+    """One theory pair's frontier reading: similar, and not talking to each other."""
+
+    @property
+    def left(self) -> str: ...
+    @property
+    def right(self) -> str: ...
+    @property
+    def similarity(self) -> float:
+        """Shape buckets both theories occupy, over the smaller theory's bucket count."""
+
+    @property
+    def cross_citations(self) -> int:
+        """Declarations in one theory whose statement or proof cites the other."""
+
+    @property
+    def left_size(self) -> int: ...
+    @property
+    def right_size(self) -> int: ...
+    @property
+    def score(self) -> float:
+        """`similarity / (1 + sqrt(cross_citations))`. Similarity buys, traffic discounts."""
+
+    def __repr__(self) -> str: ...
+
 class Corpus:
     """A parsed slice: one load, many queries.
 
-    Loading parses the whole JSONL once (~6 s for 131k declarations); every query below
+    Loading parses the whole JSONL once (~5 s for 131k declarations); every query below
     then runs against the graph already in memory.
+
+    Three further layers are built lazily, each by the first query that needs it and each
+    once: the statement arena (`skeleton`, `generalize`), B5's equivalence index
+    (`equivalent`, `classes`) and B4's skeleton index (`similar`, `dictionary`,
+    `transport`, `frontier`). Measured on the 131,062-row algebra slice they cost 4.3 s,
+    6.3 s and 13.7 s. A session that asks graph questions only pays none of it.
     """
 
     @staticmethod
@@ -185,4 +354,97 @@ class Corpus:
         Raises:
             UnknownDeclaration: either name is not in the slice.
             NoStatement: either row carries no usable statement.
+        """
+
+    def similar(
+        self,
+        name: str,
+        top: int = 10,
+        level: Level = "carriers",
+        min_retention: float = 0.30,
+        min_common: int = 6,
+    ) -> list[Neighbour]:
+        """Declarations whose statements anti-unify with this one, best score first.
+
+        `level` chooses the family, not just the fidelity: at `presentation` the neighbours
+        keep the carrier and vary the operator, at `carriers` they keep the operator and
+        vary the carrier. `min_common` and `min_retention` are the floors a candidate must
+        clear to be reported at all; lowering them buys recall by admitting rows whose
+        shared structure is punctuation.
+
+        Raises:
+            UnknownDeclaration: `name` is not in the slice.
+            NoStatement: it is, and carries no comparable statement.
+            ValueError: `level` is not one of the five names.
+        """
+
+    def similar_brute(
+        self, name: str, top: int = 10, level: Level = "carriers"
+    ) -> list[tuple[str, float]]:
+        """The same ranking with the index switched off: `(name, retention)`, best first.
+
+        The differential reference for `similar` — a recall floor measured against a
+        prefilter that shares the prefilter's blind spots is not a measurement. Ranked by
+        retention alone, where `similar` ranks by score, so the two orders differ on
+        purpose. Costs one anti-unification per declaration in the slice.
+        """
+
+    def equivalent(self, name: str, level: Level = "instances") -> list[str]:
+        """Declarations whose statements normalize to the same thing as this one, sorted.
+
+        Reflexive, symmetric and transitive by construction — the relation *is* equality of
+        `erase(stmt, level)` — and the class excludes `name` itself.
+
+        Raises:
+            UnknownDeclaration: `name` is not in the slice.
+            NotAProposition: it is, and is not a claim.
+            ValueError: `level` is not one of the five names, or is `shape` — at `shape`
+                "equivalent" would mean "has the same skeleton", which `similar` answers.
+        """
+
+    def classes(
+        self, level: Level = "instances", theorems_only: bool = True, top: int | None = None
+    ) -> list[tuple[int, list[str]]]:
+        """Every equivalence class of size > 1 at a level, largest first: `(size, members)`.
+
+        Non-propositions are excluded outright and there is no knob for it: unrestricted,
+        the largest class is the 1,859 declarations whose type is literally `Type`.
+        `theorems_only` additionally drops Prop-valued *definitions* — dozens of typeclass
+        definitions have identical statements and bury the reformulation families.
+        """
+
+    def dictionary(
+        self, left: str, right: str, per_decl: int = 1, theorems_only: bool = True
+    ) -> Dictionary:
+        """The maximal partial functor between two theories.
+
+        A theory is a module prefix — depth 2 under `Mathlib`, depth 1 elsewhere — so
+        `"Mathlib.Order"` and `"Mathlib.Algebra"` are two theories and
+        `Mathlib.Algebra.Group.Defs` is inside one. `per_decl` caps how many partners one
+        declaration may contribute.
+        """
+
+    def transport(
+        self, row_left: str, row_right: str, subject: str, level: Level = "carriers"
+    ) -> Transported:
+        """Apply the row `(row_left ~ row_right)` to `subject` and say where it lands.
+
+        Raises:
+            UnknownDeclaration: one of the three is not in the slice.
+            NoMatch: `subject` does not match the row's left-hand pattern.
+            ScopedRow: the row abstracts something under a binder.
+        """
+
+    def frontier(
+        self,
+        min_theory_size: int = 200,
+        top: int = 20,
+        theorems_only: bool = True,
+        exclude: Sequence[str] = (),
+    ) -> list[FrontierPair]:
+        """Theory pairs that look alike and do not cite each other, best first.
+
+        `exclude` drops namespaces by name. Without excluding infrastructure the ranking is
+        led by metaprogramming siblings — `Aesop ~ ProofWidgets`, `Aesop ~ Qq` — which is a
+        correct answer to the question as posed and not a mathematical agenda.
         """

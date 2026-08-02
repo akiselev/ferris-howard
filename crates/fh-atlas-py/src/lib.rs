@@ -37,11 +37,13 @@
 //! Merging them would mean either building the postings on the first `skeleton()` call or
 //! building the `Prop` table on the first `similar()` call, and the builds are nowhere near
 //! the same size: measured on the 131,062-row algebra slice, the plain statement arena
-//! costs 4.4 s, the equivalence index 6.5 s, and the full skeleton index — every subterm of
-//! every statement, at two levels, inverted — 105 s. Charging a `corpus.skeleton(…)` caller
-//! 105 s so that one arena can be shared is the wrong trade. Each layer is built by the
-//! first query that needs it and not before, and a session that asks graph questions only
-//! builds none of them.
+//! costs 4.3 s, the equivalence index 6.3 s, and the full skeleton index — every subterm of
+//! every statement, at two levels, inverted — 13.7 s. (All three roughly halve or double
+//! with what else the machine is doing; their ordering does not.) Each layer is built by
+//! the first query that needs it and not before, so a session that asks graph questions
+//! only builds none of them and one that asks for a skeleton is not charged for postings it
+//! will never read. The price is paid in memory, and that part *is* deterministic: 723 MB
+//! after a load, 1,095 MB with the skeleton index, 1,442 MB with all three.
 //!
 //! # `py.detach` is `py.allow_threads`
 //!
@@ -53,9 +55,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
-use ::fh_atlas::dict::{
-    self, Row as CoreRow, Status, TransportError, Transported as CoreTransported,
-};
+use ::fh_atlas::dict::{self, Row as CoreRow, TransportError, Transported as CoreTransported};
 use ::fh_atlas::equiv::{EquivIndex, Unknown};
 use ::fh_atlas::graph::{Decl as CoreDecl, Graph, Lens};
 use ::fh_atlas::skel::erase::{EraseCache, Level, Signatures, erase};
@@ -89,6 +89,25 @@ create_exception!(
     NoStatement,
     AtlasError,
     "The declaration is in the slice but carries no usable I3 statement encoding."
+);
+create_exception!(
+    fh_atlas,
+    NotAProposition,
+    AtlasError,
+    "Equivalence was asked of something that is not a claim."
+);
+create_exception!(
+    fh_atlas,
+    NoMatch,
+    AtlasError,
+    "The subject does not match the dictionary row's left-hand pattern."
+);
+create_exception!(
+    fh_atlas,
+    ScopedRow,
+    AtlasError,
+    "The row has a variable standing for something under a binder, so it cannot be \
+     instantiated independently of that binder."
 );
 
 /// The axioms an argument may rest on when the caller names none — Lean's own three, which
@@ -191,6 +210,246 @@ fn truncate(s: &str, n: usize) -> String {
     }
 }
 
+/// One neighbour from `similar`, with everything needed to audit the rank rather than
+/// trust it.
+#[pyclass(module = "fh_atlas", frozen, get_all)]
+pub struct Neighbour {
+    pub name: String,
+    pub module: String,
+    pub kind: String,
+    /// `common / max(|x|,|y|)` of the anti-unification against the query.
+    pub retention: f32,
+    pub common: u32,
+    pub vars: u32,
+    /// Variables abstracting something locally bound. Positive means the row is a local
+    /// coincidence rather than a transportable analogy.
+    pub scoped_vars: u32,
+    /// The rarest shared index key's IDF — how surprising the overlap is.
+    pub rarity: f32,
+    /// Which of the index's three sources found this candidate: `shape`, `subterm`,
+    /// `shape-subterm`. A list rather than the CLI's `"shape+subterm"` string, because a
+    /// caller asking "did the shape-subterm source find this" should not have to grep.
+    pub sources: Vec<String>,
+    /// The rendered skeleton. This *is* the candidate dictionary row.
+    pub skeleton: String,
+    /// `scoped_vars == 0`. B6 refuses to transport the rest.
+    pub transportable: bool,
+    /// Retention, weighted by rarity and a cross-theory bonus, penalised for scoped
+    /// variables. The ranking key — not a probability.
+    pub score: f32,
+}
+
+impl From<CoreNeighbour> for Neighbour {
+    fn from(n: CoreNeighbour) -> Neighbour {
+        Neighbour {
+            name: n.name,
+            module: n.module,
+            kind: n.kind,
+            retention: n.retention,
+            common: n.common,
+            vars: n.vars,
+            scoped_vars: n.scoped_vars,
+            rarity: n.rarity,
+            sources: source_names(n.sources),
+            skeleton: n.skeleton,
+            transportable: n.transportable,
+            score: n.score,
+        }
+    }
+}
+
+#[pymethods]
+impl Neighbour {
+    fn __repr__(&self) -> String {
+        format!(
+            "Neighbour(name={:?}, score={:.3}, retention={:.2}, common={}, vars={}{}, \
+             sources={:?}, module={:?})",
+            self.name,
+            self.score,
+            self.retention,
+            self.common,
+            self.vars,
+            if self.transportable { "" } else { ", scoped" },
+            self.sources,
+            self.module
+        )
+    }
+}
+
+fn source_names(s: Sources) -> Vec<String> {
+    let mut v = Vec::new();
+    for (bit, name) in [
+        (Sources::SHAPE, "shape"),
+        (Sources::SUBTERM, "subterm"),
+        (Sources::SHAPE_SUBTERM, "shape-subterm"),
+    ] {
+        if s.has(bit) {
+            v.push(name.to_string());
+        }
+    }
+    v
+}
+
+/// One candidate dictionary row: two declarations that anti-unify, and how far.
+#[pyclass(module = "fh_atlas", frozen, get_all)]
+pub struct Row {
+    pub left: String,
+    pub right: String,
+    pub skeleton: String,
+    pub retention: f32,
+    /// `both-proven`, `one-proven` or `neither-proven` — whether each half is a theorem.
+    pub status: String,
+    pub transportable: bool,
+}
+
+impl From<CoreRow> for Row {
+    fn from(r: CoreRow) -> Row {
+        Row {
+            left: r.left,
+            right: r.right,
+            skeleton: r.skeleton,
+            retention: r.retention,
+            status: r.status.name().to_string(),
+            transportable: r.transportable,
+        }
+    }
+}
+
+#[pymethods]
+impl Row {
+    fn __repr__(&self) -> String {
+        format!(
+            "Row({:?} ~ {:?}, retention={:.2}, status={:?}{})",
+            self.left,
+            self.right,
+            self.retention,
+            self.status,
+            if self.transportable { "" } else { ", scoped" }
+        )
+    }
+}
+
+/// A dictionary between two theory fragments: the rows, and what has no partner.
+#[pyclass(module = "fh_atlas", frozen)]
+pub struct Dictionary {
+    #[pyo3(get)]
+    pub left_theory: String,
+    #[pyo3(get)]
+    pub right_theory: String,
+    /// Held as `Py<Row>` rather than rebuilt per access, so `d.rows[0] is d.rows[0]` and a
+    /// caller can key a dict on a row it pulled out.
+    rows: Vec<Py<Row>>,
+    #[pyo3(get)]
+    pub missing_left: Vec<String>,
+    #[pyo3(get)]
+    pub missing_right: Vec<String>,
+}
+
+#[pymethods]
+impl Dictionary {
+    /// The matched rows, best retention first.
+    #[getter]
+    fn rows(&self, py: Python<'_>) -> Vec<Py<Row>> {
+        // `clone_ref`, not `clone`: pyo3 0.29 puts `Py: Clone` behind the `py-clone`
+        // feature precisely because a refcount bump needs the GIL held, and a getter is the
+        // one place it demonstrably is.
+        self.rows.iter().map(|r| r.clone_ref(py)).collect()
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Dictionary({:?} → {:?}, {} rows, unmatched {} left / {} right)",
+            self.left_theory,
+            self.right_theory,
+            self.rows.len(),
+            self.missing_left.len(),
+            self.missing_right.len()
+        )
+    }
+}
+
+/// What transporting a statement along a dictionary row produced.
+///
+/// One class with a boolean discriminant rather than two classes: `if t.exists:` is what
+/// every caller writes, and a two-state answer does not earn an `isinstance` dispatch or a
+/// union type in the stubs. `name` is `None` exactly when `exists` is false — the two are
+/// the same fact, and the invariant is asserted in `tests/smoke.py` rather than left to
+/// documentation.
+#[pyclass(module = "fh_atlas", frozen, get_all)]
+pub struct Transported {
+    /// True when the image is already a declaration in the slice: the dictionary row is
+    /// verified rather than candidate.
+    pub exists: bool,
+    /// The declaration the image turned out to be, when it exists.
+    pub name: Option<String>,
+    /// The image statement, rendered in the I3 grammar. When it does not exist this is the
+    /// directed target — falsify it before proving it, because refutation is cheap and
+    /// locates the analogy's boundary.
+    pub image: String,
+}
+
+impl From<CoreTransported> for Transported {
+    fn from(t: CoreTransported) -> Transported {
+        match t {
+            CoreTransported::Exists { name, image } => Transported {
+                exists: true,
+                name: Some(name),
+                image,
+            },
+            CoreTransported::Open { image } => Transported {
+                exists: false,
+                name: None,
+                image,
+            },
+        }
+    }
+}
+
+#[pymethods]
+impl Transported {
+    fn __repr__(&self) -> String {
+        match &self.name {
+            Some(n) => format!("Transported(exists=True, name={n:?})"),
+            None => format!(
+                "Transported(exists=False, image={:?})",
+                truncate(&self.image, 60)
+            ),
+        }
+    }
+}
+
+/// One theory pair's frontier reading: similar, and not talking to each other.
+#[pyclass(module = "fh_atlas", frozen, get_all)]
+pub struct FrontierPair {
+    pub left: String,
+    pub right: String,
+    /// Shape buckets both theories occupy, as a fraction of the smaller theory's buckets.
+    pub similarity: f32,
+    /// Declarations in one theory whose statement or proof cites the other.
+    pub cross_citations: usize,
+    pub left_size: usize,
+    pub right_size: usize,
+    /// `similarity / (1 + sqrt(cross_citations))`. High similarity, low traffic.
+    pub score: f32,
+}
+
+#[pymethods]
+impl FrontierPair {
+    fn __repr__(&self) -> String {
+        format!(
+            "FrontierPair({:?} ~ {:?}, score={:.3}, similarity={:.2}, cross_citations={}, \
+             sizes={}/{})",
+            self.left,
+            self.right,
+            self.score,
+            self.similarity,
+            self.cross_citations,
+            self.left_size,
+            self.right_size
+        )
+    }
+}
+
 // ---------------------------------------------------------------------------
 // The handle
 // ---------------------------------------------------------------------------
@@ -199,8 +458,16 @@ fn truncate(s: &str, n: usize) -> String {
 #[pyclass(module = "fh_atlas", frozen)]
 pub struct Corpus {
     path: String,
+    /// The bytes the graph was built from, kept because B4's and B5's indexes each parse
+    /// the slice themselves. Re-reading the file when one of them is first needed would be
+    /// 146 MB cheaper and would make a handle's answers depend on whether the file changed
+    /// underneath it — the three layers would then disagree about what the slice *is*,
+    /// which is not a failure any caller could diagnose.
+    source: String,
     graph: Graph,
     skel: Mutex<Option<Skel>>,
+    index: Mutex<Option<SkeletonIndex>>,
+    equiv: Mutex<Option<EquivIndex>>,
 }
 
 /// The statement layer: built lazily, mutated by every erasure and every generalization.
@@ -252,6 +519,11 @@ impl Skel {
 enum SkelFail {
     NoStatement { name: String, reason: String },
     Unparsable { name: String, reason: String },
+    NotInSlice(String),
+    NotAProposition(String),
+    NoMatch,
+    Scoped,
+    Build(String),
     Poisoned,
 }
 
@@ -264,6 +536,23 @@ impl From<SkelFail> for PyErr {
             SkelFail::Unparsable { name, reason } => NoStatement::new_err(format!(
                 "`{name}`'s statement encoding could not be parsed: {reason}"
             )),
+            SkelFail::NotInSlice(name) => {
+                UnknownDeclaration::new_err(format!("`{name}` is not in this slice"))
+            }
+            SkelFail::NotAProposition(name) => NotAProposition::new_err(format!(
+                "`{name}` is not a proposition — equivalence is a relation between claims, \
+                 and asking it of a definition would return every declaration whose type is \
+                 literally `Type`"
+            )),
+            SkelFail::NoMatch => NoMatch::new_err(
+                "the subject does not match this row's left-hand pattern, so the row says \
+                 nothing about it — a failure of applicability, not of transport",
+            ),
+            SkelFail::Scoped => ScopedRow::new_err(
+                "this row has a variable standing for something under a binder, so it cannot \
+                 be instantiated independently of that binder",
+            ),
+            SkelFail::Build(reason) => SliceError::new_err(reason),
             SkelFail::Poisoned => AtlasError::new_err(
                 "this corpus's statement arena was left inconsistent by an earlier panic; \
                  reload the slice",
@@ -295,7 +584,7 @@ impl Corpus {
     #[staticmethod]
     fn load(py: Python<'_>, path: PathBuf) -> PyResult<Corpus> {
         let shown = path.display().to_string();
-        let graph = py.detach(|| -> Result<Graph, LoadFail> {
+        let (source, graph) = py.detach(|| -> Result<(String, Graph), LoadFail> {
             let text = std::fs::read_to_string(&path).map_err(|e| match e.kind() {
                 std::io::ErrorKind::NotFound => LoadFail::Missing(format!(
                     "no slice at {shown} — produce one with \
@@ -303,12 +592,17 @@ impl Corpus {
                 )),
                 _ => LoadFail::Io(format!("{shown}: {e}")),
             })?;
-            Graph::from_jsonl(&text).map_err(|e| LoadFail::Row(format!("{shown}: {e}")))
+            let graph =
+                Graph::from_jsonl(&text).map_err(|e| LoadFail::Row(format!("{shown}: {e}")))?;
+            Ok((text, graph))
         })?;
         Ok(Corpus {
             path: path.display().to_string(),
+            source,
             graph,
             skel: Mutex::new(None),
+            index: Mutex::new(None),
+            equiv: Mutex::new(None),
         })
     }
 
@@ -457,6 +751,262 @@ impl Corpus {
             })
         })?)
     }
+
+    // -----------------------------------------------------------------------
+    // B4 — the skeleton index
+    // -----------------------------------------------------------------------
+
+    /// Declarations whose statements anti-unify with this one, ranked.
+    ///
+    /// `level` is what the *reported* skeleton is computed at, and it is the knob that
+    /// chooses the family: at `presentation` the neighbours share a carrier and differ in
+    /// operator, at `carriers` they share an operator and differ in carrier. `min_common`
+    /// and `min_retention` are the floors a candidate must clear to be reported at all —
+    /// the defaults are the engine's, and lowering them buys recall by admitting rows whose
+    /// shared structure is punctuation.
+    #[pyo3(signature = (name, top = 10, level = "carriers", min_retention = 0.30, min_common = 6))]
+    fn similar(
+        &self,
+        py: Python<'_>,
+        name: &str,
+        top: usize,
+        level: &str,
+        min_retention: f32,
+        min_common: u32,
+    ) -> PyResult<Vec<Neighbour>> {
+        let level = parse_level(level)?;
+        self.known(name)?;
+        let found = py.detach(|| -> Result<Vec<CoreNeighbour>, SkelFail> {
+            let cfg = IndexConfig {
+                lgg_level: level,
+                min_retention,
+                min_common,
+                ..IndexConfig::default()
+            };
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            idx.similar(name, top, &cfg)
+                .map_err(|_| self.not_indexed(name))
+        })?;
+        Ok(found.into_iter().map(Neighbour::from).collect())
+    }
+
+    /// The same ranking with the index switched off: every declaration, compared.
+    ///
+    /// The differential reference for `similar`, and the reason it is exposed rather than
+    /// kept in a Rust test — a recall floor measured against a prefilter that shares the
+    /// prefilter's blind spots is not a measurement. Costs one anti-unification per
+    /// declaration in the slice, so seconds rather than milliseconds.
+    #[pyo3(signature = (name, top = 10, level = "carriers"))]
+    fn similar_brute(
+        &self,
+        py: Python<'_>,
+        name: &str,
+        top: usize,
+        level: &str,
+    ) -> PyResult<Vec<(String, f32)>> {
+        let level = parse_level(level)?;
+        self.known(name)?;
+        Ok(py.detach(|| -> Result<Vec<(String, f32)>, SkelFail> {
+            let cfg = IndexConfig {
+                lgg_level: level,
+                ..IndexConfig::default()
+            };
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            idx.similar_brute(name, top, &cfg)
+                .map_err(|_| self.not_indexed(name))
+        })?)
+    }
+
+    // -----------------------------------------------------------------------
+    // B5 — the equivalence graph
+    // -----------------------------------------------------------------------
+
+    /// The declarations whose statements normalize to the same thing as this one.
+    ///
+    /// Reflexive, symmetric and transitive by construction — the relation *is* equality of
+    /// `erase(stmt, level)` — and the class excludes `name` itself.
+    ///
+    /// Raises rather than answers for a non-proposition: without that guard the query
+    /// returns every declaration whose type is literally `Type`, which is a type index
+    /// wearing an equivalence relation's name.
+    #[pyo3(signature = (name, level = "instances"))]
+    fn equivalent(&self, py: Python<'_>, name: &str, level: &str) -> PyResult<Vec<String>> {
+        let level = parse_level(level)?;
+        // Coarser than `carriers` is `similar`'s question: at `shape` "equivalent" would
+        // mean "same skeleton", which is an analogy rather than a reformulation.
+        if level > Level::Carriers {
+            return Err(PyValueError::new_err(
+                "`equivalent` stops at `carriers` — at `shape` it would mean `has the same \
+                 skeleton`, which is what `similar` answers",
+            ));
+        }
+        self.known(name)?;
+        Ok(py.detach(|| -> Result<Vec<String>, SkelFail> {
+            let mut guard = self.equivalences()?;
+            let idx = guard.as_mut().expect("equivalences() builds it");
+            idx.equivalent(name, level).map_err(|e| match e {
+                Unknown::NotProp(n) => SkelFail::NotAProposition(n),
+                Unknown::NotInSlice(n) => self.not_indexed(&n),
+            })
+        })?)
+    }
+
+    /// Every equivalence class of size > 1 at a level, largest first, as `(size, members)`.
+    ///
+    /// `theorems_only` is the useful default and not a convenience: a *class definition*
+    /// like `AddLeftMono` is a proposition by the conclusion test, the corpus has dozens
+    /// with literally identical statements, and they bury the reformulation families under
+    /// an alphabetised list of typeclass names. Non-propositions are excluded outright —
+    /// there is no knob for that, because the largest class it produces is the 1,859
+    /// declarations whose type is `Type`.
+    #[pyo3(signature = (level = "instances", theorems_only = true, top = None))]
+    fn classes(
+        &self,
+        py: Python<'_>,
+        level: &str,
+        theorems_only: bool,
+        top: Option<usize>,
+    ) -> PyResult<Vec<(usize, Vec<String>)>> {
+        let level = parse_level(level)?;
+        Ok(
+            py.detach(|| -> Result<Vec<(usize, Vec<String>)>, SkelFail> {
+                let mut guard = self.equivalences()?;
+                let idx = guard.as_mut().expect("equivalences() builds it");
+                let mut out = idx.classes(level, true, theorems_only);
+                if let Some(n) = top {
+                    out.truncate(n);
+                }
+                Ok(out)
+            })?,
+        )
+    }
+
+    // -----------------------------------------------------------------------
+    // B6 — dictionaries, transport, the frontier
+    // -----------------------------------------------------------------------
+
+    /// The maximal partial functor between two theories: every skeleton-matched row, plus
+    /// the declarations on each side with no partner.
+    ///
+    /// A theory is a module prefix — depth 2 under `Mathlib`, depth 1 elsewhere, so
+    /// `Mathlib.Order` and `Mathlib.Algebra` are different theories and
+    /// `Mathlib.Algebra.Group.Defs` is inside one of them. The missing-entry lists are the
+    /// point of the exercise: a total dictionary would mean the analogy has nothing left to
+    /// say.
+    #[pyo3(signature = (left, right, per_decl = 1, theorems_only = true))]
+    fn dictionary(
+        &self,
+        py: Python<'_>,
+        left: &str,
+        right: &str,
+        per_decl: usize,
+        theorems_only: bool,
+    ) -> PyResult<Dictionary> {
+        let core = py.detach(|| -> Result<dict::Dictionary, SkelFail> {
+            let cfg = IndexConfig::default();
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            Ok(dict::dictionary(
+                idx,
+                left,
+                right,
+                &cfg,
+                per_decl,
+                theorems_only,
+            ))
+        })?;
+        let rows = core
+            .rows
+            .into_iter()
+            .map(|r| Py::new(py, Row::from(r)))
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(Dictionary {
+            left_theory: core.left_theory,
+            right_theory: core.right_theory,
+            rows,
+            missing_left: core.missing_left,
+            missing_right: core.missing_right,
+        })
+    }
+
+    /// Apply the row `(row_left ~ row_right)` to `subject` and report where the image lands.
+    ///
+    /// Both outcomes are signal: an image that already exists verifies the row, and one
+    /// that does not is a directed target. Refusals are raised rather than folded into the
+    /// result — `NoMatch` when the subject does not match the row's left pattern (the row
+    /// says nothing about it), `ScopedRow` when a variable stands for something under a
+    /// binder (it cannot be instantiated independently of that binder).
+    #[pyo3(signature = (row_left, row_right, subject, level = "carriers"))]
+    fn transport(
+        &self,
+        py: Python<'_>,
+        row_left: &str,
+        row_right: &str,
+        subject: &str,
+        level: &str,
+    ) -> PyResult<Transported> {
+        let level = parse_level(level)?;
+        for n in [row_left, row_right, subject] {
+            self.known(n)?;
+        }
+        // `exists` is `TermId` equality inside the engine, so it is only meaningful while
+        // the arena's interner is intact. `Arena::seal` used to break that silently and
+        // this call returned open targets that already existed; see `Arena::unseal` and
+        // the level sweep in `fh-atlas/examples/dictcheck.rs`.
+        let core = py.detach(|| -> Result<CoreTransported, SkelFail> {
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            dict::transport(idx, row_left, row_right, subject, level).map_err(|e| match e {
+                TransportError::NotInSlice(n) => self.not_indexed(&n),
+                TransportError::NoMatch => SkelFail::NoMatch,
+                TransportError::Scoped => SkelFail::Scoped,
+            })
+        })?;
+        Ok(Transported::from(core))
+    }
+
+    /// Theory pairs that look alike and do not cite each other, best first.
+    ///
+    /// `exclude` drops namespaces by name, and `theorems_only` is on for the same reason it
+    /// is on for `classes`: without it the top of this ranking is `Aesop ~ ProofWidgets` and
+    /// `Aesop ~ Qq` — metaprogramming siblings that share shapes because they are all Lean
+    /// code over syntax trees. A correct answer to the question as posed, and not a research
+    /// agenda.
+    #[pyo3(signature = (min_theory_size = 200, top = 20, theorems_only = true, exclude = Vec::new()))]
+    fn frontier(
+        &self,
+        py: Python<'_>,
+        min_theory_size: usize,
+        top: usize,
+        theorems_only: bool,
+        exclude: Vec<String>,
+    ) -> PyResult<Vec<FrontierPair>> {
+        Ok(py.detach(|| -> Result<Vec<FrontierPair>, SkelFail> {
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            Ok(dict::frontier(
+                idx,
+                &self.graph,
+                min_theory_size,
+                top,
+                theorems_only,
+                &exclude,
+            )
+            .into_iter()
+            .map(|f| FrontierPair {
+                left: f.left,
+                right: f.right,
+                similarity: f.similarity,
+                cross_citations: f.cross_citations,
+                left_size: f.left_size,
+                right_size: f.right_size,
+                score: f.score,
+            })
+            .collect())
+        })?)
+    }
 }
 
 impl Corpus {
@@ -478,6 +1028,57 @@ impl Corpus {
             *guard = Some(Skel::build(&self.graph));
         }
         Ok(guard)
+    }
+
+    /// B4's index, built once for every level and every threshold.
+    ///
+    /// Caching one index across calls is only sound because `SkeletonIndex::build` reads
+    /// none of `lgg_level`, `min_common` or `min_retention` — those are `similar`'s, applied
+    /// per query. The build-time knobs (the posting-key size floors and the
+    /// posting-list cutoff) are the engine's defaults and are not exposed: they change what
+    /// the index *contains*, so a per-call value would silently mean a rebuild.
+    fn skeletons(&self) -> Result<MutexGuard<'_, Option<SkeletonIndex>>, SkelFail> {
+        let mut guard = self.index.lock().map_err(|_| SkelFail::Poisoned)?;
+        if guard.is_none() {
+            let built = SkeletonIndex::build(&self.source, &IndexConfig::default())
+                .map_err(|e| SkelFail::Build(format!("{}: {e}", self.path)))?;
+            *guard = Some(built);
+        }
+        Ok(guard)
+    }
+
+    /// B5's index. Separate from [`Corpus::skeletons`] because it carries what that one
+    /// does not: which rows are propositions.
+    fn equivalences(&self) -> Result<MutexGuard<'_, Option<EquivIndex>>, SkelFail> {
+        let mut guard = self.equiv.lock().map_err(|_| SkelFail::Poisoned)?;
+        if guard.is_none() {
+            let built = EquivIndex::build(&self.source)
+                .map_err(|e| SkelFail::Build(format!("{}: {e}", self.path)))?;
+            *guard = Some(built);
+        }
+        Ok(guard)
+    }
+
+    /// Why a name the graph knows is absent from an index.
+    ///
+    /// The indexes skip rows whose statement is missing or unparseable; the graph keeps
+    /// them. So an index miss on a name the graph has is never "not in this slice" — it is
+    /// "in it, and carrying nothing to compare", and a caller does something different with
+    /// each.
+    fn not_indexed(&self, name: &str) -> SkelFail {
+        let Some(decl) = self.graph.get(name) else {
+            return SkelFail::NotInSlice(name.to_string());
+        };
+        match &decl.stmt_error {
+            Some(reason) => SkelFail::NoStatement {
+                name: name.to_string(),
+                reason: reason.clone(),
+            },
+            None => SkelFail::Unparsable {
+                name: name.to_string(),
+                reason: "the arena's parser rejected the encoding".to_string(),
+            },
+        }
     }
 
     fn term_of(&self, s: &Skel, name: &str) -> Result<TermId, SkelFail> {
@@ -530,6 +1131,11 @@ fn fh_atlas(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Corpus>()?;
     m.add_class::<Decl>()?;
     m.add_class::<Generalization>()?;
+    m.add_class::<Neighbour>()?;
+    m.add_class::<Row>()?;
+    m.add_class::<Dictionary>()?;
+    m.add_class::<Transported>()?;
+    m.add_class::<FrontierPair>()?;
     m.add("AtlasError", m.py().get_type::<AtlasError>())?;
     m.add("SliceError", m.py().get_type::<SliceError>())?;
     m.add(
@@ -537,5 +1143,8 @@ fn fh_atlas(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.py().get_type::<UnknownDeclaration>(),
     )?;
     m.add("NoStatement", m.py().get_type::<NoStatement>())?;
+    m.add("NotAProposition", m.py().get_type::<NotAProposition>())?;
+    m.add("NoMatch", m.py().get_type::<NoMatch>())?;
+    m.add("ScopedRow", m.py().get_type::<ScopedRow>())?;
     Ok(())
 }

@@ -12,7 +12,11 @@ The last claim is the reason the crate exists, and it is a measurement: one load
 twenty queries against the handle, versus twenty CLI invocations answering the same twenty
 questions.
 
-    python3 crates/fh-atlas-py/tests/smoke.py [--slice /tmp/mathlib-algebra.jsonl]
+    cargo build -p fh-atlas --bins --release          # the oracle
+    uv run crates/fh-atlas-py/tests/smoke.py [--slice /tmp/mathlib-algebra.jsonl]
+
+Most of the wall clock is the CLI side, and the B4/B5/B6 differentials are the expensive
+part of it: each of those CLI invocations rebuilds an index the handle built once.
 """
 
 from __future__ import annotations
@@ -102,6 +106,47 @@ def the_handle_and_the_cli_agree_on_skeletons(corpus: fa.Corpus, slice_path: str
     assert corpus.skeleton("Nat.add_comm", level="carriers") == out.strip()
 
 
+def the_handle_and_the_cli_agree_on_similar(corpus: fa.Corpus, slice_path: str) -> None:
+    # The whole ranking, in order: `similar` reads five knobs off `IndexConfig`, and a
+    # binding that defaulted one of them differently from the CLI would still return
+    # plausible neighbours. Order included, because the score is the part that would drift.
+    out, code = cli("similar", "le_trans", "--top", "5", slice_path=slice_path)
+    assert code == 0, f"the CLI answered no `similar`: {out!r}"
+    expected = [ln.split()[1] for ln in out.splitlines() if ln.strip()]
+    assert [n.name for n in corpus.similar("le_trans", top=5)] == expected, out
+
+
+def the_handle_and_the_cli_agree_on_equivalence(corpus: fa.Corpus, slice_path: str) -> None:
+    # `equivalent` has a default level (`instances`) that is *not* the module-wide default
+    # (`carriers`), which is exactly the kind of thing a second implementation gets wrong.
+    out, code = cli("equivalent", "le_antisymm", slice_path=slice_path)
+    assert code == 0, f"the CLI answered no `equivalent`: {out!r}"
+    expected = [ln.split()[0] for ln in out.splitlines() if ln.strip()]
+    assert corpus.equivalent("le_antisymm") == expected, (corpus.equivalent("le_antisymm"), expected)
+
+
+def the_handle_and_the_cli_agree_on_dictionaries(corpus: fa.Corpus, slice_path: str) -> None:
+    out, code = cli("dictionary", "Mathlib.Order", "Mathlib.Algebra", slice_path=slice_path)
+    assert code == 0, f"the CLI answered no `dictionary`: {out!r}"
+    # The summary line carries the three numbers the whole query is about: how many rows,
+    # and how much of each side went unmatched.
+    summary = [ln for ln in out.splitlines() if " rows; unmatched: " in ln][0].split()
+    d = corpus.dictionary("Mathlib.Order", "Mathlib.Algebra")
+    assert [len(d.rows), len(d.missing_left), len(d.missing_right)] == [
+        int(summary[0]), int(summary[3]), int(summary[6])
+    ], (len(d.rows), len(d.missing_left), len(d.missing_right), summary)
+
+
+def the_handle_and_the_cli_agree_on_transport(corpus: fa.Corpus, slice_path: str) -> None:
+    out, code = cli("transport", "le_trans", "dvd_trans", "le_trans", slice_path=slice_path)
+    assert code == 0, f"the CLI answered no `transport`: {out!r}"
+    t = corpus.transport("le_trans", "dvd_trans", "le_trans")
+    assert t.exists == out.startswith("exists:"), (out, repr(t))
+    assert t.name is not None and f"`{t.name}`" in out, (out, t.name)
+
+
+
+
 # ---------------------------------------------------------------------------
 # Properties: the things no oracle can check
 # ---------------------------------------------------------------------------
@@ -161,6 +206,47 @@ def generalization_is_commutative_and_partial(corpus: fa.Corpus, slice_path: str
     # Two statements that are not the same one must retain less than everything, or the
     # anti-unifier is reporting a match it did not find.
     assert 0.0 < left.retention < 1.0 and left.vars > 0, repr(left)
+
+
+def a_class_member_reports_the_rest_of_its_class(corpus: fa.Corpus, slice_path: str) -> None:
+    # `classes` buckets the whole slice; `equivalent` answers about one declaration. Two
+    # code paths over one relation, so a member of a reported class must see its siblings —
+    # and this is what catches the two disagreeing about which rows count as propositions.
+    # A superset rather than equality: `classes(theorems_only=True)` drops the Prop-valued
+    # *definitions* that `equivalent` still reports.
+    size, members = corpus.classes(top=1)[0]
+    assert size == len(members) > 1, (size, members)
+    assert set(corpus.equivalent(members[0])) >= set(members[1:]), members
+
+
+def a_transported_image_names_a_declaration_exactly_when_it_exists(
+    corpus: fa.Corpus, slice_path: str
+) -> None:
+    # `.exists` and `.name` are one fact in two fields, which is only safe if they cannot
+    # disagree. `le_trans ~ dvd_trans` applied to itself lands on an existing theorem;
+    # applied to `Nat.add_comm` the row does not match at all, which is a refusal rather
+    # than an open target — the distinction B6 exists to keep.
+    hit = corpus.transport("le_trans", "dvd_trans", "le_trans")
+    assert hit.exists and hit.name is not None and hit.image
+    # Rendered from the skeleton index's arena, compared against the plain statement
+    # arena's rendering: the two layers must agree about what the image *is*.
+    assert hit.image == corpus.skeleton(hit.name, level="carriers")
+    try:
+        corpus.transport("le_trans", "dvd_trans", "Nat.add_comm")
+    except fa.NoMatch:
+        pass
+    else:
+        raise AssertionError("a row was applied to a statement it does not match")
+
+
+def similar_keeps_the_head_of_the_brute_force_ranking(corpus: fa.Corpus, slice_path: str) -> None:
+    # The index exists to avoid 131,062 anti-unifications per query, and its own docs say
+    # the honest gate is a recall floor rather than an equality. Brute force is a different
+    # algorithm over the same corpus — ranked by retention where the index ranks by score,
+    # so it may reorder, and must not lose.
+    brute = [n for n, _ in corpus.similar_brute("le_trans", top=10)]
+    wide = {n.name for n in corpus.similar("le_trans", top=50)}
+    assert set(brute) <= wide, [n for n in brute if n not in wide]
 
 
 # ---------------------------------------------------------------------------
@@ -315,12 +401,19 @@ CLAIMS = [
     the_handle_and_the_cli_agree_on_walls,
     the_handle_and_the_cli_agree_on_honesty,
     the_handle_and_the_cli_agree_on_skeletons,
+    the_handle_and_the_cli_agree_on_similar,
+    the_handle_and_the_cli_agree_on_equivalence,
+    the_handle_and_the_cli_agree_on_dictionaries,
+    the_handle_and_the_cli_agree_on_transport,
     foundations_and_impact_are_converse,
     the_lens_separates_claim_from_argument,
     erasure_levels_form_a_chain,
     cross_carrier_statements_collapse_at_carriers,
     a_statement_generalizes_with_itself_perfectly,
     generalization_is_commutative_and_partial,
+    a_class_member_reports_the_rest_of_its_class,
+    a_transported_image_names_a_declaration_exactly_when_it_exists,
+    similar_keeps_the_head_of_the_brute_force_ranking,
     a_bad_lens_names_the_lenses_that_exist,
     a_bad_level_names_the_levels_that_exist,
     an_unknown_declaration_says_so_rather_than_returning_nothing,

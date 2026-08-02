@@ -43,9 +43,14 @@ Everything below must be green before a commit. They are slow; run them anyway.
 | Lean build | `cd lean && lake build --wfail` | ~8,700 jobs warm. An uncaptured warning fails it. |
 | Round-trip | `python3 scripts/round-trip.py` | Slow — see §4 on why. |
 | MCP smoke | `python3 scripts/mcp-smoke.py` | Needs `cargo build -p fh-atlas --bins` first. |
-| Atlas experiments | `python3 scripts/atlas-mathlib-experiment.py` | Needs a slice (§4) and the `fh_atlas` binding (§6): `maturin develop --release -m crates/fh-atlas-py/Cargo.toml`. |
-| Python binding | `python3 crates/fh-atlas-py/tests/smoke.py` | Differential against `target/release/atlas`; ~5 min, mostly the CLI side. |
+| Atlas experiments | `uv run scripts/atlas-mathlib-experiment.py` | Needs a slice (§4) and `uv sync` (§6). ~40 s, two thirds of it the three index builds. |
+| Python binding | `uv run crates/fh-atlas-py/tests/smoke.py` | Differential against `target/release/atlas`; ~12 min, nearly all of it the CLI side. |
 | Rust | `cargo test -p fh-atlas && cargo clippy -p fh-atlas --all-targets && cargo fmt -p fh-atlas -- --check` | Zero warnings, not "few". |
+
+Read a gate's **own** exit status, not the status of whatever you piped it into.
+`gate.py > log; tail log` exits with `tail`'s status, which is always 0 — a red gate read
+as green that way once already. Capture `$?` immediately, into the log if it is running in
+the background.
 
 `lake build --wfail` does **not** compile test targets in the Rust sense — and a green
 result from before a signature change says nothing about after it. Re-run the actual gate
@@ -138,6 +143,22 @@ binaries rather than scripts.
 - **Reserving a keyword can break FH's own source.** It has happened three times (`enum`,
   `as`, `mod`). The full reserved list is read off the grammar in `differences.md` — read it
   off the grammar again rather than trusting the list.
+- **A stale build directory earlier on `LEAN_PATH` shadows the real package.** `findOLean`
+  takes the *first* search-path entry containing a matching directory, so leftover
+  `atlas-extract/.lake/build/lib/lean/FerrisHoward/` from before the `FhAtlas.*` rename
+  made every `import FerrisHoward` resolve there and fail. Renaming a module is not done
+  until the old build output is gone; `lake build` will not remove it for you.
+- **Never run two `lake` builds at once — `atlas-extract` is shared.** `lean/` and
+  `physics/` both take a path dependency on it, so both write
+  `atlas-extract/.lake/build/`. A build in one workspace deletes and rewrites oleans the
+  other is reading, and the victim fails with `failed to open file '…/FhAtlas/Statement.olean'`
+  — which reads like a missing dependency and is really a race. It has cost a full
+  round-trip run. Serialize; the gates are slow but they are not concurrent.
+- **`processHeader` reports a failed import by *returning*, not throwing.** It hands back
+  an empty environment plus a message. Drop that message and the tool elaborates the whole
+  file against an environment with no `OfNat` in it, then reports a screen of "unknown
+  constant" errors naming everything except the import that actually failed. `fh_check`
+  now stops at a failed header instead of elaborating past it.
 
 ### Rust / Atlas
 
@@ -166,6 +187,17 @@ binaries rather than scripts.
 - **A carrier is often an *explicit* binder.** `Nat.add_comm` binds `(n m : ℕ)` explicitly;
   a rule that only looks at implicit binders leaves the carrier in place and the whole
   normalization knob does nothing.
+- **Hash-consing is a *global* invariant — you cannot drop the interner and keep it.**
+  `Arena::seal` frees the maps once the index is built, but `intern` then misses on nodes
+  already in the arena and pushes structurally identical duplicates. Every `TermId`
+  comparison downstream answers "different" for terms that are equal, so `transport`
+  reported *open targets for lemmas that exist* — B6 inventing research. `seal` now marks
+  the arena and the next `intern` rebuilds from `nodes`/`syms`/`levels`.
+- **Test a level-parameterised query at every level, not at its default.** The seal bug
+  was invisible for weeks because `Exact`/`Presentation`/`Shape` are precomputed during
+  `build` and `Instances`/`Carriers` are erased lazily afterwards — so the *default* level
+  compared two post-seal terms and was right by accident. The gate that catches it is a
+  sweep, not a case.
 
 ---
 
@@ -173,7 +205,21 @@ binaries rather than scripts.
 
 `crates/fh-atlas-py` binds the Atlas core so that scripts load a corpus **once** and query
 it many times, instead of paying a full re-parse per CLI call. `research/python-api.md` has
-the full design; only the `Corpus` namespace is bound so far.
+the full design; the whole `Corpus` namespace is bound — B2's graph, B4's index, B5's
+equivalence classes, B6's dictionaries — and nothing outside it is.
+
+**Script against the binding, never the CLI.** Two commands from a clean clone, and
+`import fh_atlas` then works with no `sys.path` surgery and no `PYTHONPATH`:
+
+```sh
+uv sync                                       # builds the extension into .venv
+uv run scripts/atlas-mathlib-experiment.py    # or your own script
+```
+
+Every `atlas` invocation re-parses the whole slice — 6.0 s for 131k rows — and a B4 or B6
+query then rebuilds a 14 s index on top of that, per call. Measured over twenty questions:
+211 s of CLI against 7.8 s of handle including the load — 27× end to end, 37,000× per
+query. The CLI is for a human at a terminal asking one question.
 
 **If you add or change an Atlas query, update the Python binding in the same change.** Not
 in a follow-up. A query that exists only in the CLI is a query that validation scripts
