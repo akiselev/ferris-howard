@@ -29,7 +29,13 @@ LEAN = pathlib.Path("lean")
 EMITTED_DIR = LEAN / "Tests" / "Emitted"
 
 # (FH source module, emitted module) — add a row per publishable fixture.
-CASES = [("Tests.corpus.g01_peano", "Tests.Emitted.G01Peano")]
+CASES = [
+    ("Tests.corpus.g01_peano", "Tests.Emitted.G01Peano"),
+    # Group 12 uses `use lean::Dvd;` and `use lean::Subtype;`. It is here because the
+    # `use`-bearing case is the one that catches a bridge `open` leaking into the artifact
+    # — which it did, until 2026-08-01. A gate with only bridge-free cases cannot see it.
+    ("Tests.corpus.g12_gcd", "Tests.Emitted.G12Gcd"),
+]
 
 
 def run(args: list[str], **kw) -> subprocess.CompletedProcess:
@@ -41,7 +47,13 @@ def module_path(module: str) -> pathlib.Path:
 
 
 def rows(module: str) -> dict[str, dict]:
-    """Statement rows for a module, keyed by declaration name."""
+    """Statement rows for a module, keyed by declaration name.
+
+    Note the cost: `atlas_extract --local` still `importModules` the whole closure, so a
+    Mathlib-importing fixture costs ~9 GB and minutes *per call* — the `--local` flag
+    filters the output, not the import. Two cases here means four such calls. Worth
+    knowing before adding a third.
+    """
     proc = run(["lake", "exe", "atlas_extract", "--local", module])
     if proc.returncode != 0:
         sys.exit(f"round-trip: extraction failed for {module}\n{proc.stderr}")

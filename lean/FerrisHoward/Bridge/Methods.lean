@@ -58,7 +58,11 @@ other receiver becomes a projection, which is the compound-receiver case
 macro_rules
   | `(fh_dot% $x $m:ident) =>
     if x.raw.isIdent then
-      return mkIdentFrom x (x.raw.getId ++ m.getId)
+      -- Scopes erased on both halves. `Name.append` *panics* when both arguments carry
+      -- them, and an identifier arriving from a quotation does — so a dotted name written
+      -- inside any FH-emitting macro would have crashed rather than errored. Erasing is
+      -- correct rather than merely safe: a method spelling is never a binder.
+      return mkIdentFrom x (x.raw.getId.eraseMacroScopes ++ m.getId.eraseMacroScopes)
     else
       `($x.$m:ident)
 
@@ -70,9 +74,14 @@ namespace here; using one is `use lean::<name>;`.
 
 namespace Bridge.Dvd
 
-/-- `a.dvd(b)` is `a ∣ b` (F16). -/
+/-- `a.dvd(b)` is `a ∣ b` (F16).
+
+The pattern branches on the *erased* name rather than matching a literal `dvd`, because a
+method name reaching here from a quotation carries macro scopes and a literal pattern
+would not fire on it. `Expand/Item.lean` records the same fact for `#[terminates_by]`. -/
 scoped macro_rules
-  | `(fh_dot% $x dvd) => `(Dvd.dvd $x)
+  | `(fh_dot% $x $m:ident) => do
+      if m.getId.eraseMacroScopes == `dvd then `(Dvd.dvd $x) else Macro.throwUnsupported
 
 end Bridge.Dvd
 
@@ -84,7 +93,9 @@ The canonical case for this bridge: `|x|` is `Abs.abs x`, no carrier declares an
 method, and generalized dot notation on a `Real` therefore looks for `Real.abs` and does
 not find it. Corpus Group 4 writes `(x - a).abs()` three times in one definition. -/
 scoped macro_rules
-  | `(fh_dot% $x abs) => do let c := mkIdent `abs; `($c $x)
+  | `(fh_dot% $x $m:ident) => do
+      if m.getId.eraseMacroScopes != `abs then Macro.throwUnsupported
+      let c := mkIdent `abs; `($c $x)
 
 end Bridge.Abs
 
@@ -97,7 +108,9 @@ operator left; the ASCII method spelling is the whole of what F16 exists for. An
 no carrier method to fall back on — corpus Group 7 writes `a.pow(P)` for `a : Fp<P>`,
 whose carrier is a `match` on `P` and has no namespace at all. -/
 scoped macro_rules
-  | `(fh_dot% $x pow) => do let c := mkIdent `HPow.hPow; `($c $x)
+  | `(fh_dot% $x $m:ident) => do
+      if m.getId.eraseMacroScopes != `pow then Macro.throwUnsupported
+      let c := mkIdent `HPow.hPow; `($c $x)
 
 end Bridge.Pow
 
@@ -114,7 +127,9 @@ They are reachable through a bridge. The rule is unchanged — a spelling comes 
 import — and the bridge simply names the method FH cannot type. Corpus Group 11 needs
 exactly this. -/
 scoped macro_rules
-  | `(fh_dot% $x find) => do let m := mkIdent `find?; `($x.$m:ident)
+  | `(fh_dot% $x $mth:ident) => do
+      if mth.getId.eraseMacroScopes != `find then Macro.throwUnsupported
+      let m := mkIdent `find?; `($x.$m:ident)
 
 end Bridge.Find
 
@@ -124,7 +139,9 @@ namespace Bridge.Function
 declarations named `T.comp`, and every one of them is the right answer for its own
 receiver — so this belongs in a file that has said it means the plain function. -/
 scoped macro_rules
-  | `(fh_dot% $x comp) => `(Function.comp $x)
+  | `(fh_dot% $x $m:ident) => do
+      if m.getId.eraseMacroScopes != `comp then Macro.throwUnsupported
+      `(Function.comp $x)
 
 end Bridge.Function
 

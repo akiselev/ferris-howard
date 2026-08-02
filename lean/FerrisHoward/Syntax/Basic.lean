@@ -114,6 +114,15 @@ in front of it. The `atomic` keeps a positional argument that merely *starts* wi
 identifier from committing to the named reading. -/
 syntax fhCallArg := (atomic(ident ": "))? fh_expr
 
+/-- A bare expression is a positional argument.
+
+Without this, an `fh_expr` cannot be spliced into call position inside a quotation —
+`` `(fh_expr| f($x)) `` fails, because F11 made an argument its own node. Every macro that
+builds a call hits it, `notation!`'s right-hand-side rewriter included, so the coercion
+belongs here rather than in each of them. -/
+instance : CoeHTCT (Lean.TSyntax `fh_expr) (Lean.TSyntax ``fhCallArg) where
+  coe e := ⟨Lean.mkNode ``fhCallArg #[Lean.mkNullNode, e.raw]⟩
+
 /-- Call. `noWs` requires the callee and `(` to be adjacent: FH rejects `f (x)`, which
 Rust accepts. Restriction, not divergence — relaxing it later is non-breaking, the
 reverse is not (Ruling B). Recorded on the differences page. -/

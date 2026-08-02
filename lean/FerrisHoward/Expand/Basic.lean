@@ -82,7 +82,13 @@ private def joinPath (lhs : TSyntax `term) (field : Ident) (ref : Syntax) : Macr
   checkIdent field
   unless lhs.raw.isIdent do
     Macro.throwErrorAt ref "FH: `::` joins identifiers; for a value's field or method use `.`"
-  return mkIdentFrom ref (lhs.raw.getId ++ field.getId)
+  -- Macro scopes are erased on both halves before appending. `Name.append` *panics* when
+  -- both arguments carry scopes, and an identifier arriving from a quotation carries them
+  -- — so `Nat::floor(x)` written inside any FH-emitting macro would have crashed rather
+  -- than errored. Erasing is right rather than merely safe: `::` names a global by
+  -- construction (the check above), and a global is never hygienic.
+  return mkIdentFrom ref
+    (lhs.raw.getId.eraseMacroScopes ++ field.getId.eraseMacroScopes)
 
 /-- `f a b`, for the constant `f`.
 
@@ -351,7 +357,17 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
             ("FH: `for`, `while`, `let mut`, assignment, `break`, `continue` and `return` \
               are statements — they belong in a block, not inside an expression" : String)
         else
-          Macro.throwErrorAt e "FH: no expansion for this expression form"
+          -- The extension point. An `fh_expr` production FH does not know about gets one
+          -- chance to be a macro, which is exactly how Lean's own `term` category behaves
+          -- and what makes the category extensible from outside this file — `notation!`
+          -- (M3) is the consumer, and the F16 bridges already rely on the same mechanism
+          -- one level down at `term`.
+          --
+          -- Stage one throughout: `Macro.expandMacro?` is ordinary `MacroM`, no
+          -- elaborator and no environment access beyond what any `macro_rules` has.
+          match ← Macro.expandMacro? e.raw with
+          | some e' => expandExpr ⟨e'⟩
+          | none => Macro.throwErrorAt e "FH: no expansion for this expression form"
 
 /-- Quantifier binders: F2's distributed ascriptions, as Lean bracketed binders. -/
 partial def quantBinders (ps : Array (TSyntax ``fhGenericParam)) :

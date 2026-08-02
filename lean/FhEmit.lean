@@ -34,6 +34,17 @@ command *n* produced.
 
 open Lean Elab Command FerrisHoward
 
+/-- Is this FH item a bridge import — `use lean::C;`?
+
+Checked on the *source* item rather than on its expansion, so no string is inspected and
+no syntax is re-parsed. `use lean::…` is exactly the bridge form: `Expand/Item.lean`'s
+`usePath?` maps a `lean`-rooted path to `FerrisHoward.Bridge.…` and leaves every other
+path alone. -/
+def isBridgeUse (stx : Syntax) : Bool :=
+  (stx.find? fun s =>
+    s.isOfKind ``FerrisHoward.fhUse
+      && (s.find? fun t => t.isIdent && (`lean).isPrefixOf t.getId).isSome).isSome
+
 /-- The header of the emitted file: the original imports, minus FH's. -/
 def emitHeader (header : Syntax) : String := Id.run do
   let mut out := ""
@@ -64,6 +75,13 @@ partial def emitOne (src : String) (stx : Syntax) : CommandElabM (String × Nat)
   if stx.isOfKind ``Lean.guardMsgsCmd then
     return ("", 1)
   if stx.isOfKind ``FerrisHoward.fhItemCommand then
+    -- `use lean::Dvd;` becomes `open FerrisHoward.Bridge.Dvd`, which is *scaffolding*: the
+    -- bridge has already done its work by the time anything is emitted (`p.dvd(a)` is
+    -- `Dvd.dvd p a` in the output), and carrying the `open` would put an FH module in the
+    -- artifact's import graph — exactly what ADR-006 forbids. A non-`lean` `use` is kept,
+    -- because an ordinary `open` can still be load-bearing for the names FH emitted.
+    if isBridgeUse stx then
+      return ("", 1)
     return ((← Emit.emitCommand stx).pretty ++ "\n", 0)
   if Emit.isFhKind stx.getKind then
     return ("", 1)
