@@ -57,7 +57,8 @@ def severityString : MessageSeverity → String
   | .error => "error"
 
 /-- Elaborate a file and collect its diagnostics and final environment. -/
-partial def checkFile (path : System.FilePath) : IO (Array Diagnostic × Environment) := do
+partial def checkFile (path : System.FilePath) :
+    IO (Array Diagnostic × Environment × Array InfoTree) := do
   let input ← IO.FS.readFile path
   let inputCtx := Parser.mkInputContext input path.toString
   let (header, parserState, messages) ← Parser.parseHeader inputCtx
@@ -68,6 +69,7 @@ partial def checkFile (path : System.FilePath) : IO (Array Diagnostic × Environ
   -- terminal `eoi` command resets the log, so a whole file's diagnostics vanish if you
   -- wait for it.
   let mut collected : Array Message := #[]
+  let mut trees : Array InfoTree := #[]
   repeat
     let scope := cmdState.scopes.head!
     let pmctx : Parser.ParserModuleContext :=
@@ -82,6 +84,7 @@ partial def checkFile (path : System.FilePath) : IO (Array Diagnostic × Environ
     match ← (((Command.elabCommandTopLevel stx).run ctx).run cmdState).toIO' with
     | .ok (_, st) =>
       collected := collected ++ st.messages.reportedPlusUnreported.toArray
+      trees := trees ++ st.infoState.trees.toArray
       cmdState := { st with messages := {} }
     | .error e => throw (IO.userError (← e.toMessageData.toString))
     if Parser.isTerminalCommand stx then break
@@ -94,7 +97,85 @@ partial def checkFile (path : System.FilePath) : IO (Array Diagnostic × Environ
       line := msg.pos.line, column := msg.pos.column
       endLine := endPos.line, endColumn := endPos.column
       message := (← msg.data.toString).trimAscii.copy }
-  return (diags, cmdState.env)
+  return (diags, cmdState.env, trees)
+
+/-- Every `sorry` site in the file, with its goal and local context.
+
+`agent-interface.md` §1 asks for "the goal state at every `sorry`/`todo!()`", and calls the
+edit → check → read goals → edit loop "90% of an agent's loop". This is that.
+
+Read from the **info tree** rather than by hunting `sorryAx` in elaborated terms, because
+the tree is what carries a position and a local context — an agent needs to know *where*
+the hole is in the file it wrote, and what is in scope there. FH's span discipline is what
+makes the position the FH one. -/
+def sorryGoals (trees : Array InfoTree) : CommandElabM (Array Json) := do
+  let mut out := #[]
+  let mut seen : Std.HashSet (Nat × Nat) := {}
+  for tree in trees do
+    let infos := tree.foldInfo (init := #[]) fun ctx i acc =>
+      match i with
+      -- User-written holes only. A *synthetic* sorry is Lean recovering from an
+      -- elaboration error, and the diagnostics already report that; an agent wants the
+      -- holes it left, whose goals it can actually work on.
+      | .ofTermInfo ti =>
+        if ti.expr.isSorry && !ti.expr.isSyntheticSorry then acc.push (ctx, ti) else acc
+      | _ => acc
+    for (ctx, ti) in infos do
+      let some pos := ti.stx.getPos? | continue
+      let p := (← getFileMap).toPosition pos
+      let endP := (← getFileMap).toPosition (ti.stx.getTailPos?.getD pos)
+      let goal ← ctx.runMetaM ti.lctx do
+        let ty ← Meta.inferType ti.expr
+        pure (toString (← Meta.ppExpr ty))
+      let hyps ← ctx.runMetaM ti.lctx do
+        let mut hs := #[]
+        for d in (← getLCtx) do
+          if d.isImplementationDetail then continue
+          hs := hs.push <| Json.mkObj [
+            ("name", Json.str (toString d.userName.eraseMacroScopes)),
+            ("type", Json.str (toString (← Meta.ppExpr d.type)))]
+        pure hs
+      -- One entry per position: the elaborator can visit a hole more than once, and a
+      -- duplicate is noise rather than a second thing to do.
+      unless seen.contains (p.line, p.column) do
+        seen := seen.insert (p.line, p.column)
+        out := out.push <| Json.mkObj [
+          ("line", Json.num p.line), ("column", Json.num p.column),
+          ("endLine", Json.num endP.line), ("endColumn", Json.num endP.column),
+          ("goal", Json.str goal),
+          ("context", Json.arr hyps)]
+  return out
+
+/-- How a name binds, computed rather than annotated.
+
+Design §4.9 separates two layers on principle: *what an object is* (space, claim,
+structured carrier — user-written, and `#[role(…)]`'s business) from *how a name binds*
+(parameter, implicit, instance, …), which is "**derivable**, so the tooling computes and
+reports it rather than asking the user to annotate it". This is the derivation.
+
+What it does not yet distinguish is *ambient* from *inline* — a `var` and an inline generic
+produce the same binder by construction (that identity is `Tests/M2/Var.lean`'s
+obligation), so telling them apart needs the FH syntax rather than the elaborated type.
+Named here rather than implied. -/
+def bindingRole : BinderInfo → String
+  | .default => "parameter"
+  | .implicit => "implicit"
+  | .strictImplicit => "strict-implicit"
+  | .instImplicit => "instance"
+
+def bindersOf (env : Environment) (n : Name) : CommandElabM (Array Json) := do
+  let some ci := env.find? n | return #[]
+  let act : MetaM (Array Json) := Meta.forallTelescopeReducing ci.type fun xs _ => do
+    let mut out := #[]
+    for x in xs do
+      let d ← x.fvarId!.getDecl
+      if d.isImplementationDetail then continue
+      out := out.push <| Json.mkObj [
+        ("name", Json.str (toString d.userName.eraseMacroScopes)),
+        ("role", Json.str (bindingRole d.binderInfo)),
+        ("type", Json.str (toString (← Meta.ppExpr d.type)))]
+    return out
+  liftTermElabM (Meta.MetaM.run' act)
 
 /-- The declarations this file introduced, with their axioms — so an agent can tell a
 complete argument from an incomplete one without taking FH's word for it. -/
@@ -109,6 +190,7 @@ def declReport (env : Environment) : CommandElabM (Array Json) := do
     out := out.push <| Json.mkObj [
       ("name", Json.str (toString n)),
       ("sorry", Json.bool (axioms.contains `sorryAx)),
+      ("binders", Json.arr (← bindersOf env n)),
       ("axioms", Json.arr (axioms.qsort (fun a b => a.toString < b.toString)
         |>.map (Json.str <| toString ·)))]
   return out
@@ -126,19 +208,22 @@ unsafe def main (args : List String) : IO UInt32 := do
     enableInitializersExecution
     initSearchPath (← findSysroot)
     let path : System.FilePath := pathStr
-    let (diags, env) ← checkFile path
+    let (diags, env, trees) ← checkFile path
     let errors := diags.filter (·.severity == "error")
-    let sorries ← do
-      let act : CommandElabM (Array Json) := declReport env
+    let fileMap := (← IO.FS.readFile path).toFileMap
+    let run {α} (act : CommandElabM α) (dflt : α) : IO α := do
       let ctx : Command.Context :=
-        { fileName := pathStr, fileMap := default, snap? := none, cancelTk? := none }
+        { fileName := pathStr, fileMap := fileMap, snap? := none, cancelTk? := none }
       match ← (((act).run ctx).run (Command.mkState env)).toIO' with
       | .ok (r, _) => pure r
-      | .error _ => pure #[]
+      | .error _ => pure dflt
+    let sorries ← run (declReport env) #[]
+    let goals ← run (sorryGoals trees) #[]
     let report := Json.mkObj [
       ("file", Json.str pathStr),
       ("status", Json.str (if errors.isEmpty then "ok" else "error")),
       ("diagnostics", Json.arr (diags.map Diagnostic.toJson)),
+      ("goals", Json.arr goals),
       ("declarations", Json.arr sorries)]
     IO.println report.pretty
     return (if errors.isEmpty then 0 else 1)

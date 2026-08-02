@@ -60,18 +60,38 @@ jobs:
       - name: emit-lean round-trip
         run: python3 scripts/round-trip.py
 
-      # `fh check` v0 is the agent layer's entry point (C1), so its JSON is a contract:
-      # a corpus fixture must report `ok`, and a complete proof must report no sorry.
+      # `fh check` is the agent layer's entry point (C1), so its JSON is a contract:
+      # a corpus fixture must report `ok`, a complete proof must report no sorry, and
+      # every hole must come with the goal and local context an agent edits against —
+      # agent-interface §1 calls edit -> check -> read goals -> edit "90% of an agent's
+      # loop", so the goals array is load-bearing rather than informational.
       - name: fh check smoke
         working-directory: lean
         run: |
           lake exe fh_check Tests/corpus/g01_peano.lean > /tmp/fh-check.json
+          lake exe fh_check Tests/corpus/g12_gcd.lean > /tmp/fh-check-holes.json
           python3 - <<'PY'
           import json
           d = json.load(open("/tmp/fh-check.json"))
           assert d["status"] == "ok", d
           add_comm = next(x for x in d["declarations"] if x["name"] == "add_comm")
           assert not add_comm["sorry"], add_comm
+          assert d["goals"] == [], d["goals"]
+
+          # Group 12 keeps the corpus's three `todo!()`s plus one in its span tier, so it
+          # is the fixture with holes. Synthetic sorries — Lean recovering from an
+          # elaboration error — are not holes and must not appear.
+          h = json.load(open("/tmp/fh-check-holes.json"))
+          assert len(h["goals"]) == 4, h["goals"]
+          g = next(g for g in h["goals"] if g["goal"] == "d \u2223 gcd2 a b")
+          names = [c["name"] for c in g["context"]]
+          assert names == ["a", "b", "d", "ha", "hb"], names
+
+          # Binding roles are computed, not annotated (design §4.9).
+          gt = next(x for x in h["declarations"] if x["name"] == "gcd2_greatest")
+          roles = [(b["name"], b["role"]) for b in gt["binders"]]
+          assert roles == [("a", "parameter"), ("b", "parameter"), ("d", "parameter"),
+                           ("ha", "parameter"), ("hb", "parameter")], roles
           print("fh check: ok")
           PY
 
