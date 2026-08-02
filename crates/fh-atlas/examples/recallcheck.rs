@@ -111,10 +111,58 @@ fn main() {
     };
 
     let recall = run(&names, "recall over Mathlib theorems");
+
     run(
         &unrestricted,
         "recall over the whole slice (measures Lean, kept for contrast)",
     );
+
+    // Where does the missing third actually go? "Recall" here is retrieve-*and-rank*: a
+    // true neighbour is missed either because the prefilter never proposed it, or because
+    // the scorer buried it below the top-50 cut. Those are different defects with
+    // different fixes, and a single number cannot tell them apart.
+    //
+    // The split is clean rather than approximate, because `similar_brute` applies the same
+    // `min_common`/`min_retention` as `similar` does. Every entry in the truth set passes
+    // those thresholds by construction, so one missing from an untruncated `similar` was
+    // never *proposed* — it cannot have been dropped by a floor.
+    {
+        let (mut lost_prefilter, mut lost_ranking, mut total) = (0usize, 0usize, 0usize);
+        for name in &names {
+            let Ok(brute) = idx.similar_brute(name, 5, &cfg) else {
+                continue;
+            };
+            if brute.is_empty() {
+                continue;
+            }
+            let truth: Vec<String> = brute.into_iter().map(|(n, _)| n).collect();
+            // An effectively unbounded `top`, so nothing is lost to truncation: what is
+            // missing here the prefilter genuinely never proposed.
+            let Ok(wide) = idx.similar(name, usize::MAX, &cfg) else {
+                continue;
+            };
+            let reachable: HashSet<&str> = wide.iter().map(|n| n.name.as_str()).collect();
+            let Ok(cut) = idx.similar(name, 50, &cfg) else {
+                continue;
+            };
+            let ranked: HashSet<&str> = cut.iter().map(|n| n.name.as_str()).collect();
+            for t in &truth {
+                total += 1;
+                if !reachable.contains(t.as_str()) {
+                    lost_prefilter += 1;
+                } else if !ranked.contains(t.as_str()) {
+                    lost_ranking += 1;
+                }
+            }
+        }
+        println!(
+            "\ndecomposition over the same {total} true neighbours:\n  \
+             lost by the PREFILTER (never proposed): {lost_prefilter} ({:.1}%)\n  \
+             lost by the RANKING (proposed, buried below top-50): {lost_ranking} ({:.1}%)",
+            100.0 * lost_prefilter as f64 / total.max(1) as f64,
+            100.0 * lost_ranking as f64 / total.max(1) as f64
+        );
+    }
 
     // The ablation, on the population the gate is about. This is what source B is worth:
     // the same index, the same truth set, the same retention formula on both arms — only

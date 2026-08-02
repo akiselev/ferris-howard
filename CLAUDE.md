@@ -47,6 +47,7 @@ Everything below must be green before a commit. They are slow; run them anyway.
 | Python binding | `uv run crates/fh-atlas-py/tests/smoke.py` | Differential against `target/release/atlas`; ~12 min, nearly all of it the CLI side. |
 | Rust | `cargo test -p fh-atlas && cargo clippy -p fh-atlas --all-targets && cargo fmt -p fh-atlas -- --check` | Zero warnings, not "few". |
 | Ranking golden | `FH_SLICE=/tmp/mathlib-algebra.jsonl cargo test -p fh-atlas --test golden` | **Skips silently without `FH_SLICE`** — a plain `cargo test` does not run it. ~95 s. |
+| Retrieval sources | `FH_SLICE=… cargo test -p fh-atlas --test sources` | Per-source fixtures run without a slice; only the differential needs one. ~115 s with it. |
 
 Read a gate's **own** exit status, not the status of whatever you piped it into.
 `gate.py > log; tail log` exits with `tail`'s status, which is always 0 — a red gate read
@@ -185,6 +186,18 @@ binaries rather than scripts.
   frontier pairs are `Aesop ~ ProofWidgets` and `Aesop ~ Qq`, metaprogramming siblings that
   share shapes because they are all Lean code over syntax trees. A working slice is
   two-thirds `Init`/`Std`/`Lean`, so this is not a corner case.
+- **A per-source fixture must be built so it can fail.** Source B's postings are keyed on
+  the `Presentation` erasure, and `Presentation` only changes a term that carries a
+  universe level, a `StrictImplicit` binder, or an `OfNat.ofNat`. A fixture without one of
+  those has `Presentation` as the identity, so it passes whether or not the query is
+  normalized correctly — which is how a source that was dead for 60.6% of the corpus kept
+  a green test suite. `tests/sources.rs` pairs each positive case with the ablation that
+  must silence it.
+- **Recall loss is not one number.** Measured on Mathlib theorems: of 189 true neighbours
+  missed, **63 (33.3%) were never proposed by the prefilter and 0 were buried by the
+  ranking**. The split is clean because `similar_brute` applies the same `min_common` and
+  `min_retention`, so a truth entry passes those floors by construction. Remaining recall
+  work belongs in candidate generation; the scorer is not losing anything.
 - **A ranking change needs a golden pinned *before* it.** Recomputing a score from the
   factors the refactor just recorded is an identity, not a regression test; what moves is
   neighbour *order*. `tests/golden.rs` pins top-k for seven queries, and it took a fix to
