@@ -275,10 +275,10 @@ impl SkeletonIndex {
                     shape_pairs.push((s, id));
                 }
             }
-            if let Node::Const(sym, _) = arena.node(arena.spine(t).0) {
-                if !sigs.known(sym) {
-                    degraded_spines += 1;
-                }
+            if let Node::Const(sym, _) = arena.node(arena.spine(t).0)
+                && !sigs.known(sym)
+            {
+                degraded_spines += 1;
             }
         }
 
@@ -349,12 +349,12 @@ impl SkeletonIndex {
 
         // A — structural twins.
         let sh = self.shape[q.0 as usize];
-        if let Some(bucket) = self.shape_bucket.get(&sh) {
-            if bucket.len() <= cfg.max_bucket {
-                let idf = (self.len() as f32 / bucket.len() as f32).ln();
-                for &d in bucket {
-                    note(&mut hits, d, Sources::SHAPE, idf);
-                }
+        if let Some(bucket) = self.shape_bucket.get(&sh)
+            && bucket.len() <= cfg.max_bucket
+        {
+            let idf = (self.len() as f32 / bucket.len() as f32).ln();
+            for &d in bucket {
+                note(&mut hits, d, Sources::SHAPE, idf);
             }
         }
 

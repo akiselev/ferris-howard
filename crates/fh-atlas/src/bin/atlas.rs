@@ -16,6 +16,8 @@
 use std::process::ExitCode;
 
 use fh_atlas::graph::{Graph, Lens};
+use fh_atlas::skel::erase::Level;
+use fh_atlas::skel::index::{IndexConfig, SkeletonIndex};
 
 const USAGE: &str = "\
 usage: atlas <query> <slice.jsonl> [args] [--lens statement|proof|both]
@@ -27,7 +29,13 @@ queries:
   walls               declarations ranked by how many others cite them
   honesty [axiom...]  declarations resting on `sorryAx` or on an axiom outside the
                       whitelist; exits non-zero if any are found
+  similar <decl>      declarations whose statements anti-unify with this one
+  skeleton <decl>     the rendered erasure of one statement
   stats               size of the slice, and how much of it encodes
+
+`similar` and `skeleton` take `--level exact|presentation|instances|carriers|shape`,
+which chooses how much to erase before comparing; `--top N`; and `--brute` to skip the
+index and compare against every declaration (slow, and the differential reference).
 
 The lens selects which edges are walked: `statement` is what claims rest on, `proof` is
 what arguments rest on, `both` is the citation graph. Default: both.
@@ -66,7 +74,7 @@ impl From<String> for Report {
 }
 
 fn run(args: &[String]) -> Result<Report, String> {
-    let (lens, rest) = take_lens(args)?;
+    let (lens, level_opt, top, brute, rest) = take_options(args)?;
     let (query, rest) = rest.split_first().ok_or_else(|| USAGE.to_string())?;
     let (path, rest) = rest.split_first().ok_or_else(|| USAGE.to_string())?;
     let input = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
@@ -160,6 +168,51 @@ fn run(args: &[String]) -> Result<Report, String> {
                 clean: false,
             })
         }
+        "similar" => {
+            let [decl] = rest else {
+                return Err("similar takes one declaration name".into());
+            };
+            let mut cfg = IndexConfig::default();
+            if let Some(l) = level_opt {
+                cfg.lgg_level = l;
+            }
+            let mut idx = SkeletonIndex::build(&input, &cfg).map_err(|e| e.to_string())?;
+            let mut out = String::new();
+            if brute {
+                for (name, ret) in idx.similar_brute(decl, top, &cfg)? {
+                    out.push_str(&format!("{ret:.3}  {name}\n"));
+                }
+            } else {
+                for n in idx.similar(decl, top, &cfg)? {
+                    out.push_str(&format!(
+                        "{:.3}  {:<44} {:<7} ret {:.2} common {:>3} vars {:>2}{}  [{}]\n",
+                        n.score,
+                        n.name,
+                        n.kind,
+                        n.retention,
+                        n.common,
+                        n.vars,
+                        if n.transportable { "" } else { " scoped" },
+                        n.sources.describe()
+                    ));
+                }
+            }
+            Ok(out.into())
+        }
+        "skeleton" => {
+            let [decl] = rest else {
+                return Err("skeleton takes one declaration name".into());
+            };
+            let mut cfg = IndexConfig::default();
+            if let Some(l) = level_opt {
+                cfg.lgg_level = l;
+            }
+            let mut idx = SkeletonIndex::build(&input, &cfg).map_err(|e| e.to_string())?;
+            let level = level_opt.unwrap_or(Level::Shape);
+            idx.skeleton_of(decl, level)
+                .map(|s| (s + "\n").into())
+                .ok_or_else(|| format!("`{decl}` is not in this slice"))
+        }
         "stats" => {
             let total = g.len();
             let encoded = g
@@ -193,22 +246,39 @@ fn lines(names: impl IntoIterator<Item = String>) -> String {
     out
 }
 
-fn take_lens(args: &[String]) -> Result<(Lens, Vec<String>), String> {
+type Options = (Lens, Option<Level>, usize, bool, Vec<String>);
+
+fn take_options(args: &[String]) -> Result<Options, String> {
     let mut lens = Lens::Both;
+    let mut level = None;
+    let mut top = 10usize;
+    let mut brute = false;
     let mut rest = Vec::new();
     let mut it = args.iter();
     while let Some(a) = it.next() {
-        if a == "--lens" {
-            let v = it.next().ok_or("--lens takes a value")?;
-            lens = match v.as_str() {
-                "statement" => Lens::Statement,
-                "proof" => Lens::Proof,
-                "both" => Lens::Both,
-                other => return Err(format!("unknown lens `{other}`")),
-            };
-        } else {
-            rest.push(a.clone());
+        match a.as_str() {
+            "--lens" => {
+                let v = it.next().ok_or("--lens takes a value")?;
+                lens = match v.as_str() {
+                    "statement" => Lens::Statement,
+                    "proof" => Lens::Proof,
+                    "both" => Lens::Both,
+                    other => return Err(format!("unknown lens `{other}`")),
+                };
+            }
+            "--level" => {
+                let v = it.next().ok_or("--level takes a value")?;
+                level = Some(
+                    Level::parse(v).ok_or_else(|| format!("unknown level `{v}`"))?,
+                );
+            }
+            "--top" => {
+                let v = it.next().ok_or("--top takes a number")?;
+                top = v.parse().map_err(|_| format!("`{v}` is not a number"))?;
+            }
+            "--brute" => brute = true,
+            _ => rest.push(a.clone()),
         }
     }
-    Ok((lens, rest))
+    Ok((lens, level, top, brute, rest))
 }

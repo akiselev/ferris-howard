@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/fh-atlas"]
+members = ["crates/fh-atlas", "crates/fh-atlas-py"]
 
 [workspace.package]
 version = "0.1.0"
