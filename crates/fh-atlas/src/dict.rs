@@ -400,3 +400,192 @@ pub fn frontier(
     out.truncate(top);
     out
 }
+
+/// What a dictionary's row set actually is, as opposed to what it is called.
+///
+/// A dictionary is meant to be a *partial structure-preserving map*. Greedy
+/// per-declaration selection cannot produce one — it returns each left's nearest
+/// right-theory neighbour and nothing looks across rows — so the first thing M3a needs is
+/// a way to say how far the output is from a map, before anything tries to fix it.
+///
+/// # Rights are counted by statement, not by name
+///
+/// `dvd_trans` and `Dvd.dvd.trans` are one theorem under two names, and a left displaced
+/// onto the alias of its old partner would otherwise score as a coherence *improvement*.
+/// So the collision count keys on the `Exact` skeleton — statement identity — and the
+/// name-keyed count is reported beside it, because the gap between them is itself worth
+/// seeing.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Coherence {
+    pub rows: usize,
+    pub distinct_lefts: usize,
+    /// Distinct right-hand *names*.
+    pub distinct_rights: usize,
+    /// Distinct right-hand *statements*. Lower than `distinct_rights` exactly when the
+    /// dictionary points at two names for one theorem.
+    pub distinct_right_statements: usize,
+    /// Right statements claimed by more than one left.
+    pub contested: usize,
+    /// Rows whose right statement is contested — the fraction of the dictionary that is
+    /// not a map.
+    pub rows_in_collision: usize,
+    /// The worst offenders: `(right name, number of lefts claiming its statement)`.
+    pub worst: Vec<(String, usize)>,
+}
+
+impl Coherence {
+    pub fn collision_rate(&self) -> f32 {
+        self.rows_in_collision as f32 / self.rows.max(1) as f32
+    }
+}
+
+/// Measure a dictionary against the map it claims to be.
+pub fn coherence(idx: &mut SkeletonIndex, d: &Dictionary, worst: usize) -> Coherence {
+    // Statement identity, so two names for one theorem count once. A name with no
+    // encodable statement falls back to its own name, which cannot collide with anything.
+    let mut key_of: HashMap<&str, String> = HashMap::new();
+    for r in &d.rows {
+        if !key_of.contains_key(r.right.as_str()) {
+            let k = idx
+                .skeleton_of(&r.right, Level::Exact)
+                .unwrap_or_else(|| format!("\u{0}name:{}", r.right));
+            key_of.insert(r.right.as_str(), k);
+        }
+    }
+
+    let mut lefts_per_statement: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
+    for r in &d.rows {
+        lefts_per_statement
+            .entry(key_of[r.right.as_str()].as_str())
+            .or_default()
+            .insert(&r.left);
+    }
+
+    let contested: BTreeSet<&str> = lefts_per_statement
+        .iter()
+        .filter(|(_, ls)| ls.len() > 1)
+        .map(|(k, _)| *k)
+        .collect();
+
+    let rows_in_collision = d
+        .rows
+        .iter()
+        .filter(|r| contested.contains(key_of[r.right.as_str()].as_str()))
+        .count();
+
+    // Reported by a representative name rather than by the encoding, which is unreadable.
+    let mut by_name: BTreeMap<&str, usize> = BTreeMap::new();
+    for r in &d.rows {
+        let n = lefts_per_statement[key_of[r.right.as_str()].as_str()].len();
+        by_name.insert(&r.right, n);
+    }
+    let mut worst_v: Vec<(String, usize)> = by_name
+        .into_iter()
+        .filter(|(_, n)| *n > 1)
+        .map(|(n, c)| (n.to_string(), c))
+        .collect();
+    worst_v.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+    worst_v.truncate(worst);
+
+    Coherence {
+        rows: d.rows.len(),
+        distinct_lefts: d
+            .rows
+            .iter()
+            .map(|r| &r.left)
+            .collect::<BTreeSet<_>>()
+            .len(),
+        distinct_rights: d
+            .rows
+            .iter()
+            .map(|r| &r.right)
+            .collect::<BTreeSet<_>>()
+            .len(),
+        distinct_right_statements: lefts_per_statement.len(),
+        contested: contested.len(),
+        rows_in_collision,
+        worst: worst_v,
+    }
+}
+
+/// §9's acceptance criterion, as a runnable control: *"false shuffled mappings are
+/// rejected at a substantially earlier rate than genuine mappings."*
+///
+/// Every gate M3a's first draft proposed measured the dictionary against itself —
+/// injectivity, total score, row counts — and a perfectly injective, high-scoring,
+/// entirely fabricated dictionary passes all of them. This is the one that a fabricated
+/// dictionary fails: re-pair each left with a *different* right drawn from the same
+/// theory, and compare the retention the anti-unifier assigns.
+///
+/// If genuine pairs do not separate from shuffled ones, the floors are admitting
+/// coincidence and no number computed downstream is about analogy.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ShuffleControl {
+    pub pairs: usize,
+    pub genuine_mean: f32,
+    pub shuffled_mean: f32,
+    /// Shuffled pairs that would clear the same floors the real rows cleared. The rate a
+    /// coincidence survives the admission test.
+    pub shuffled_admitted: usize,
+    /// Fraction of (genuine, shuffled) comparisons where the genuine pair scores higher.
+    /// 1.0 is perfect separation, 0.5 is chance.
+    pub separation: f32,
+}
+
+/// Deterministic: the shuffle is a fixed stride through the right-hand pool, not a random
+/// permutation, so a failure is reproducible and a reviewer can re-derive the pairing.
+/// `stride` must be coprime with the pool size to be a permutation; 7919 is prime and
+/// larger than any right-hand pool here.
+pub fn shuffle_control(
+    idx: &mut SkeletonIndex,
+    d: &Dictionary,
+    cfg: &IndexConfig,
+) -> ShuffleControl {
+    let rights: Vec<String> = d
+        .rows
+        .iter()
+        .map(|r| r.right.clone())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    if rights.len() < 2 || d.rows.is_empty() {
+        return ShuffleControl {
+            pairs: 0,
+            genuine_mean: 0.0,
+            shuffled_mean: 0.0,
+            shuffled_admitted: 0,
+            separation: 0.0,
+        };
+    }
+
+    let (mut gsum, mut ssum, mut admitted, mut wins, mut n) =
+        (0.0f32, 0.0f32, 0usize, 0usize, 0usize);
+    for (i, r) in d.rows.iter().enumerate() {
+        // A different right, chosen deterministically and never the true partner.
+        let mut j = (i * 7919 + 13) % rights.len();
+        if rights[j] == r.right {
+            j = (j + 1) % rights.len();
+        }
+        let Ok((g, _)) = idx.generalize_named(&r.left, &rights[j], cfg.lgg_level) else {
+            continue;
+        };
+        let shuffled = g.retention;
+        if g.common >= cfg.min_common && shuffled >= cfg.min_retention {
+            admitted += 1;
+        }
+        if r.retention > shuffled {
+            wins += 1;
+        }
+        gsum += r.retention;
+        ssum += shuffled;
+        n += 1;
+    }
+
+    ShuffleControl {
+        pairs: n,
+        genuine_mean: gsum / n.max(1) as f32,
+        shuffled_mean: ssum / n.max(1) as f32,
+        shuffled_admitted: admitted,
+        separation: wins as f32 / n.max(1) as f32,
+    }
+}

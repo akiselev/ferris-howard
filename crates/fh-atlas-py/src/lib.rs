@@ -55,7 +55,10 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
-use ::fh_atlas::dict::{self, Row as CoreRow, TransportError, Transported as CoreTransported};
+use ::fh_atlas::dict::{
+    self, Coherence as CoreCoherence, Row as CoreRow, ShuffleControl as CoreShuffle,
+    TransportError, Transported as CoreTransported,
+};
 use ::fh_atlas::equiv::{EquivIndex, Unknown};
 use ::fh_atlas::graph::{Decl as CoreDecl, Graph, Lens};
 use ::fh_atlas::logical::LogicalGraph;
@@ -364,6 +367,70 @@ pub struct Neighbour {
     /// The score factor by factor, so a caller can audit or ablate the rank rather than
     /// trust it. Engine 1 §6 C2's "complete feature vector".
     pub factors: ScoreFactors,
+}
+
+/// How far a dictionary is from the map it claims to be.
+///
+/// Rights are counted by *statement*, not by name: two names for one theorem would
+/// otherwise let a left displaced onto an alias score as a coherence improvement.
+#[pyclass(module = "fh_atlas", frozen, get_all, skip_from_py_object)]
+#[derive(Clone)]
+pub struct Coherence {
+    pub rows: usize,
+    pub distinct_lefts: usize,
+    pub distinct_rights: usize,
+    /// Below `distinct_rights` exactly when the dictionary points at two names for one
+    /// theorem.
+    pub distinct_right_statements: usize,
+    pub contested: usize,
+    pub rows_in_collision: usize,
+    /// `(right name, lefts claiming its statement)`, worst first.
+    pub worst: Vec<(String, usize)>,
+    /// `rows_in_collision / rows` — the fraction of the dictionary that is not a map.
+    pub collision_rate: f32,
+}
+
+#[pymethods]
+impl Coherence {
+    fn __repr__(&self) -> String {
+        format!(
+            "Coherence(rows={}, lefts={}, right_statements={}, contested={}, \
+             collision_rate={:.3})",
+            self.rows,
+            self.distinct_lefts,
+            self.distinct_right_statements,
+            self.contested,
+            self.collision_rate
+        )
+    }
+}
+
+/// Design §9's control: are false shuffled mappings rejected earlier than genuine ones?
+#[pyclass(module = "fh_atlas", frozen, get_all, skip_from_py_object)]
+#[derive(Clone)]
+pub struct ShuffleControl {
+    pub pairs: usize,
+    pub genuine_mean: f32,
+    pub shuffled_mean: f32,
+    /// Shuffled pairs that would still clear the floors — the rate a coincidence survives.
+    pub shuffled_admitted: usize,
+    /// Fraction where the genuine pair outscores its shuffled twin. 1.0 perfect, 0.5 chance.
+    pub separation: f32,
+}
+
+#[pymethods]
+impl ShuffleControl {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShuffleControl(pairs={}, genuine={:.3}, shuffled={:.3}, separation={:.3}, \
+             admitted={})",
+            self.pairs,
+            self.genuine_mean,
+            self.shuffled_mean,
+            self.separation,
+            self.shuffled_admitted
+        )
+    }
 }
 
 /// The multiplicands of a `Neighbour.score`.
@@ -1209,6 +1276,73 @@ impl Corpus {
     /// `Mathlib.Algebra.Group.Defs` is inside one of them. The missing-entry lists are the
     /// point of the exercise: a total dictionary would mean the analogy has nothing left to
     /// say.
+    /// How far a dictionary is from the map it claims to be.
+    ///
+    /// Greedy per-declaration selection cannot produce a map — nothing looks across rows —
+    /// so this is the measurement any repair has to be judged against, and it exists
+    /// before the repair does.
+    #[pyo3(signature = (left, right, per_decl = 1, theorems_only = true, worst = 6))]
+    fn dictionary_coherence(
+        &self,
+        py: Python<'_>,
+        left: &str,
+        right: &str,
+        per_decl: usize,
+        theorems_only: bool,
+        worst: usize,
+    ) -> PyResult<Coherence> {
+        py.detach(|| -> Result<Coherence, SkelFail> {
+            let cfg = IndexConfig::default();
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            let d = dict::dictionary(idx, left, right, &cfg, per_decl, theorems_only);
+            let c: CoreCoherence = dict::coherence(idx, &d, worst);
+            Ok(Coherence {
+                rows: c.rows,
+                distinct_lefts: c.distinct_lefts,
+                distinct_rights: c.distinct_rights,
+                distinct_right_statements: c.distinct_right_statements,
+                contested: c.contested,
+                rows_in_collision: c.rows_in_collision,
+                collision_rate: c.collision_rate(),
+                worst: c.worst,
+            })
+        })
+        .map_err(Into::into)
+    }
+
+    /// Design §9's control: re-pair each left with a different right and compare. If
+    /// genuine pairs do not separate from shuffled ones, the floors are admitting
+    /// coincidence and nothing computed from this dictionary is about analogy.
+    ///
+    /// The shuffle is a fixed stride, not a random permutation, so a failure is
+    /// reproducible and the pairing can be re-derived by hand.
+    #[pyo3(signature = (left, right, per_decl = 1, theorems_only = true))]
+    fn dictionary_shuffle_control(
+        &self,
+        py: Python<'_>,
+        left: &str,
+        right: &str,
+        per_decl: usize,
+        theorems_only: bool,
+    ) -> PyResult<ShuffleControl> {
+        py.detach(|| -> Result<ShuffleControl, SkelFail> {
+            let cfg = IndexConfig::default();
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            let d = dict::dictionary(idx, left, right, &cfg, per_decl, theorems_only);
+            let s: CoreShuffle = dict::shuffle_control(idx, &d, &cfg);
+            Ok(ShuffleControl {
+                pairs: s.pairs,
+                genuine_mean: s.genuine_mean,
+                shuffled_mean: s.shuffled_mean,
+                shuffled_admitted: s.shuffled_admitted,
+                separation: s.separation,
+            })
+        })
+        .map_err(Into::into)
+    }
+
     #[pyo3(signature = (left, right, per_decl = 1, theorems_only = true))]
     fn dictionary(
         &self,
@@ -1461,6 +1595,8 @@ fn fh_atlas(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Generalization>()?;
     m.add_class::<Relation>()?;
     m.add_class::<ScoreFactors>()?;
+    m.add_class::<Coherence>()?;
+    m.add_class::<ShuffleControl>()?;
     m.add_class::<ScorerId>()?;
     m.add_class::<LogicalStats>()?;
     m.add_class::<Neighbour>()?;

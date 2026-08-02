@@ -4,7 +4,9 @@
 //! ranked list of theory pairs is exactly the kind of output that can be admired instead
 //! of read.
 
-use fh_atlas::dict::{Transported, dictionary, frontier, theory_of, transport};
+use fh_atlas::dict::{
+    Transported, coherence, dictionary, frontier, shuffle_control, theory_of, transport,
+};
 use fh_atlas::graph::Graph;
 use fh_atlas::skel::erase::Level;
 use fh_atlas::skel::index::{IndexConfig, SkeletonIndex};
@@ -107,6 +109,58 @@ fn main() {
     assert!(
         !d.missing_left.is_empty(),
         "a total dictionary would mean every order-theory concept has an algebraic partner"
+    );
+
+    // ---- M3a: is this a map, and is it about analogy at all? ----
+    //
+    // Stated before the run. (1) The shuffled control must separate: genuine pairs score
+    // above coincidence, and few shuffled pairs clear the same floors. Without that, every
+    // other number here is about the floors rather than about mathematics. (2) The
+    // coherence report must show the dictionary is *not* a map today — if it already were,
+    // M3a has nothing to fix and the plan is wrong.
+    println!("\nM3a — coherence of the Order <-> Algebra dictionary:");
+    let coh = coherence(&mut idx, &d, 6);
+    println!(
+        "  {} rows, {} distinct lefts, {} distinct right names ({} distinct right \
+         *statements*)",
+        coh.rows, coh.distinct_lefts, coh.distinct_rights, coh.distinct_right_statements
+    );
+    println!(
+        "  {} right statements contested by more than one left; {} rows ({:.1}%) are in a \
+         collision",
+        coh.contested,
+        coh.rows_in_collision,
+        100.0 * coh.collision_rate()
+    );
+    for (name, n) in &coh.worst {
+        println!("    x{n:<3} {name}");
+    }
+    assert!(
+        coh.collision_rate() > 0.05,
+        "the greedy dictionary is already almost a map ({:.1}% of rows in a collision), so \
+         M3a's premise is wrong and the solver is not the fix",
+        100.0 * coh.collision_rate()
+    );
+
+    println!("\nnegative control: shuffled mappings must be rejected (design §9):");
+    let sc = shuffle_control(&mut idx, &d, &cfg);
+    println!(
+        "  genuine mean retention {:.3} vs shuffled {:.3}; genuine wins {:.1}% of pairs",
+        sc.genuine_mean,
+        sc.shuffled_mean,
+        100.0 * sc.separation
+    );
+    println!(
+        "  {} of {} shuffled pairs would still clear the floors ({:.1}%)",
+        sc.shuffled_admitted,
+        sc.pairs,
+        100.0 * sc.shuffled_admitted as f32 / sc.pairs.max(1) as f32
+    );
+    assert!(
+        sc.separation > 0.90,
+        "genuine pairs beat shuffled ones only {:.1}% of the time — the dictionary is not \
+         separating analogy from coincidence, and no downstream number is about analogy",
+        100.0 * sc.separation
     );
 
     // Transport, on a row we can check by eye.

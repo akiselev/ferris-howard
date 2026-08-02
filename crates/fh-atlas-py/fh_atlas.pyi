@@ -153,6 +153,56 @@ class LogicalStats:
     def prop_heads(self) -> int: ...
 
 
+class Coherence:
+    """How far a dictionary is from the map it claims to be.
+
+    Rights are counted by *statement*, not by name — two names for one theorem would
+    otherwise let a left displaced onto an alias score as a coherence improvement.
+    """
+
+    @property
+    def rows(self) -> int: ...
+    @property
+    def distinct_lefts(self) -> int: ...
+    @property
+    def distinct_rights(self) -> int: ...
+    @property
+    def distinct_right_statements(self) -> int:
+        """Below `distinct_rights` exactly when two names for one theorem are pointed at."""
+
+    @property
+    def contested(self) -> int:
+        """Right statements claimed by more than one left."""
+
+    @property
+    def rows_in_collision(self) -> int: ...
+    @property
+    def worst(self) -> list[tuple[str, int]]:
+        """`(right name, lefts claiming its statement)`, worst first."""
+
+    @property
+    def collision_rate(self) -> float:
+        """The fraction of the dictionary that is not a map."""
+
+
+class ShuffleControl:
+    """Design §9's control: are false shuffled mappings rejected earlier than genuine ones?"""
+
+    @property
+    def pairs(self) -> int: ...
+    @property
+    def genuine_mean(self) -> float: ...
+    @property
+    def shuffled_mean(self) -> float: ...
+    @property
+    def shuffled_admitted(self) -> int:
+        """Shuffled pairs still clearing the floors — the rate a coincidence survives."""
+
+    @property
+    def separation(self) -> float:
+        """Fraction where the genuine pair outscores its shuffled twin. 1.0 perfect, 0.5 chance."""
+
+
 class ScoreFactors:
     """The multiplicands of a `Neighbour.score` — Engine 1 §6 C2's feature vector."""
 
@@ -561,6 +611,25 @@ class Corpus:
         `theorems_only` additionally drops Prop-valued *definitions* — dozens of typeclass
         definitions have identical statements and bury the reformulation families.
         """
+
+    def dictionary_coherence(
+        self,
+        left: str,
+        right: str,
+        per_decl: int = 1,
+        theorems_only: bool = True,
+        worst: int = 6,
+    ) -> Coherence:
+        """How far the dictionary between two theories is from being a map."""
+
+    def dictionary_shuffle_control(
+        self,
+        left: str,
+        right: str,
+        per_decl: int = 1,
+        theorems_only: bool = True,
+    ) -> ShuffleControl:
+        """Re-pair each left with a different right; genuine pairs must separate."""
 
     def dictionary(
         self, left: str, right: str, per_decl: int = 1, theorems_only: bool = True
