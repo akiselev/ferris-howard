@@ -95,6 +95,24 @@ jobs:
           print("fh check: ok")
           PY
 
+      # B2's queries are only as good as B1's edges, and `uses_proof` was empty for every
+      # theorem in Mathlib until B2's first real run caught it. So the gate is end to end:
+      # extract a slice, ask the graph a question, and check the answer is the citation
+      # chain rather than an empty one.
+      - name: atlas end-to-end
+        working-directory: lean
+        run: |
+          lake exe atlas_extract --local Tests.Atlas.Extract > /tmp/slice.jsonl
+          cargo build --manifest-path ../Cargo.toml -p fh-atlas --bins
+          ../target/debug/atlas stats /tmp/slice.jsonl
+          test "$(../target/debug/atlas why /tmp/slice.jsonl two_eq_two Eq.refl --lens proof)" = \
+               "$(printf 'two_eq_two\nEq.refl')"
+          # And the lens is load-bearing: the claim does not mention reflexivity.
+          if ../target/debug/atlas why /tmp/slice.jsonl two_eq_two Eq.refl --lens statement; then
+            echo "expected no statement-lens path to Eq.refl"; exit 1
+          fi
+          echo "atlas: ok"
+
   rust:
     name: rust
     runs-on: ubuntu-latest

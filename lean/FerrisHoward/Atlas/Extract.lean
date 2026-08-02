@@ -76,6 +76,22 @@ lexicographic order of the strings they actually see. -/
 private def sortedConstants (e : Expr) : Array Name :=
   e.getUsedConstants.qsort (fun a b => a.toString < b.toString)
 
+/-- The value a declaration was defined by, if it has one.
+
+**Not `ConstantInfo.value?`**, which returns `none` for a theorem on this toolchain — Lean
+does not hand out proof terms through that accessor. Using it made `uses_proof` empty for
+every theorem in the environment, which is exactly backwards: a theorem's proof is where
+the interesting dependencies are, and `atlas why --lens proof` is the query they exist for.
+Found by B2, whose first real run over `Mathlib.Logic.Basic` reported 33,521 theorems and
+not one proof edge.
+
+`opaqueInfo` is deliberately excluded. An `opaque` declaration's whole content is that
+nothing may look at its value, and the Atlas should not be the thing that does. -/
+private def valueOf? : ConstantInfo → Option Expr
+  | .defnInfo v => some v.value
+  | .thmInfo v => some v.value
+  | _ => none
+
 /-- Extract one declaration. -/
 def rowOf (env : Environment) (n : Name) (info : ConstantInfo) : Row :=
   let (stmt, stmtError) :=
@@ -87,7 +103,7 @@ def rowOf (env : Environment) (n : Name) (info : ConstantInfo) : Row :=
     module := (env.getModuleIdxFor? n).bind (env.header.moduleNames[·.toNat]?) |>.getD env.mainModule
     stmt, stmtError
     usesStatement := sortedConstants info.type
-    usesProof := (info.value?.map sortedConstants).getD #[] }
+    usesProof := ((valueOf? info).map sortedConstants).getD #[] }
 
 /-- Extract every extractable declaration of the *current module*, in name order. Used by
 `#fh_extract`, where "current module" is the file being elaborated. -/
