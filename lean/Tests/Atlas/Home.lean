@@ -162,3 +162,42 @@ info: FH home: `twocarrier` has 2 over-hypothesis candidate(s) — a candidate i
 -/
 #guard_msgs (whitespace := lax) in
 #fh_home twocarrier
+
+/-! ## Confirmation, by re-elaboration (C4 D1b)
+
+`#fh_home` proposes; the kernel disposes. `#fh_home_confirm` rebuilds the declaration with
+the candidate binder weakened and hands it back — which is what B3 did by hand, above, and
+what §9's "minimal-home claims are confirmed by re-elaboration" asks for.
+
+Retyping the binder is not enough and the first version of this was wrong because of it.
+When a declaration is elaborated its instance arguments are resolved against the binders it
+was written with and **baked into the term**: `add_comm a b` under `[CommRing R]` carries
+`CommRing.toAddCommMagma inst`. Weakening the binder breaks that projection whether or not
+the proof needed the strength, so the kernel rejected even `overh` — a declaration this file
+proves is a genuine over-hypothesis two sections up.
+
+So the projections are discarded and re-derived by `synthInstance?` at every instance
+position, in **both the type and the value**. The type matters as much: its body carries
+baked projections too, and rebuilding only the value leaves a weakened type that is itself
+ill-formed.
+-/
+
+/--
+info: FH home confirm: `overh`
+  [CommRing] -> AddCommMagma: CONFIRMED — the term typechecks without CommRing
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_confirm overh
+
+/-! And the negative control, which the confirmer needs more than the positive one. Every
+candidate `#fh_home_confirm` tries came from the evidence, so it confirms nearly always —
+and a tool that only ever says yes is indistinguishable from one that cannot say no.
+`#fh_home_refute` forces a target the proof cannot possibly be built from. `genuinely` needs
+distributivity and subtraction; an additive magma has neither. -/
+
+/--
+info: FH home confirm: `genuinely`
+  [CommRing] -> AddCommMagma: REFUTED — even with every instance argument re-synthesised in the weakened context, the term does not typecheck
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_refute genuinely AddCommMagma

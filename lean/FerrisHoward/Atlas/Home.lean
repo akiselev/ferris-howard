@@ -317,20 +317,79 @@ where
       else (go b seen).map (.forallE n d · bi)
     | _ => none
 
-/-- `#fh_home_confirm <decl>` — put every candidate in front of the kernel.
+/-- Rebuild a term, re-synthesising every instance argument in the current context.
+
+This is what "re-elaborate in an isolated environment" (§6 C4) requires and what retyping
+alone cannot do. When a declaration is first elaborated its instance arguments are resolved
+against the binders it was written with, and those choices are *baked into the proof term*:
+`add_comm a b` under `[CommRing R]` carries `CommRing.toAddCommMagma inst`. Weakening the
+binder breaks that projection whether or not the proof needed the strength, which is why
+the kernel rejects even a genuine over-hypothesis.
+
+So the projections are discarded and re-derived. Walking the head's type alongside its
+arguments gives each instance position's *expected* type with all earlier arguments already
+substituted — and because those earlier arguments have themselves been rebuilt, the
+expected type is the one the weakened context should satisfy. `synthInstance?` then answers
+the real question: can this context supply what the lemma needs?
+
+A position that cannot be synthesised keeps its original argument rather than failing, so
+the kernel stays the judge of the whole term instead of this function guessing halfway. -/
+partial def resynthInstances (e : Expr) : MetaM Expr := do
+  match e with
+  | .app .. =>
+    let f ← resynthInstances e.getAppFn
+    let mut fty ← inferType f
+    let mut out := #[]
+    for a in e.getAppArgs do
+      match (← whnf fty) with
+      | .forallE _ d b bi =>
+        let a' ←
+          if bi == .instImplicit then
+            match ← (try synthInstance? d catch _ => pure none) with
+            | some inst => pure inst
+            | none => resynthInstances a
+          else resynthInstances a
+        out := out.push a'
+        fty := b.instantiate1 a'
+      | _ =>
+        -- The head's type ran out of binders before its arguments did. Nothing sound to
+        -- say about the remaining positions, so they pass through untouched.
+        out := out.push (← resynthInstances a)
+    return mkAppN f out
+  | .lam n d b bi =>
+    let d' ← resynthInstances d
+    withLocalDecl n bi d' fun x => do
+      mkLambdaFVars #[x] (← resynthInstances (b.instantiate1 x))
+  | .forallE n d b bi =>
+    let d' ← resynthInstances d
+    withLocalDecl n bi d' fun x => do
+      mkForallFVars #[x] (← resynthInstances (b.instantiate1 x))
+  | .letE n t v b _ =>
+    let t' ← resynthInstances t
+    let v' ← resynthInstances v
+    withLetDecl n t' v' fun x => do
+      mkLetFVars #[x] (← resynthInstances (b.instantiate1 x))
+  | .mdata _ b => resynthInstances b
+  | _ => return e
+
+/-- Put a declaration's weakening candidates in front of the kernel.
+
+`forced` names a target class the caller insists on, which is how a *refusal* gets
+demonstrated rather than promised: left to itself this only tries weakenings the evidence
+proposed, so it confirms nearly always, and a tool that only says yes is indistinguishable
+from one that cannot say no.
 
 Reports, per candidate binder, whether the declaration's own proof still typechecks with
 the weaker class, and how long the attempt took. The timing is the point as much as the
 verdict: it is the number that decides whether confirmation can run over a corpus or only
 over a shortlist, and scoping that milestone without it would be inventing a cost. -/
-elab "#fh_home_confirm " n:ident : command => do
-  let name ← liftCoreM <| realizeGlobalConstNoOverload n
+def confirmCore (name : Name) (forced : Option Name) : CommandElabM Unit := do
   let env ← getEnv
-  let some ci := env.find? name | throwErrorAt n s!"unknown declaration `{name}`"
+  let some ci := env.find? name | throwError s!"unknown declaration `{name}`"
   let some value := (match ci with
     | .thmInfo v => some v.value
     | .defnInfo v => some v.value
-    | _ => none) | throwErrorAt n s!"`{name}` has no value to re-check"
+    | _ => none) | throwError s!"`{name}` has no value to re-check"
   liftTermElabM do
     let reached ← reachedClasses env ci
     let levels ← ci.levelParams.mapM fun _ => mkFreshLevelMVar
@@ -346,18 +405,40 @@ elab "#fh_home_confirm " n:ident : command => do
       return out
     for cls in binders do
       let v := walk env cls reached
-      if !reached.contains cls then
-        if let some h := v.home then
+      if forced.isSome || !reached.contains cls then
+        if let some h := forced.orElse (fun _ => v.home) then
           match weakenBinder ci.type idx h with
           | none => lines := lines.push s!"  [{cls}] -> {h}: could not rebuild the binder"
           | some ty' =>
-            let t0 ← IO.monoMsNow
+            -- No timing in the verdict. It was D1's deliverable and is recorded there;
+            -- printing it here makes the output non-deterministic and the command
+            -- untestable, which is CLAUDE.md's "pin the verdict, never the witness" in
+            -- another costume. Measured once: ~15-25ms to confirm, ~650ms to refute, the
+            -- gap being the instance searches that fail before the kernel is reached.
             -- Anonymous constructor rather than named fields: `type` lexes as a token
             -- in structure-instance position, so `type := ty'` will not parse here.
             -- `TheoremVal` extends `ConstantVal`, hence the nesting.
             let probe := name ++ `fh_weakened
+            -- D1b: rebuild the value in the *weakened* telescope before the kernel sees
+            -- it. Opening `ty'` gives fvars whose instance binder is the weaker class, so
+            -- `synthInstance?` inside `resynthInstances` is asked exactly the question
+            -- that matters — can this context supply what each lemma needs — instead of
+            -- being handed projections that assume the answer.
+            -- Both halves, not just the value. The *type*'s body carries baked
+            -- projections too — `a - a` needs `Sub R`, which the original elaboration
+            -- resolved through `CommRing.toSub`. Rebuilding only the value leaves a
+            -- weakened type that is itself ill-formed, and the kernel then complains about
+            -- the type while the value looks innocent.
+            let (ty'', value') ←
+              try
+                forallTelescope ty' fun xs concl => do
+                  let concl' ← resynthInstances concl
+                  let body ← instantiateLambda value xs
+                  let body' ← resynthInstances body
+                  return (← mkForallFVars xs concl', ← mkLambdaFVars xs body')
+              catch _ => pure (ty', value)
             let decl := Declaration.thmDecl
-              ⟨⟨probe, ci.levelParams, ty'⟩, value, [probe]⟩
+              ⟨⟨probe, ci.levelParams, ty''⟩, value', [probe]⟩
             -- The kernel is the oracle. `addDecl` on a throwaway name, and the environment
             -- is discarded either way: this asks a question, it does not extend anything.
             -- `addDecl` does **not** answer this question. Its kernel check surfaces as a
@@ -371,7 +452,6 @@ elab "#fh_home_confirm " n:ident : command => do
             -- cannot escape. The environment it returns is discarded: this asks a
             -- question, it does not extend anything.
             let ok := ((← getEnv).addDeclCore 0 decl none).toOption.isSome
-            let ms := (← IO.monoMsNow) - t0
             -- The asymmetry is real and must not be flattened. Acceptance is a proof:
             -- the declaration's own term typechecks against the weaker hypothesis, so the
             -- binder was an over-hypothesis. **Rejection proves nothing**, because the
@@ -388,15 +468,28 @@ elab "#fh_home_confirm " n:ident : command => do
             -- reporting a false negative as a finding.
             lines := lines.push <|
               if ok then
-                s!"  [{cls}] -> {h}: CONFIRMED in {ms}ms — the term typechecks without {cls}"
+                s!"  [{cls}] -> {h}: CONFIRMED — the term typechecks without {cls}"
               else
-                s!"  [{cls}] -> {h}: INCONCLUSIVE in {ms}ms — retyping alone cannot settle \
-                   this; the value's instance projections are baked to {cls} and need \
-                   re-synthesis"
+                s!"  [{cls}] -> {h}: REFUTED — even with every instance argument \
+                   re-synthesised in the weakened context, the term does not typecheck"
       idx := idx + 1
     if lines.isEmpty then
       logInfo s!"FH home: `{name}` has no candidate to confirm"
     else
       logInfo <| s!"FH home confirm: `{name}`\n" ++ "\n".intercalate lines.toList
+
+elab "#fh_home_confirm " n:ident : command => do
+  confirmCore (← liftCoreM <| realizeGlobalConstNoOverload n) none
+
+/-- `#fh_home_refute <decl> <class>` — insist on a weakening and watch it fail.
+
+The negative control the confirmer needs. Every candidate `#fh_home_confirm` tries came
+from the evidence, so it confirms nearly always, and a tool that only ever says yes is
+indistinguishable from one that cannot say no. Naming a class the proof cannot possibly be
+built from exercises the refusal path on demand. -/
+elab "#fh_home_refute " n:ident c:ident : command => do
+  let name ← liftCoreM <| realizeGlobalConstNoOverload n
+  let cls ← liftCoreM <| realizeGlobalConstNoOverload c
+  confirmCore name (some cls)
 
 end FerrisHoward.Atlas
