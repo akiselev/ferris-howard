@@ -268,9 +268,7 @@ fn take_options(args: &[String]) -> Result<Options, String> {
             }
             "--level" => {
                 let v = it.next().ok_or("--level takes a value")?;
-                level = Some(
-                    Level::parse(v).ok_or_else(|| format!("unknown level `{v}`"))?,
-                );
+                level = Some(Level::parse(v).ok_or_else(|| format!("unknown level `{v}`"))?);
             }
             "--top" => {
                 let v = it.next().ok_or("--top takes a number")?;
