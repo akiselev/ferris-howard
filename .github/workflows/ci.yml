@@ -111,6 +111,15 @@ jobs:
           if ../target/debug/atlas why /tmp/slice.jsonl two_eq_two Eq.refl --lens statement; then
             echo "expected no statement-lens path to Eq.refl"; exit 1
           fi
+          # C5's transitive-sorry scan, which the graph answers directly. The two names
+          # it finds in g01 are the same two `scripts/round-trip.py` omits as incomplete
+          # — two independent mechanisms (Lean's `collectAxioms`, Rust-side reachability)
+          # agreeing, which is the point of having both.
+          lake exe atlas_extract --local Tests.corpus.g01_peano > /tmp/g01.jsonl
+          ../target/debug/atlas honesty /tmp/g01.jsonl > /tmp/honesty.txt && \
+            { echo "expected honesty findings in g01"; exit 1; }
+          grep -q "as_bool  rests on  sorryAx" /tmp/honesty.txt
+          grep -q "bad_arm  rests on  sorryAx" /tmp/honesty.txt
           echo "atlas: ok"
 
       # The M2 exit gate's MCP round-trip: initialize -> tools/list -> elaborate -> goals.

@@ -25,6 +25,8 @@ queries:
   foundations <name>  everything <name> transitively rests on
   impact <name>       everything that transitively rests on <name>
   walls               declarations ranked by how many others cite them
+  honesty [axiom...]  declarations resting on `sorryAx` or on an axiom outside the
+                      whitelist; exits non-zero if any are found
   stats               size of the slice, and how much of it encodes
 
 The lens selects which edges are walked: `statement` is what claims rest on, `proof` is
@@ -34,9 +36,15 @@ what arguments rest on, `both` is the citation graph. Default: both.
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match run(&args) {
-        Ok(out) => {
-            print!("{out}");
-            ExitCode::SUCCESS
+        // `honesty` reports findings on stdout and still exits non-zero — the findings are
+        // the answer, not an error, but CI has to be able to fail on them.
+        Ok(Report { text, clean }) => {
+            print!("{text}");
+            if clean {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            }
         }
         Err(msg) => {
             eprintln!("atlas: {msg}");
@@ -45,7 +53,19 @@ fn main() -> ExitCode {
     }
 }
 
-fn run(args: &[String]) -> Result<String, String> {
+/// A query's output, and whether it should exit zero.
+struct Report {
+    text: String,
+    clean: bool,
+}
+
+impl From<String> for Report {
+    fn from(text: String) -> Report {
+        Report { text, clean: true }
+    }
+}
+
+fn run(args: &[String]) -> Result<Report, String> {
     let (lens, rest) = take_lens(args)?;
     let (query, rest) = rest.split_first().ok_or_else(|| USAGE.to_string())?;
     let (path, rest) = rest.split_first().ok_or_else(|| USAGE.to_string())?;
@@ -61,7 +81,7 @@ fn run(args: &[String]) -> Result<String, String> {
             match g.why(from, to, lens) {
                 // The chain is printed one name per line rather than joined, because the
                 // thing an agent does next is read it top to bottom.
-                Some(path) => Ok(path.join("\n") + "\n"),
+                Some(path) => Ok((path.join("\n") + "\n").into()),
                 None => Err(format!(
                     "no dependency chain from `{from}` to `{to}` in this slice"
                 )),
@@ -72,7 +92,7 @@ fn run(args: &[String]) -> Result<String, String> {
                 return Err("foundations takes one declaration name".into());
             };
             known(&g, name)?;
-            Ok(lines(g.foundations(name, lens)))
+            Ok(lines(g.foundations(name, lens)).into())
         }
         "impact" => {
             let [name] = rest else {
@@ -80,7 +100,7 @@ fn run(args: &[String]) -> Result<String, String> {
             };
             // Not `known`: asking what rests on something outside the slice is a fair
             // question, and the answer is the part of the slice that cites it.
-            Ok(lines(g.impact(name, lens)))
+            Ok(lines(g.impact(name, lens)).into())
         }
         "walls" => {
             let mut out = String::new();
@@ -93,7 +113,52 @@ fn run(args: &[String]) -> Result<String, String> {
                 }
                 out.push_str(&format!("{n:>6}  {name}\n"));
             }
-            Ok(out)
+            Ok(out.into())
+        }
+        "honesty" => {
+            // C5's transitive-sorry scan, which the dependency graph answers directly:
+            // everything resting on `sorryAx` is its impact under the proof lens. The
+            // scan is *transitive* on purpose — a complete-looking theorem one step above
+            // a hole is not complete, and that is the case anti-cheat exists to catch.
+            let mut findings: Vec<(String, String)> = g
+                .impact("sorryAx", Lens::Proof)
+                .into_iter()
+                .map(|n| (n, "sorryAx".to_string()))
+                .collect();
+            // The whitelist is the axioms an argument may rest on. Default: Lean's own
+            // three, which everything classical uses. Anything else is named.
+            let allowed: Vec<String> = if rest.is_empty() {
+                ["propext", "Classical.choice", "Quot.sound"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect()
+            } else {
+                rest.to_vec()
+            };
+            for name in g.names() {
+                if g.get(name).is_some_and(|d| d.kind == "axiom")
+                    && !allowed.contains(name)
+                    && name != "sorryAx"
+                {
+                    for user in g.impact(name, Lens::Proof) {
+                        findings.push((user, name.clone()));
+                    }
+                }
+            }
+            findings.sort();
+            findings.dedup();
+            if findings.is_empty() {
+                return Ok(format!("honesty: clean — {} declarations\n", g.len()).into());
+            }
+            let mut out = String::new();
+            for (who, why) in &findings {
+                out.push_str(&format!("{who}  rests on  {why}\n"));
+            }
+            out.push_str(&format!("honesty: {} finding(s)\n", findings.len()));
+            Ok(Report {
+                text: out,
+                clean: false,
+            })
         }
         "stats" => {
             let total = g.len();
@@ -104,7 +169,8 @@ fn run(args: &[String]) -> Result<String, String> {
             Ok(format!(
                 "declarations: {total}\nencoded statements: {encoded}\nunencodable: {}\n",
                 total - encoded
-            ))
+            )
+            .into())
         }
         other => Err(format!("unknown query `{other}`\n\n{USAGE}")),
     }
