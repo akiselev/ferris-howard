@@ -1,0 +1,31 @@
+# The Ferris–Howard Correspondence: Formalizing the Project's Own Thesis
+
+**Status:** Draft 0.1 · Can the correspondence FH lives on be stated and proven in Lean itself? Yes — as a three-part theorem package: a positive correspondence (Curry–Howard, one level up), structure theorems about the Atlas graph, and limitative theorems proving the gaps. The last part is the jewel: the project's honesty doctrine ("calibration, never certainty; the miner is never done") becomes *provably necessary*, not a stance.
+
+## 1. What the correspondence asserts (the positive part)
+
+Curry–Howard identifies programs with proofs and types with propositions. The Ferris–Howard correspondence is the same identification one level up — about *libraries*, not programs:
+
+> **programs : proofs :: types : propositions :: traits : theories :: impls : interpretations :: trait bounds : interpretability.**
+
+Formally: deep-embed (i) a miniature FH trait calculus (traits with laws, impls, bounded generics) and (ii) first-order theories with interpretations, then prove the dictionary as a functor/equivalence on the fragment: a trait *is* a theory presentation; an `impl` *is* a model/interpretation; a generic theorem over `where T: Grp` *is* a theorem schema over all models; and **`transport` is pushforward along an interpretation — proven meaning-preserving** (the transport-soundness theorem, which upgrades the Atlas's flagship operation from tooling to semantics). Bound-minimization gets its true name: **`home` is position in the interpretability preorder** — the minimal theory proving a statement, existing under stated conditions, unique up to bi-interpretability. Honesty note: the informal content here is categorical logic and interpretability theory, long known; the contribution is formalizing it *and wiring it to a live tool*, so every Atlas operation acquires a theorem saying what it computes.
+
+## 2. Structure theorems: the graph has real geometry (and real gaps between theories)
+
+With the edge relation (interpretability/relative provability) formalized, the Atlas graph becomes a mathematical object and classical interpretability theory becomes provable structure: **incomparable theories exist** — pairs with no dictionary in either direction, i.e., *proven gaps between nodes*; the preorder is no lattice in general; degrees are dense in places and wild in others. Each such theorem is simultaneously metamathematics and product documentation: it says which shapes the Atlas's map can and cannot have, with proofs. The Frobenius-hole phenomenon — a partial dictionary that provably cannot extend — gets its abstract statement here: obstruction theorems for extending partial interpretations, the formal genus of "the missing entry."
+
+## 3. The limitative theorems: proving there are gaps in math, and in us
+
+This is the part your question was really asking for, and it's buildable on existing infrastructure — Gödel's incompleteness theorems are already formalized in Lean 4 (the first-order-logic/arithmetization foundations exist as community libraries; Isabelle has had them for a decade), so the arithmetized-provability machinery is importable rather than rebuilt. On top of it, three theorems about *ourselves*:
+
+**(a) The Atlas incompleteness theorem.** Edge-existence in the graph is provability-shaped, hence undecidable; therefore **any recursively enumerable Atlas over a sufficiently strong corpus misses true edges and can never certify edge-absence.** The miner is necessarily semidecidable: it can confirm relationships forever and complete the map never. "The map can always be extended but never finished" — currently a slogan in the Atlas doc — becomes a theorem *proven by the Atlas's own formalization*.
+
+**(b) The vet-incompleteness theorem.** Provable-equivalence of statements over arithmetic is undecidable; therefore **no algorithmic battery decides statement faithfulness** — there is no complete V-probe set, and Part IV's calibration-not-certainty doctrine is not epistemic modesty but a corollary. The validity program's deepest design decision (measure detection rates, never claim completeness) gets a one-line mathematical justification, kernel-checked.
+
+**(c) The inherited floor.** Gödel II, already formalized: the system cannot prove its own consistency — which is the formal statement of why the kernel is the trust floor and why §7's discovered stratum was *designed* as definitions-not-axioms (fruitfulness at stake, consistency never). The architecture's most careful dodge, revealed as load-bearing by the theorem it dodges.
+
+## 4. What this buys, and the milestones
+
+Three purchases: **semantics** — Atlas operations become defined mathematical operations with soundness theorems, not heuristics with good branding; **grounded honesty** — the project's limitative doctrines become theorems in its own artifact, which is a stronger position than any amount of careful prose (and a referee-proof answer to "how do you know your relationship-miner isn't missing things": we *proved* it must be, and built the calibration program that theorem demands); **a publishable object** — "the Ferris–Howard correspondence" as a metamathematics paper: Curry–Howard for libraries, with the tool as the running example and the incompleteness results as the punchline. Milestones: **FHC1** — deep-embed the mini trait calculus and mini theories, prove the dictionary on the fragment; **FHC2** — transport-soundness and home-as-minimality; **FHC3** — the Atlas incompleteness theorem atop the existing Lean incompleteness libraries; **FHC4** — vet-incompleteness. FHC1–2 are a season of careful work; FHC3–4 are surprisingly cheap once the provability layer is imported, because they are reductions, not constructions. Roadmap placement: Horizon 3, alongside the discovered-stratum experiments it philosophically underwrites.
+
+The closing symmetry, for the ledger: the project began by using Rust's type system to *read* mathematics, and this document ends it by using mathematics to *type* the project — the correspondence proving both that the method is sound where it's sound and that it is incomplete where anything must be. A tool that can state its own limits as theorems is the only kind this program was ever trying to build.
