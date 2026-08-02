@@ -49,6 +49,18 @@ class Decl:
     def stmt_error(self) -> str | None:
         """Why `stmt` is absent. Present exactly when `stmt` is absent."""
 
+    @property
+    def uses_statement(self) -> list[str]:
+        """What the claim cites, **directly** — the row as extracted.
+
+        `Corpus.foundations` answers the transitive question; this answers the extractor's
+        one, which is what a claim about B1's output has to ask.
+        """
+
+    @property
+    def uses_proof(self) -> list[str]:
+        """What the argument cites, directly."""
+
     def __repr__(self) -> str: ...
 
 class Generalization:

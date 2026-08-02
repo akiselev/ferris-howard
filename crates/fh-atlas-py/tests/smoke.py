@@ -18,6 +18,7 @@ questions.
 from __future__ import annotations
 
 import argparse
+import ast
 import pathlib
 import subprocess
 import sys
@@ -210,16 +211,48 @@ def an_unknown_declaration_says_so_rather_than_returning_nothing(corpus: fa.Corp
 
 
 def an_unusable_statement_says_which_declaration_and_why(corpus: fa.Corpus, slice_path: str) -> None:
-    victim = next(
-        (n for n in corpus.names()[:20000] if (d := corpus.get(n)) and d.stmt is None), None
+    # On a fixture, not on the Mathlib slice: measured, every one of that slice's 131,062
+    # rows encodes, so the two ways a statement can be unusable have no witness there.
+    fixture = pathlib.Path("/tmp/fh-atlas-unusable.jsonl")
+    fixture.write_text(
+        '{"name":"Encoded","kind":"theorem","module":"M","stmt":"fh-stmt-v1;b0"}\n'
+        '{"name":"Unencodable","kind":"recursor","module":"M","stmt_error":"recursor"}\n'
+        '{"name":"Garbled","kind":"theorem","module":"M","stmt":"fh-stmt-v1;zzz"}\n'
     )
-    assert victim is not None, "no unencodable declaration in this slice to test with"
     try:
-        corpus.skeleton(victim)
-    except fa.NoStatement as e:
-        assert victim in str(e) and str(e) != victim, str(e)
-    else:
-        raise AssertionError("a declaration with no statement produced a skeleton")
+        c = fa.Corpus.load(fixture)
+        for name, expected in (("Unencodable", "recursor"), ("Garbled", "byte")):
+            try:
+                c.skeleton(name)
+            except fa.NoStatement as e:
+                # The name and the reason, both: "it failed" is not an actionable answer.
+                assert name in str(e) and expected in str(e), str(e)
+            else:
+                raise AssertionError(f"{name} produced a skeleton")
+        # The row that *does* encode still works, so the failures above are about those
+        # rows rather than about the fixture being rejected wholesale.
+        assert c.skeleton("Encoded", level="shape") == "b0"
+    finally:
+        fixture.unlink()
+
+
+def the_stubs_describe_the_module_that_shipped(corpus: fa.Corpus, slice_path: str) -> None:
+    # Agents lean on stubs harder than humans do (python-api.md §2), so a stub that has
+    # drifted from the extension is worse than no stub: it is a confident wrong answer.
+    stub = ast.parse((ROOT / "crates" / "fh-atlas-py" / "fh_atlas.pyi").read_text())
+    for node in stub.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        live = getattr(fa, node.name, None)
+        assert live is not None, f"{node.name} is stubbed but not exported"
+        if issubclass(live, BaseException):
+            continue
+        for member in node.body:
+            if isinstance(member, ast.FunctionDef):
+                assert hasattr(live, member.name), f"{node.name}.{member.name} is stubbed only"
+    stubbed = {n.name for n in stub.body if isinstance(n, ast.ClassDef)}
+    exported = {n for n in dir(fa) if not n.startswith("_") and isinstance(getattr(fa, n), type)}
+    assert exported <= stubbed, f"exported but unstubbed: {exported - stubbed}"
 
 
 def a_missing_or_broken_slice_raises_before_any_query(corpus: fa.Corpus, slice_path: str) -> None:
@@ -293,6 +326,7 @@ CLAIMS = [
     a_bad_level_names_the_levels_that_exist,
     an_unknown_declaration_says_so_rather_than_returning_nothing,
     an_unusable_statement_says_which_declaration_and_why,
+    the_stubs_describe_the_module_that_shipped,
     a_missing_or_broken_slice_raises_before_any_query,
     one_load_answers_twenty_questions_for_less_than_one_cli_call,
 ]

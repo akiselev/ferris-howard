@@ -92,6 +92,13 @@ pub struct Decl {
     /// Why `stmt` is absent. Present exactly when `stmt` is — B1 keeps the row rather than
     /// dropping it, and the reason is what makes a `None` readable.
     pub stmt_error: Option<String>,
+    /// What the *claim* cites, directly. The graph queries answer the transitive question;
+    /// this is the row as extracted, and the difference matters: "does this theorem carry
+    /// proof edges at all" is a question about B1's extractor that a transitive closure
+    /// answers only expensively and only indirectly.
+    pub uses_statement: Vec<String>,
+    /// What the *argument* cites, directly.
+    pub uses_proof: Vec<String>,
 }
 
 impl From<&CoreDecl> for Decl {
@@ -102,6 +109,8 @@ impl From<&CoreDecl> for Decl {
             module: d.module.clone(),
             stmt: d.stmt.clone(),
             stmt_error: d.stmt_error.clone(),
+            uses_statement: d.uses_statement.clone(),
+            uses_proof: d.uses_proof.clone(),
         }
     }
 }
@@ -117,8 +126,12 @@ impl Decl {
             (None, None) => "stmt=None".to_string(),
         };
         format!(
-            "Decl(name={:?}, kind={:?}, module={:?}, {stmt})",
-            self.name, self.kind, self.module
+            "Decl(name={:?}, kind={:?}, module={:?}, {stmt}, uses_statement={}, uses_proof={})",
+            self.name,
+            self.kind,
+            self.module,
+            self.uses_statement.len(),
+            self.uses_proof.len()
         )
     }
 }

@@ -328,6 +328,35 @@ impl SkeletonIndex {
     pub fn signature_count(&self) -> usize {
         self.sigs.len()
     }
+    pub fn module_of(&self, name: &str) -> Option<&str> {
+        self.by_name
+            .get(name)
+            .map(|d| self.modules[d.0 as usize].as_str())
+    }
+    pub fn is_theorem(&self, name: &str) -> bool {
+        self.by_name
+            .get(name)
+            .is_some_and(|d| self.kinds[d.0 as usize] == "theorem")
+    }
+    pub fn shape_of(&self, d: DeclId) -> TermId {
+        self.shape[d.0 as usize]
+    }
+    pub fn arena_mut(&mut self) -> &mut Arena {
+        &mut self.arena
+    }
+    /// A declaration's statement at a level, by name.
+    pub fn term_of(&mut self, name: &str, level: Level) -> Option<TermId> {
+        let d = self.id_of(name)?;
+        Some(self.level_term(d, level))
+    }
+    /// Which declaration, if any, has exactly this statement at this level. Used by
+    /// `transport` to tell "already a theorem" from "a directed target".
+    pub fn name_with_term(&mut self, t: TermId, level: Level) -> Option<String> {
+        (0..self.len()).find_map(|i| {
+            let d = DeclId(i as u32);
+            (self.level_term(d, level) == t).then(|| self.names[i].clone())
+        })
+    }
     pub fn key_counts(&self) -> (usize, usize) {
         (self.concrete.key_count(), self.shape_sub.key_count())
     }

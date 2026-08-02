@@ -15,6 +15,7 @@
 
 use std::process::ExitCode;
 
+use fh_atlas::dict::{Transported, dictionary, frontier, transport};
 use fh_atlas::equiv::EquivIndex;
 use fh_atlas::graph::{Graph, Lens};
 use fh_atlas::skel::erase::Level;
@@ -32,6 +33,9 @@ queries:
                       whitelist; exits non-zero if any are found
   equivalent <decl>   declarations whose statements normalize to the same thing
   classes             every equivalence class of size > 1, largest first
+  dictionary <A> <B>  skeleton-matched rows between two theories, plus what is unmatched
+  transport <l> <r> <s>  apply the row (l ~ r) to statement s
+  frontier            theory pairs that look alike and do not cite each other
   similar <decl>      declarations whose statements anti-unify with this one
   skeleton <decl>     the rendered erasure of one statement
   stats               size of the slice, and how much of it encodes
@@ -39,6 +43,9 @@ queries:
 `similar` and `skeleton` take `--level exact|presentation|instances|carriers|shape`,
 which chooses how much to erase before comparing; `--top N`; and `--brute` to skip the
 index and compare against every declaration (slow, and the differential reference).
+
+`dictionary` and `frontier` restrict to theorems unless `--all-kinds`; `frontier` takes
+`--exclude A,B` to drop infrastructure namespaces.
 
 The lens selects which edges are walked: `statement` is what claims rest on, `proof` is
 what arguments rest on, `both` is the citation graph. Default: both.
@@ -77,7 +84,15 @@ impl From<String> for Report {
 }
 
 fn run(args: &[String]) -> Result<Report, String> {
-    let (lens, level_opt, top, brute, rest) = take_options(args)?;
+    let Options {
+        lens,
+        level: level_opt,
+        top,
+        brute,
+        all_kinds,
+        exclude,
+        rest,
+    } = take_options(args)?;
     let (query, rest) = rest.split_first().ok_or_else(|| USAGE.to_string())?;
     let (path, rest) = rest.split_first().ok_or_else(|| USAGE.to_string())?;
     let input = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
@@ -201,6 +216,72 @@ fn run(args: &[String]) -> Result<Report, String> {
             }
             Ok(out.into())
         }
+        "dictionary" => {
+            let [left, right] = rest else {
+                return Err("dictionary takes two theory prefixes".into());
+            };
+            let cfg = IndexConfig::default();
+            let mut idx = SkeletonIndex::build(&input, &cfg).map_err(|e| e.to_string())?;
+            let d = dictionary(&mut idx, left, right, &cfg, 1, !all_kinds);
+            let mut out = String::new();
+            for r in d.rows.iter().take(top) {
+                out.push_str(&format!(
+                    "{:.2} {:<14} {:<40} ~ {}{}\n",
+                    r.retention,
+                    r.status.name(),
+                    r.left,
+                    r.right,
+                    if r.transportable { "" } else { "  (scoped)" }
+                ));
+            }
+            // The missing-entry report is the point of the exercise, so it is not
+            // optional output.
+            out.push_str(&format!(
+                "\n{} rows; unmatched: {} in {}, {} in {}\n",
+                d.rows.len(),
+                d.missing_left.len(),
+                d.left_theory,
+                d.missing_right.len(),
+                d.right_theory
+            ));
+            Ok(out.into())
+        }
+        "transport" => {
+            let [l, r, subject] = rest else {
+                return Err("transport takes a row (two names) and a subject".into());
+            };
+            let cfg = IndexConfig::default();
+            let mut idx = SkeletonIndex::build(&input, &cfg).map_err(|e| e.to_string())?;
+            let level = level_opt.unwrap_or(Level::Carriers);
+            match transport(&mut idx, l, r, subject, level).map_err(|e| e.to_string())? {
+                // Existing strengthens the dictionary; open is the directed target, and
+                // the next step on it is falsification rather than proof — refutation is
+                // cheap and locates the analogy's boundary.
+                Transported::Exists { name, .. } => Ok(format!("exists: `{name}`\n").into()),
+                Transported::Open { image } => {
+                    Ok(format!("open target (falsify before proving):\n{image}\n").into())
+                }
+            }
+        }
+        "frontier" => {
+            let cfg = IndexConfig::default();
+            let mut idx = SkeletonIndex::build(&input, &cfg).map_err(|e| e.to_string())?;
+            let graph = Graph::from_jsonl(&input).map_err(|e| e.to_string())?;
+            let mut out = String::new();
+            for f in frontier(&mut idx, &graph, 200, top, !all_kinds, &exclude) {
+                out.push_str(&format!(
+                    "{:.3}  {:<24} ~ {:<24} sim {:.2}  cites {:>6}  ({}/{})\n",
+                    f.score,
+                    f.left,
+                    f.right,
+                    f.similarity,
+                    f.cross_citations,
+                    f.left_size,
+                    f.right_size
+                ));
+            }
+            Ok(out.into())
+        }
         "similar" => {
             let [decl] = rest else {
                 return Err("similar takes one declaration name".into());
@@ -279,13 +360,23 @@ fn lines(names: impl IntoIterator<Item = String>) -> String {
     out
 }
 
-type Options = (Lens, Option<Level>, usize, bool, Vec<String>);
+struct Options {
+    lens: Lens,
+    level: Option<Level>,
+    top: usize,
+    brute: bool,
+    all_kinds: bool,
+    exclude: Vec<String>,
+    rest: Vec<String>,
+}
 
 fn take_options(args: &[String]) -> Result<Options, String> {
     let mut lens = Lens::Both;
     let mut level = None;
     let mut top = 10usize;
     let mut brute = false;
+    let mut all_kinds = false;
+    let mut exclude = Vec::new();
     let mut rest = Vec::new();
     let mut it = args.iter();
     while let Some(a) = it.next() {
@@ -308,8 +399,24 @@ fn take_options(args: &[String]) -> Result<Options, String> {
                 top = v.parse().map_err(|_| format!("`{v}` is not a number"))?;
             }
             "--brute" => brute = true,
+            // Dictionaries and frontiers restrict to theorems by default: a row between
+            // two *recursors* is a fact about how Lean compiles inductives, not a
+            // structure-preserving map between theories.
+            "--all-kinds" => all_kinds = true,
+            "--exclude" => {
+                let v = it.next().ok_or("--exclude takes a comma-separated list")?;
+                exclude.extend(v.split(',').map(|s| s.trim().to_string()));
+            }
             _ => rest.push(a.clone()),
         }
     }
-    Ok((lens, level, top, brute, rest))
+    Ok(Options {
+        lens,
+        level,
+        top,
+        brute,
+        all_kinds,
+        exclude,
+        rest,
+    })
 }

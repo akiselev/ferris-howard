@@ -154,6 +154,14 @@ binaries rather than scripts.
   *application*, so a naive "is the domain a sort" test says no and produces asymmetry.
 - **`Prop` is not a carrier.** Holing every implicit sort-domain argument collapses `and_comm`
   into a statement about two erased propositions.
+- **Restrict to claims, or you are measuring Lean rather than mathematics.** This has now
+  bitten three times in a row — B5's equivalence classes, B6's dictionary rows, B6's
+  frontier — and each time the unrestricted answer was *correct* and useless. Without the
+  restriction: the largest "equivalence class" is 1,859 declarations whose type is
+  literally `Type`; the best dictionary rows are between two recursors; and the top
+  frontier pairs are `Aesop ~ ProofWidgets` and `Aesop ~ Qq`, metaprogramming siblings that
+  share shapes because they are all Lean code over syntax trees. A working slice is
+  two-thirds `Init`/`Std`/`Lean`, so this is not a corner case.
 - **A carrier is often an *explicit* binder.** `Nat.add_comm` binds `(n m : ℕ)` explicitly;
   a rule that only looks at implicit binders leaves the carrier in place and the whole
   normalization knob does nothing.
