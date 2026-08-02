@@ -48,6 +48,7 @@ Everything below must be green before a commit. They are slow; run them anyway.
 | Rust | `cargo test -p fh-atlas && cargo clippy -p fh-atlas --all-targets && cargo fmt -p fh-atlas -- --check` | Zero warnings, not "few". |
 | Ranking golden | `FH_SLICE=/tmp/mathlib-algebra.jsonl cargo test -p fh-atlas --test golden` | **Skips silently without `FH_SLICE`** — a plain `cargo test` does not run it. ~95 s. |
 | Retrieval sources | `FH_SLICE=… cargo test -p fh-atlas --test sources` | Per-source fixtures run without a slice; only the differential needs one. ~115 s with it. |
+| Baselines (M1 D4/D5) | `./target/release/examples/baselinecheck /tmp/mathlib-algebra.jsonl` | Asserts the deletion control collapses. ~60 s. |
 
 Read a gate's **own** exit status, not the status of whatever you piped it into.
 `gate.py > log; tail log` exits with `tail`'s status, which is always 0 — a red gate read
@@ -193,6 +194,15 @@ binaries rather than scripts.
   normalized correctly — which is how a source that was dead for 60.6% of the corpus kept
   a green test suite. `tests/sources.rs` pairs each positive case with the ablation that
   must silence it.
+- **An exclusion at the wrong level is no exclusion.** GT-C was frozen excluding pairs
+  identical at `carriers`, and 16 of its 22 pairs turned out identical at `shape` — the
+  level the deletion control buckets on. A ranker with the anti-unifier deleted therefore
+  scored *103% of the real index*. Whatever a control does without the component, exclude
+  coincidence at **that** level, not at a neighbouring one.
+- **Stratify rather than filter when a ground truth splits.** The shape-identical pairs
+  are still real analogies (they are Mathlib's `to_additive` correspondence); they simply
+  cannot separate anti-unification from bucketing. Dropping them would have hidden that
+  the engine handles the two strata very differently.
 - **Recall loss is not one number.** Measured on Mathlib theorems: of 189 true neighbours
   missed, **63 (33.3%) were never proposed by the prefilter and 0 were buried by the
   ranking**. The split is clean because `similar_brute` applies the same `min_common` and

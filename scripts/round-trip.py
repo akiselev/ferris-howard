@@ -108,7 +108,15 @@ def main() -> int:
                 # negative fixture's contents only exist at all because Lean recovers from
                 # the error by inserting one. Omitting those is correct; omitting a
                 # *complete* declaration never is.
-                if "sorryAx" in row.get("uses_proof", []):
+                #
+                # `opaque` is the second recovery shape, and it is not reachable from the
+                # first. A definition whose termination proof fails is added as an **opaque
+                # constant** — `kind: "opaque"`, `uses_proof: []` — so it cites `sorryAx`
+                # neither directly nor transitively, and a deeper sorry scan would not find
+                # it either. Measured on `Tests.corpus.g12_gcd`, whose `gcd_nodec` is a
+                # Tier-3 negative fixture asserting exactly that failure. A constant with no
+                # body is not something an artifact can be expected to contain.
+                if "sorryAx" in row.get("uses_proof", []) or row.get("kind") == "opaque":
                     dropped_incomplete.append(name)
                 else:
                     print(f"  missing from the artifact: {name}")
