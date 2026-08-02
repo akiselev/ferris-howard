@@ -182,4 +182,123 @@ elab "#fh_home " n:ident : command => do
              a candidate is confirmed by moving the declaration and re-checking it"
     logInfo (header ++ "\n" ++ String.intercalate "\n" lines.toList)
 
+
+/-! ## Confirmation — C4's second stage
+
+`#fh_home` reports *candidates*. A candidate is a claim about what a proof needs, and the
+only thing that settles it is putting the weaker hypothesis in front of the kernel. Until
+now that was done by hand: `Tests/Atlas/Home.lean` carries `overh_confirmed` beside
+`overh`, written out and compiled by a human.
+
+The construction is deliberately blunt. The declaration's type is a nest of `forallE`;
+walk it, replace the candidate binder's domain `C args` with `H args` for the weaker class
+`H`, and leave everything else alone. Binder *count* and *order* are untouched, so every de
+Bruijn index in the body still resolves to what it did and the proof term needs no
+rewriting at all — which is what makes this one kernel call rather than a re-elaboration.
+
+The kernel then answers the real question. A proof that only ever used the weaker class's
+operations typechecks; one that projects a field `H` does not have is rejected, and that
+rejection is the evidence that the binder is *not* an over-hypothesis. Both outcomes are
+findings.
+-/
+
+/-- Replace the domain of the `i`-th instance-implicit binder with `repl`, keeping the
+binder structure identical so the body's de Bruijn indices stay valid. -/
+private def weakenBinder (ty : Expr) (i : Nat) (repl : Name) : Option Expr :=
+  go ty 0
+where
+  go (e : Expr) (seen : Nat) : Option Expr :=
+    match e with
+    | .forallE n d b bi =>
+      if bi == .instImplicit then
+        if seen == i then
+          -- Same arguments, weaker head: `CommRing R` becomes `AddCommMagma R`.
+          let d' := mkAppN (.const repl (d.getAppFn.constLevels!)) d.getAppArgs
+          some (.forallE n d' b bi)
+        else (go b (seen + 1)).map (.forallE n d · bi)
+      else (go b seen).map (.forallE n d · bi)
+    | _ => none
+
+/-- `#fh_home_confirm <decl>` — put every candidate in front of the kernel.
+
+Reports, per candidate binder, whether the declaration's own proof still typechecks with
+the weaker class, and how long the attempt took. The timing is the point as much as the
+verdict: it is the number that decides whether confirmation can run over a corpus or only
+over a shortlist, and scoping that milestone without it would be inventing a cost. -/
+elab "#fh_home_confirm " n:ident : command => do
+  let name ← liftCoreM <| realizeGlobalConstNoOverload n
+  let env ← getEnv
+  let some ci := env.find? name | throwErrorAt n s!"unknown declaration `{name}`"
+  let some value := (match ci with
+    | .thmInfo v => some v.value
+    | .defnInfo v => some v.value
+    | _ => none) | throwErrorAt n s!"`{name}` has no value to re-check"
+  liftTermElabM do
+    let reached ← reachedClasses env ci
+    let levels ← ci.levelParams.mapM fun _ => mkFreshLevelMVar
+    let mut idx := 0
+    let mut lines : Array String := #[]
+    let binders ← forallTelescopeReducing (ci.instantiateTypeLevelParams levels) fun xs _ => do
+      let mut out : Array Name := #[]
+      for x in xs do
+        let d ← x.fvarId!.getDecl
+        unless d.binderInfo == .instImplicit do continue
+        let .const cls _ := (← whnf d.type).getAppFn | continue
+        out := out.push cls
+      return out
+    for cls in binders do
+      let v := walk env cls reached
+      if !reached.contains cls then
+        if let some h := v.home then
+          match weakenBinder ci.type idx h with
+          | none => lines := lines.push s!"  [{cls}] -> {h}: could not rebuild the binder"
+          | some ty' =>
+            let t0 ← IO.monoMsNow
+            -- Anonymous constructor rather than named fields: `type` lexes as a token
+            -- in structure-instance position, so `type := ty'` will not parse here.
+            -- `TheoremVal` extends `ConstantVal`, hence the nesting.
+            let probe := name ++ `fh_weakened
+            let decl := Declaration.thmDecl
+              ⟨⟨probe, ci.levelParams, ty'⟩, value, [probe]⟩
+            -- The kernel is the oracle. `addDecl` on a throwaway name, and the environment
+            -- is discarded either way: this asks a question, it does not extend anything.
+            -- `addDecl` does **not** answer this question. Its kernel check surfaces as a
+            -- separately-logged error rather than as an exception a `try` can see, so the
+            -- first version of this command reported CONFIRMED for a declaration the
+            -- kernel had just rejected — including for `needsit`, whose proof genuinely
+            -- needs `CommRing`. A confirmation tool that says "confirmed" when the kernel
+            -- refuses is worse than no tool.
+            --
+            -- `addDeclCore` returns an `Except` instead, so the verdict is a value and
+            -- cannot escape. The environment it returns is discarded: this asks a
+            -- question, it does not extend anything.
+            let ok := ((← getEnv).addDeclCore 0 decl none).toOption.isSome
+            let ms := (← IO.monoMsNow) - t0
+            -- The asymmetry is real and must not be flattened. Acceptance is a proof:
+            -- the declaration's own term typechecks against the weaker hypothesis, so the
+            -- binder was an over-hypothesis. **Rejection proves nothing**, because the
+            -- elaborator baked instance projections into the value when it was first
+            -- checked — `add_comm a b` under `[CommRing R]` carries
+            -- `CommRing.toCommSemiring`, and retyping the binder breaks that chain whether
+            -- or not the proof needed the strength. Measured on B3's own fixture: `overh`
+            -- is a *known* over-hypothesis (`overh_confirmed` compiles by hand) and this
+            -- test rejects it.
+            --
+            -- Settling a rejection means re-synthesising the value's instance arguments in
+            -- the weakened context, which is C4's re-elaboration proper. Until that exists
+            -- the negative outcome is INCONCLUSIVE, and calling it "refuted" would be
+            -- reporting a false negative as a finding.
+            lines := lines.push <|
+              if ok then
+                s!"  [{cls}] -> {h}: CONFIRMED in {ms}ms — the term typechecks without {cls}"
+              else
+                s!"  [{cls}] -> {h}: INCONCLUSIVE in {ms}ms — retyping alone cannot settle \
+                   this; the value's instance projections are baked to {cls} and need \
+                   re-synthesis"
+      idx := idx + 1
+    if lines.isEmpty then
+      logInfo s!"FH home: `{name}` has no candidate to confirm"
+    else
+      logInfo <| s!"FH home confirm: `{name}`\n" ++ "\n".intercalate lines.toList
+
 end FerrisHoward.Atlas
