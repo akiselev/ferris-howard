@@ -62,13 +62,31 @@ partial def checkFile (path : System.FilePath) :
   let input ← IO.FS.readFile path
   let inputCtx := Parser.mkInputContext input path.toString
   let (header, parserState, messages) ← Parser.parseHeader inputCtx
-  let (env, messages) ← processHeader header {} messages inputCtx
-  let mut cmdState := Command.mkState env messages {}
+  let (env, headerMessages) ← processHeader header {} messages inputCtx
+  -- The header's own messages are taken here rather than left in the command state to be
+  -- picked up later. `processHeader` reports a failed import by returning an *empty*
+  -- environment plus a message, and if that message is not read out the tool goes on to
+  -- elaborate the whole file against a environment with no `OfNat` in it — emitting a
+  -- screen of "unknown constant" errors that name everything except the one thing that
+  -- actually went wrong.
+  let mut collected : Array Message := headerMessages.toArray
+  -- And when the header did fail there is nothing to learn from elaborating on: every
+  -- later message would be a consequence of the missing environment, not of the file.
+  if headerMessages.hasErrors then
+    let mut diags := #[]
+    for msg in collected do
+      let endPos := msg.endPos.getD msg.pos
+      diags := diags.push {
+        severity := severityString msg.severity
+        line := msg.pos.line, column := msg.pos.column
+        endLine := endPos.line, endColumn := endPos.column
+        message := (← msg.data.toString).trimAscii.copy }
+    return (diags, env, #[])
+  let mut cmdState := Command.mkState env {} {}
   let mut ps := parserState
   -- Messages are drained after every command rather than read at the end: elaborating the
   -- terminal `eoi` command resets the log, so a whole file's diagnostics vanish if you
   -- wait for it.
-  let mut collected : Array Message := #[]
   let mut trees : Array InfoTree := #[]
   repeat
     let scope := cmdState.scopes.head!
