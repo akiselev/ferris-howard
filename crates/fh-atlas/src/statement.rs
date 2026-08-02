@@ -68,7 +68,7 @@ pub enum Verdict {
 
 /// Lowercase hex, written out because `sha2` 0.11 returns a `hybrid-array` `Array`, which
 /// does not implement `LowerHex`.
-fn to_hex(bytes: &[u8]) -> String {
+pub(crate) fn to_hex(bytes: &[u8]) -> String {
     use std::fmt::Write;
     let mut out = String::with_capacity(bytes.len() * 2);
     for b in bytes {

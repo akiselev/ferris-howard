@@ -138,6 +138,18 @@ pub struct IndexConfig {
     pub lgg_level: Level,
     pub min_common: u32,
     pub min_retention: f32,
+    /// The three ranking weights. They live here rather than as literals in `similar`
+    /// because the scorer's identity is a digest over this struct: a constant that is not
+    /// a field is a constant the digest cannot see, so a stored result would claim to come
+    /// from a scorer it did not.
+    pub rarity_weight: f32,
+    pub cross_weight: f32,
+    pub scoped_weight: f32,
+    /// Restrict the ranked pool to theorems. Default `false`, which preserves the query
+    /// "what looks like this declaration" for any kind — but a *ground truth* of theorems
+    /// scored against a pool that is half definitions and recursors measures the config,
+    /// not the scorer, so an experiment sets this.
+    pub theorems_only: bool,
     /// Ablation knob: query source B with the raw root instead of the `Presentation`
     /// erasure the postings are keyed at. `true` is the repaired behaviour; `false`
     /// reproduces the defect, which is the only honest way to measure what the repair was
@@ -157,10 +169,64 @@ impl Default for IndexConfig {
             lgg_level: Level::Carriers,
             min_common: 6,
             min_retention: 0.30,
+            rarity_weight: 0.5,
+            cross_weight: 0.15,
+            scoped_weight: 0.30,
+            theorems_only: false,
             source_b_at_build_level: true,
         }
     }
 }
+
+/// The score, factor by factor, as it was actually computed.
+///
+/// Engine 1 §6 C2 requires that "every production result records the scorer code/version
+/// and complete feature vector". A single `f32` is neither: it cannot be re-derived, and
+/// it cannot be ablated. These are the multiplicands, so `total` is exactly their product
+/// and a reader can see which one carried the rank.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ScoreFactors {
+    /// Shared concrete structure as a fraction of the larger side. The base.
+    pub retention: f32,
+    /// `1 + w * min(rarity/ln N, 1)` — how surprising the shared key is.
+    pub rarity_boost: f32,
+    /// `1 + w` when the candidate is in another module root, else 1.
+    pub cross_boost: f32,
+    /// `1 - w * scoped/vars` — a row abstracting locally bound things is not transportable.
+    pub scoped_penalty: f32,
+    pub total: f32,
+}
+
+/// Which scorer produced a row, precisely enough to distrust it later.
+///
+/// `corpus_digest` is here because the score is not a function of (pair, config): the
+/// rarity boost divides by `ln(corpus size)` and every IDF is a corpus property, so the
+/// same pair scores differently on a different slice. Without it two rows would claim a
+/// common provenance they do not have.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ScorerId {
+    pub name: &'static str,
+    pub version: u32,
+    pub config_digest: String,
+    pub corpus_digest: String,
+}
+
+impl std::fmt::Display for ScorerId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}@{} cfg:{} corpus:{}",
+            self.name,
+            self.version,
+            &self.config_digest[..8.min(self.config_digest.len())],
+            &self.corpus_digest[..8.min(self.corpus_digest.len())]
+        )
+    }
+}
+
+/// Bumped when the score's *shape* changes — a new factor, or a factor computed
+/// differently. A weight change is caught by `config_digest` instead.
+pub const SCORER_VERSION: u32 = 2;
 
 /// One neighbour, with everything a reader needs to audit the rank rather than trust it.
 #[derive(Clone, Debug)]
@@ -179,7 +245,10 @@ pub struct Neighbour {
     pub skeleton: String,
     /// True when no variable abstracts a locally bound thing. B6 must refuse the rest.
     pub transportable: bool,
+    /// The product. Kept as a plain `f32` because ranking and printing want a number;
+    /// `factors` is what an audit or an ablation wants.
     pub score: f32,
+    pub factors: ScoreFactors,
 }
 
 pub struct SkeletonIndex {
@@ -203,10 +272,57 @@ pub struct SkeletonIndex {
     /// The config the postings were built with. Kept so a diagnostic can reproduce the
     /// size floors, and so a result can name the scorer that produced it.
     build_cfg: IndexConfig,
+    corpus_digest: String,
+}
+
+impl IndexConfig {
+    /// A digest over every field that can move a score, in a fixed order.
+    ///
+    /// `f32` fields are hashed as `to_le_bytes` rather than through `Hash`, which `f32`
+    /// does not implement — for the good reason that `NaN != NaN`. Byte equality is the
+    /// right relation here anyway: two configs are the same config when they are the same
+    /// bytes, and a digest is not asked to decide anything subtler.
+    pub fn digest(&self) -> String {
+        use sha2::{Digest, Sha256};
+        let mut h = Sha256::new();
+        for v in [
+            self.min_concrete_closed,
+            self.min_concrete_open,
+            self.min_shape_sub,
+            self.max_bucket as u32,
+            self.candidate_budget as u32,
+            self.min_common,
+        ] {
+            h.update(v.to_le_bytes());
+        }
+        for v in [
+            self.max_posting_fraction,
+            self.min_retention,
+            self.rarity_weight,
+            self.cross_weight,
+            self.scoped_weight,
+        ] {
+            h.update(v.to_le_bytes());
+        }
+        h.update([
+            self.lgg_level as u8,
+            self.theorems_only as u8,
+            self.source_b_at_build_level as u8,
+        ]);
+        crate::statement::to_hex(&h.finalize())
+    }
 }
 
 impl SkeletonIndex {
     pub fn build(jsonl: &str, cfg: &IndexConfig) -> Result<SkeletonIndex, GraphError> {
+        // Over the raw slice, so it identifies the corpus a score was computed against
+        // rather than the subset that happened to parse.
+        let corpus_digest = {
+            use sha2::{Digest, Sha256};
+            let mut h = Sha256::new();
+            h.update(jsonl.as_bytes());
+            crate::statement::to_hex(&h.finalize())
+        };
         let mut arena = Arena::new();
         let (mut names, mut modules, mut kinds, mut roots) =
             (Vec::new(), Vec::new(), Vec::new(), Vec::new());
@@ -325,7 +441,32 @@ impl SkeletonIndex {
             shape_sub,
             degraded_spines,
             build_cfg: cfg.clone(),
+            corpus_digest,
         })
+    }
+
+    /// Which scorer a row from this index came from.
+    ///
+    /// Two configs are in play — the one the postings were built with and the one a query
+    /// passes — and they can differ, so both are digested. A row whose `config_digest`
+    /// does not match the running engine's was produced by a different scorer, whatever
+    /// its numbers look like.
+    pub fn scorer_id(&self, cfg: &IndexConfig) -> ScorerId {
+        let digest = if *cfg == self.build_cfg {
+            cfg.digest()
+        } else {
+            use sha2::{Digest, Sha256};
+            let mut h = Sha256::new();
+            h.update(self.build_cfg.digest().as_bytes());
+            h.update(cfg.digest().as_bytes());
+            crate::statement::to_hex(&h.finalize())
+        };
+        ScorerId {
+            name: "fh-atlas/skel",
+            version: SCORER_VERSION,
+            config_digest: digest,
+            corpus_digest: self.corpus_digest.clone(),
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -474,6 +615,9 @@ impl SkeletonIndex {
 
         let mut out = Vec::new();
         for (d, sources, rarity) in cands {
+            if cfg.theorems_only && self.kinds[d.0 as usize] != "theorem" {
+                continue;
+            }
             let ct = self.level_term(d, cfg.lgg_level);
             let g: Generalization = generalize(&mut self.arena, qt, ct);
             if g.common < cfg.min_common || g.retention < cfg.min_retention {
@@ -485,11 +629,22 @@ impl SkeletonIndex {
                 self.modules[d.0 as usize].clone(),
                 self.kinds[d.0 as usize].clone(),
             );
-            let scoped_penalty = 1.0 - 0.30 * g.scoped_vars as f32 / g.vars.max(1) as f32;
-            let score = g.retention
-                * (1.0 + 0.5 * (rarity / ln_n).min(1.0))
-                * (1.0 + if cross { 0.15 } else { 0.0 })
-                * scoped_penalty;
+            let factors = ScoreFactors {
+                retention: g.retention,
+                rarity_boost: 1.0 + cfg.rarity_weight * (rarity / ln_n).min(1.0),
+                cross_boost: 1.0 + if cross { cfg.cross_weight } else { 0.0 },
+                scoped_penalty: 1.0
+                    - cfg.scoped_weight * g.scoped_vars as f32 / g.vars.max(1) as f32,
+                total: 0.0,
+            };
+            let factors = ScoreFactors {
+                total: factors.retention
+                    * factors.rarity_boost
+                    * factors.cross_boost
+                    * factors.scoped_penalty,
+                ..factors
+            };
+            let score = factors.total;
             out.push(Neighbour {
                 name,
                 module,
@@ -503,6 +658,7 @@ impl SkeletonIndex {
                 skeleton: self.arena.render(g.skeleton),
                 transportable: g.scoped_vars == 0,
                 score,
+                factors,
             });
         }
         // Ties are the normal case, not the exception — the score is a product of a few
@@ -634,5 +790,63 @@ fn module_root(m: &str) -> &str {
         (true, _, Some((i, _))) => &m[..i],
         (_, Some((i, _)), _) => &m[..i],
         _ => m,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn changing_a_ranking_weight_changes_the_scorer_digest() {
+        // The property the previous design could not have: the weights were literals in
+        // `similar` rather than fields, so a digest over `IndexConfig` was blind to
+        // exactly the constants that decide the ranking. A stored row would then claim a
+        // provenance it did not have.
+        let base = IndexConfig::default();
+        for mutate in [
+            (|c: &mut IndexConfig| c.rarity_weight = 0.6) as fn(&mut IndexConfig),
+            |c: &mut IndexConfig| c.cross_weight = 0.20,
+            |c: &mut IndexConfig| c.scoped_weight = 0.25,
+            |c: &mut IndexConfig| c.min_retention = 0.31,
+            |c: &mut IndexConfig| c.min_common = 7,
+            |c: &mut IndexConfig| c.lgg_level = Level::Shape,
+            |c: &mut IndexConfig| c.theorems_only = true,
+            |c: &mut IndexConfig| c.source_b_at_build_level = false,
+        ] {
+            let mut other = base.clone();
+            mutate(&mut other);
+            assert_ne!(
+                base.digest(),
+                other.digest(),
+                "a config that ranks differently must not share a digest"
+            );
+        }
+    }
+
+    #[test]
+    fn the_digest_is_stable_for_the_same_config() {
+        // Otherwise "same scorer" is not a decidable question and the field is decoration.
+        let (a, b) = (IndexConfig::default(), IndexConfig::default());
+        assert_eq!(a.digest(), b.digest());
+        assert_eq!(a.digest().len(), 64, "sha256, lowercase hex");
+    }
+
+    #[test]
+    fn the_recorded_factors_reproduce_the_score() {
+        // Cheap invariant rather than the regression gate — `tests/golden.rs` is that,
+        // because what a refactor moves is neighbour *order*, and a product recomputed
+        // from its own multiplicands is an identity whatever the order did.
+        let f = ScoreFactors {
+            retention: 0.9,
+            rarity_boost: 1.25,
+            cross_boost: 1.15,
+            scoped_penalty: 0.85,
+            total: 0.9 * 1.25 * 1.15 * 0.85,
+        };
+        assert!(
+            (f.total - f.retention * f.rarity_boost * f.cross_boost * f.scoped_penalty).abs()
+                < 1e-6
+        );
     }
 }

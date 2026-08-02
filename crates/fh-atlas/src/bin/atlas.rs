@@ -368,6 +368,10 @@ fn run(args: &[String]) -> Result<Report, String> {
                     out.push_str(&format!("{ret:.3}  {name}\n"));
                 }
             } else {
+                // Provenance first, as a `#` comment: a ranking without the scorer that
+                // produced it cannot be re-derived or distrusted, which Engine 1 §6 C2
+                // asks for. Consumers skip `#` lines.
+                out.push_str(&format!("# scorer: {}\n", idx.scorer_id(&cfg)));
                 for n in idx.similar(decl, top, &cfg)? {
                     out.push_str(&format!(
                         "{:.3}  {:<44} {:<7} ret {:.2} common {:>3} vars {:>2}{}  [{}]\n",

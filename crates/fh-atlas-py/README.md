@@ -104,7 +104,9 @@ query `atlas` itself exposes:
 | `corpus.honesty(whitelist=…)` | `atlas honesty` | C5 |
 | `corpus.skeleton(name, level=…)` | `atlas skeleton` | B4 |
 | `corpus.generalize(left, right)` | — | B4 |
-| `corpus.similar(name, top=…, level=…, min_retention=…, min_common=…)` | `atlas similar` | B4 |
+| `corpus.similar(name, top=…, level=…, min_retention=…, min_common=…, theorems_only=…)` | `atlas similar` | B4 |
+| `corpus.scorer_id(level=…, …)` | `atlas similar`'s `# scorer:` line | B4 |
+| `corpus.relations(theorem)`, `.busiest_heads(top=…)`, `.relation_path(…)`, `.logical_stats()` | `atlas relations` | M2 |
 | `corpus.similar_brute(name, top=…, level=…)` | `atlas similar --brute` | B4 |
 | `corpus.equivalent(name, level=…)` | `atlas equivalent` | B5 |
 | `corpus.classes(level=…, theorems_only=…, top=…)` | `atlas classes` | B5 |
@@ -118,8 +120,8 @@ deliberate: `similar` reports at `carriers`, `equivalent` and `classes` normaliz
 `instances` (and `equivalent` refuses `shape`, where "equivalent" would mean "has the same
 skeleton" — `similar`'s question), `transport` applies at `carriers`.
 
-Results are `Decl`, `Generalization`, `Neighbour`, `Row`, `Dictionary`, `Transported` and
-`FrontierPair` pyclasses with read-only attributes and a `__repr__` worth printing. Type
+Results are `Decl`, `Generalization`, `Neighbour`, `ScoreFactors`, `ScorerId`, `Relation`,
+`LogicalStats`, `Row`, `Dictionary`, `Transported` and `FrontierPair` pyclasses with read-only attributes and a `__repr__` worth printing. Type
 stubs ship in the wheel (`fh_atlas.pyi`, `py.typed`), and `tests/smoke.py` asserts they
 describe the module that actually shipped.
 

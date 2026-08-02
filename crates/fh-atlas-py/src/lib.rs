@@ -361,6 +361,66 @@ pub struct Neighbour {
     /// Retention, weighted by rarity and a cross-theory bonus, penalised for scoped
     /// variables. The ranking key — not a probability.
     pub score: f32,
+    /// The score factor by factor, so a caller can audit or ablate the rank rather than
+    /// trust it. Engine 1 §6 C2's "complete feature vector".
+    pub factors: ScoreFactors,
+}
+
+/// The multiplicands of a `Neighbour.score`.
+///
+/// `Clone` is for embedding in `Neighbour`'s `get_all`, not for accepting one from
+/// Python — nothing constructs these outside the engine, so the `FromPyObject` derive is
+/// declined rather than inherited.
+#[pyclass(module = "fh_atlas", frozen, get_all, skip_from_py_object)]
+#[derive(Clone)]
+pub struct ScoreFactors {
+    /// Shared concrete structure as a fraction of the larger side.
+    pub retention: f32,
+    /// How surprising the shared key is: `1 + w * min(rarity / ln N, 1)`.
+    pub rarity_boost: f32,
+    /// `1 + w` when the candidate lives under another module root, else 1.
+    pub cross_boost: f32,
+    /// `1 - w * scoped/vars`; below 1 exactly when the row is not transportable.
+    pub scoped_penalty: f32,
+    pub total: f32,
+}
+
+#[pymethods]
+impl ScoreFactors {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScoreFactors(retention={:.3}, rarity_boost={:.3}, cross_boost={:.3}, \
+             scoped_penalty={:.3}, total={:.3})",
+            self.retention, self.rarity_boost, self.cross_boost, self.scoped_penalty, self.total
+        )
+    }
+}
+
+/// Which scorer produced a row — enough to re-derive it, or to refuse to trust it.
+#[pyclass(module = "fh_atlas", frozen, get_all, skip_from_py_object)]
+#[derive(Clone)]
+pub struct ScorerId {
+    pub name: String,
+    /// Bumped when the score's *shape* changes. A weight change moves `config_digest`.
+    pub version: u32,
+    /// Over every config field that can move a score.
+    pub config_digest: String,
+    /// Over the slice. The score is not a function of (pair, config): the rarity boost
+    /// divides by `ln(corpus size)` and every IDF is a corpus property.
+    pub corpus_digest: String,
+}
+
+#[pymethods]
+impl ScorerId {
+    fn __repr__(&self) -> String {
+        format!(
+            "ScorerId({}@{}, cfg={}…, corpus={}…)",
+            self.name,
+            self.version,
+            &self.config_digest[..8],
+            &self.corpus_digest[..8]
+        )
+    }
 }
 
 impl From<CoreNeighbour> for Neighbour {
@@ -378,6 +438,13 @@ impl From<CoreNeighbour> for Neighbour {
             skeleton: n.skeleton,
             transportable: n.transportable,
             score: n.score,
+            factors: ScoreFactors {
+                retention: n.factors.retention,
+                rarity_boost: n.factors.rarity_boost,
+                cross_boost: n.factors.cross_boost,
+                scoped_penalty: n.factors.scoped_penalty,
+                total: n.factors.total,
+            },
         }
     }
 }
@@ -858,6 +925,40 @@ impl Corpus {
         })?)
     }
 
+    /// Which scorer this handle's `similar` rows come from, for the config a query would
+    /// use. Two rows are comparable only when their `ScorerId`s match — the corpus digest
+    /// is part of it because the rarity boost divides by `ln(corpus size)`.
+    #[pyo3(signature = (level = "carriers", min_retention = 0.30, min_common = 6, theorems_only = false))]
+    fn scorer_id(
+        &self,
+        py: Python<'_>,
+        level: &str,
+        min_retention: f32,
+        min_common: u32,
+        theorems_only: bool,
+    ) -> PyResult<ScorerId> {
+        let level = parse_level(level)?;
+        py.detach(|| -> Result<ScorerId, SkelFail> {
+            let cfg = IndexConfig {
+                lgg_level: level,
+                min_retention,
+                min_common,
+                theorems_only,
+                ..IndexConfig::default()
+            };
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            let s = idx.scorer_id(&cfg);
+            Ok(ScorerId {
+                name: s.name.to_string(),
+                version: s.version,
+                config_digest: s.config_digest,
+                corpus_digest: s.corpus_digest,
+            })
+        })
+        .map_err(Into::into)
+    }
+
     /// Anti-unify two statements: the most specific term that matches both.
     ///
     /// Over the statements as encoded, not as erased — the concrete part is what the two
@@ -892,7 +993,10 @@ impl Corpus {
     /// and `min_retention` are the floors a candidate must clear to be reported at all —
     /// the defaults are the engine's, and lowering them buys recall by admitting rows whose
     /// shared structure is punctuation.
-    #[pyo3(signature = (name, top = 10, level = "carriers", min_retention = 0.30, min_common = 6))]
+    // Six knobs and a name. They are the engine's own, and collapsing them into a config
+    // object would make the common call site worse to read for the sake of a lint.
+    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (name, top = 10, level = "carriers", min_retention = 0.30, min_common = 6, theorems_only = false))]
     fn similar(
         &self,
         py: Python<'_>,
@@ -901,6 +1005,7 @@ impl Corpus {
         level: &str,
         min_retention: f32,
         min_common: u32,
+        theorems_only: bool,
     ) -> PyResult<Vec<Neighbour>> {
         let level = parse_level(level)?;
         self.known(name)?;
@@ -909,6 +1014,7 @@ impl Corpus {
                 lgg_level: level,
                 min_retention,
                 min_common,
+                theorems_only,
                 ..IndexConfig::default()
             };
             let mut guard = self.skeletons()?;
@@ -1354,6 +1460,8 @@ fn fh_atlas(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Decl>()?;
     m.add_class::<Generalization>()?;
     m.add_class::<Relation>()?;
+    m.add_class::<ScoreFactors>()?;
+    m.add_class::<ScorerId>()?;
     m.add_class::<LogicalStats>()?;
     m.add_class::<Neighbour>()?;
     m.add_class::<Row>()?;

@@ -153,6 +153,47 @@ class LogicalStats:
     def prop_heads(self) -> int: ...
 
 
+class ScoreFactors:
+    """The multiplicands of a `Neighbour.score` — Engine 1 §6 C2's feature vector."""
+
+    @property
+    def retention(self) -> float:
+        """Shared concrete structure as a fraction of the larger side."""
+
+    @property
+    def rarity_boost(self) -> float:
+        """`1 + w * min(rarity / ln N, 1)` — how surprising the shared key is."""
+
+    @property
+    def cross_boost(self) -> float:
+        """`1 + w` when the candidate is under another module root, else 1."""
+
+    @property
+    def scoped_penalty(self) -> float:
+        """`1 - w * scoped/vars`; below 1 exactly when the row is not transportable."""
+
+    @property
+    def total(self) -> float: ...
+
+
+class ScorerId:
+    """Which scorer produced a row. Rows are comparable only when these match."""
+
+    @property
+    def name(self) -> str: ...
+    @property
+    def version(self) -> int:
+        """Bumped when the score's *shape* changes; a weight change moves config_digest."""
+
+    @property
+    def config_digest(self) -> str:
+        """Over every config field that can move a score."""
+
+    @property
+    def corpus_digest(self) -> str:
+        """Over the slice — the score is not a function of (pair, config) alone."""
+
+
 class Generalization:
     """The least general generalization of two statements, with the numbers that rank it."""
 
@@ -223,6 +264,12 @@ class Neighbour:
     def score(self) -> float:
         """Retention weighted by rarity and a cross-theory bonus. A ranking key, not a
         probability — comparable within one query's results and nowhere else.
+        """
+
+    @property
+    def factors(self) -> ScoreFactors:
+        """The score factor by factor, so a rank can be audited or ablated rather than
+        trusted. `factors.total == score`.
         """
 
     def __repr__(self) -> str: ...
@@ -423,6 +470,15 @@ class Corpus:
             NoStatement: either row carries no usable statement.
         """
 
+    def scorer_id(
+        self,
+        level: Level = "carriers",
+        min_retention: float = 0.30,
+        min_common: int = 6,
+        theorems_only: bool = False,
+    ) -> ScorerId:
+        """Which scorer `similar` rows come from, for the config a query would use."""
+
     def similar(
         self,
         name: str,
@@ -430,6 +486,7 @@ class Corpus:
         level: Level = "carriers",
         min_retention: float = 0.30,
         min_common: int = 6,
+        theorems_only: bool = False,
     ) -> list[Neighbour]:
         """Declarations whose statements anti-unify with this one, best score first.
 

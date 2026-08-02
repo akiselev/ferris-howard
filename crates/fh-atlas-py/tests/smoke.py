@@ -112,7 +112,14 @@ def the_handle_and_the_cli_agree_on_similar(corpus: fa.Corpus, slice_path: str) 
     # plausible neighbours. Order included, because the score is the part that would drift.
     out, code = cli("similar", "le_trans", "--top", "5", slice_path=slice_path)
     assert code == 0, f"the CLI answered no `similar`: {out!r}"
-    expected = [ln.split()[1] for ln in out.splitlines() if ln.strip()]
+    # Skip `#` provenance lines and take the name explicitly, rather than trusting a
+    # column index: the row carries a score, and the day the score gains a field a
+    # positional parse compares the wrong column instead of failing.
+    expected = [
+        ln.split()[1]
+        for ln in out.splitlines()
+        if ln.strip() and not ln.startswith("#")
+    ]
     assert [n.name for n in corpus.similar("le_trans", top=5)] == expected, out
 
 
