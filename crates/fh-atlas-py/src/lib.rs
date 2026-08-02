@@ -29,15 +29,21 @@
 //!
 //! The arena is built on the *first* skeleton query, not at load: parsing 131k statement
 //! encodings is work a graph-only session should not pay for.
+//!
+//! # `py.detach` is `py.allow_threads`
+//!
+//! Every operation that walks the graph or the arena runs inside `py.detach(…)`, which is
+//! what PyO3 ≥0.26 calls the GIL release `python-api.md` §1 writes as `py.allow_threads`.
+//! The old name is gone from the API, not merely deprecated.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
-use fh_atlas::graph::{Decl as CoreDecl, Graph, Lens};
-use fh_atlas::skel::erase::{EraseCache, Level, Signatures, erase};
-use fh_atlas::skel::lgg;
-use fh_atlas::skel::term::{Arena, SymId, TermId};
+use ::fh_atlas::graph::{Decl as CoreDecl, Graph, Lens};
+use ::fh_atlas::skel::erase::{EraseCache, Level, Signatures, erase};
+use ::fh_atlas::skel::lgg;
+use ::fh_atlas::skel::term::{Arena, SymId, TermId};
 use pyo3::create_exception;
 use pyo3::exceptions::{PyException, PyFileNotFoundError, PyOSError, PyValueError};
 use pyo3::prelude::*;
@@ -258,7 +264,7 @@ impl Corpus {
     #[staticmethod]
     fn load(py: Python<'_>, path: PathBuf) -> PyResult<Corpus> {
         let shown = path.display().to_string();
-        let graph = py.allow_threads(|| -> Result<Graph, LoadFail> {
+        let graph = py.detach(|| -> Result<Graph, LoadFail> {
             let text = std::fs::read_to_string(&path).map_err(|e| match e.kind() {
                 std::io::ErrorKind::NotFound => LoadFail::Missing(format!(
                     "no slice at {shown} — produce one with \
@@ -285,7 +291,7 @@ impl Corpus {
 
     /// Every declaration name in the slice, sorted.
     fn names(&self, py: Python<'_>) -> Vec<String> {
-        py.allow_threads(|| self.graph.names().cloned().collect())
+        py.detach(|| self.graph.names().cloned().collect())
     }
 
     /// One declaration, or `None` if the slice does not have it.
@@ -305,7 +311,7 @@ impl Corpus {
     ) -> PyResult<Option<Vec<String>>> {
         let lens = parse_lens(lens)?;
         self.known(source)?;
-        Ok(py.allow_threads(|| self.graph.why(source, target, lens)))
+        Ok(py.detach(|| self.graph.why(source, target, lens)))
     }
 
     /// Everything `name` transitively rests on.
@@ -313,7 +319,7 @@ impl Corpus {
     fn foundations(&self, py: Python<'_>, name: &str, lens: &str) -> PyResult<Vec<String>> {
         let lens = parse_lens(lens)?;
         self.known(name)?;
-        Ok(py.allow_threads(|| self.graph.foundations(name, lens).into_iter().collect()))
+        Ok(py.detach(|| self.graph.foundations(name, lens).into_iter().collect()))
     }
 
     /// Everything that transitively rests on `name`.
@@ -324,7 +330,7 @@ impl Corpus {
     #[pyo3(signature = (name, lens = "both"))]
     fn impact(&self, py: Python<'_>, name: &str, lens: &str) -> PyResult<Vec<String>> {
         let lens = parse_lens(lens)?;
-        Ok(py.allow_threads(|| self.graph.impact(name, lens).into_iter().collect()))
+        Ok(py.detach(|| self.graph.impact(name, lens).into_iter().collect()))
     }
 
     /// Declarations ranked by how many others cite them *directly*, most-cited first.
@@ -334,7 +340,7 @@ impl Corpus {
     #[pyo3(signature = (lens = "both", top = 20))]
     fn walls(&self, py: Python<'_>, lens: &str, top: usize) -> PyResult<Vec<(String, usize)>> {
         let lens = parse_lens(lens)?;
-        Ok(py.allow_threads(|| {
+        Ok(py.detach(|| {
             self.graph
                 .ranked_by_citations(lens)
                 .into_iter()
@@ -357,9 +363,9 @@ impl Corpus {
         py: Python<'_>,
         whitelist: Option<Vec<String>>,
     ) -> PyResult<Vec<(String, String)>> {
-        let allowed: Vec<String> = whitelist
-            .unwrap_or_else(|| DEFAULT_WHITELIST.iter().map(|s| s.to_string()).collect());
-        Ok(py.allow_threads(|| {
+        let allowed: Vec<String> =
+            whitelist.unwrap_or_else(|| DEFAULT_WHITELIST.iter().map(|s| s.to_string()).collect());
+        Ok(py.detach(|| {
             let mut findings: Vec<(String, String)> = self
                 .graph
                 .impact("sorryAx", Lens::Proof)
@@ -390,7 +396,7 @@ impl Corpus {
     fn skeleton(&self, py: Python<'_>, name: &str, level: &str) -> PyResult<String> {
         let level = parse_level(level)?;
         self.known(name)?;
-        Ok(py.allow_threads(|| -> Result<String, SkelFail> {
+        Ok(py.detach(|| -> Result<String, SkelFail> {
             let mut guard = self.statements()?;
             let s = guard.as_mut().expect("statements() builds it");
             let t = self.term_of(s, name)?;
@@ -406,7 +412,7 @@ impl Corpus {
     fn generalize(&self, py: Python<'_>, left: &str, right: &str) -> PyResult<Generalization> {
         self.known(left)?;
         self.known(right)?;
-        Ok(py.allow_threads(|| -> Result<Generalization, SkelFail> {
+        Ok(py.detach(|| -> Result<Generalization, SkelFail> {
             let mut guard = self.statements()?;
             let s = guard.as_mut().expect("statements() builds it");
             let (x, y) = (self.term_of(s, left)?, self.term_of(s, right)?);
@@ -495,7 +501,10 @@ fn fh_atlas(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Generalization>()?;
     m.add("AtlasError", m.py().get_type::<AtlasError>())?;
     m.add("SliceError", m.py().get_type::<SliceError>())?;
-    m.add("UnknownDeclaration", m.py().get_type::<UnknownDeclaration>())?;
+    m.add(
+        "UnknownDeclaration",
+        m.py().get_type::<UnknownDeclaration>(),
+    )?;
     m.add("NoStatement", m.py().get_type::<NoStatement>())?;
     Ok(())
 }

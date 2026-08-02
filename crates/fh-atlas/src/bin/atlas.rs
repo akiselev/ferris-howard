@@ -15,6 +15,7 @@
 
 use std::process::ExitCode;
 
+use fh_atlas::equiv::EquivIndex;
 use fh_atlas::graph::{Graph, Lens};
 use fh_atlas::skel::erase::Level;
 use fh_atlas::skel::index::{IndexConfig, SkeletonIndex};
@@ -29,6 +30,8 @@ queries:
   walls               declarations ranked by how many others cite them
   honesty [axiom...]  declarations resting on `sorryAx` or on an axiom outside the
                       whitelist; exits non-zero if any are found
+  equivalent <decl>   declarations whose statements normalize to the same thing
+  classes             every equivalence class of size > 1, largest first
   similar <decl>      declarations whose statements anti-unify with this one
   skeleton <decl>     the rendered erasure of one statement
   stats               size of the slice, and how much of it encodes
@@ -167,6 +170,36 @@ fn run(args: &[String]) -> Result<Report, String> {
                 text: out,
                 clean: false,
             })
+        }
+        "equivalent" => {
+            let [decl] = rest else {
+                return Err("equivalent takes one declaration name".into());
+            };
+            let mut idx = EquivIndex::build(&input).map_err(|e| e.to_string())?;
+            // Coarser than `carriers` is `similar`'s job, not this one: at `shape`
+            // "equivalent" would mean "same skeleton", which is a different question.
+            let level = level_opt.unwrap_or(Level::Instances);
+            if level > Level::Carriers {
+                return Err("equivalent stops at `carriers`; use `similar` for `shape`".into());
+            }
+            let members = idx.equivalent(decl, level).map_err(|e| e.to_string())?;
+            if members.is_empty() {
+                return Ok(format!("`{decl}` is alone at `{}`\n", level.name()).into());
+            }
+            let mut out = String::new();
+            for m in members {
+                out.push_str(&format!("{:<52} {}\n", m, idx.module_of(&m).unwrap_or("")));
+            }
+            Ok(out.into())
+        }
+        "classes" => {
+            let mut idx = EquivIndex::build(&input).map_err(|e| e.to_string())?;
+            let level = level_opt.unwrap_or(Level::Instances);
+            let mut out = String::new();
+            for (n, members) in idx.classes(level, true, true).into_iter().take(top) {
+                out.push_str(&format!("{n:>4}  {}\n", members.join(", ")));
+            }
+            Ok(out.into())
         }
         "similar" => {
             let [decl] = rest else {
