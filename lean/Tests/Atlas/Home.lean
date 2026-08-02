@@ -201,3 +201,38 @@ info: FH home confirm: `genuinely`
 -/
 #guard_msgs (whitespace := lax, ordering := exact) in
 #fh_home_refute genuinely AddCommMagma
+
+/-! ## The skewed-index regression
+
+Found by an agent asked to break the confirmer rather than to exercise it, and it landed in
+the negative control — the one command whose job is to show the tool can say no.
+
+A binder whose domain head is not a plain constant (`DecidableEq`, `DecidablePred`, any
+`[∀ i, C (f i)]`) is skipped when candidates are collected, but `weakenBinder` counts every
+`instImplicit` forall in the raw type. A counter that advanced only on kept binders drifted
+by one per skipped binder, so the kernel was asked about a binder the report did not name —
+and answered about *that* one. Roughly 10% of Mathlib theorems have two or more instance
+binders.
+
+`skew2` is the repro: `a - b` cannot be stated without `Sub R`, so a CONFIRMED here is
+itself proof that the wrong binder was replaced. The second theorem is the same statement
+with nothing to skip, and the two must now agree.
+-/
+
+theorem skew2 {R : Type} [DecidableEq R] [CommRing R] (a b : R) : a - b = a - b := rfl
+
+/--
+info: FH home confirm: `skew2`
+  [CommRing] -> Nonempty: REFUTED — even with every instance argument re-synthesised in the weakened context, the term does not typecheck
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_refute skew2 Nonempty
+
+theorem noskew {R : Type} [CommRing R] (a b : R) : a - b = a - b := rfl
+
+/--
+info: FH home confirm: `noskew`
+  [CommRing] -> Nonempty: REFUTED — even with every instance argument re-synthesised in the weakened context, the term does not typecheck
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_refute noskew Nonempty

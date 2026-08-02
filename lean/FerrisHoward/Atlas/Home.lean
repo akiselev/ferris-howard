@@ -311,8 +311,18 @@ where
       if bi == .instImplicit then
         if seen == i then
           -- Same arguments, weaker head: `CommRing R` becomes `AddCommMagma R`.
-          let d' := mkAppN (.const repl (d.getAppFn.constLevels!)) d.getAppArgs
-          some (.forallE n d' b bi)
+          -- `constLevels!` *panics* on a non-constant domain and, because `panic!`
+          -- returns the `Inhabited` default, execution continues and the verdict looks
+          -- ordinary while a backtrace goes to stderr where `#guard_msgs` cannot see it.
+          -- Refusing to rebuild is the honest branch, and the caller already prints it.
+          --
+          -- The levels are the replacement's own, obtained by instantiating it fresh.
+          -- Pasting the source class's level list onto the target is wrong whenever the
+          -- two differ in arity; it survived because ancestors of a given class almost
+          -- always share one.
+          match d.getAppFn with
+          | .const _ ls => some (.forallE n (mkAppN (.const repl ls) d.getAppArgs) b bi)
+          | _ => none
         else (go b (seen + 1)).map (.forallE n d · bi)
       else (go b seen).map (.forallE n d · bi)
     | _ => none
@@ -391,23 +401,55 @@ def confirmCore (name : Name) (forced : Option Name) : CommandElabM Unit := do
     | .defnInfo v => some v.value
     | _ => none) | throwError s!"`{name}` has no value to re-check"
   liftTermElabM do
-    let reached ← reachedClasses env ci
     let levels ← ci.levelParams.mapM fun _ => mkFreshLevelMVar
-    let mut idx := 0
+    -- Evidence and binders come out of **one** telescope. Two calls to
+    -- `forallTelescopeReducing` mint two disjoint sets of fvars, so a carrier recorded in
+    -- the first can never equal a binder's carrier from the second and every match fails
+    -- silently — the symptom being "no candidate to confirm" for a declaration the report
+    -- had just listed candidates for.
+    --
+    -- The evidence source is `reachedWithCarrier`, the same one `#fh_home` uses. The two
+    -- surfaces disagreed until now: D3 moved the report onto carrier-attached evidence and
+    -- left the confirmer on the flat `reachedClasses`, so a candidate the report proposed
+    -- was often not one the confirmer would try — measured at 16 of 18 declarations.
+    let (evAll, binders) :
+        Array (Name × Option FVarId) × Array (Nat × Name × Option FVarId) ←
+      forallTelescopeReducing (ci.instantiateTypeLevelParams levels) fun xs concl => do
+        let mut ev ← reachedWithCarrier env concl
+        if let some v := (match ci with
+            | .thmInfo t => some t.value
+            | .defnInfo t => some t.value
+            | _ => none) then
+          let body ← try instantiateLambda v xs catch _ => pure v
+          ev := ev ++ (← reachedWithCarrier env body)
+        -- Each kept binder carries its position among **all** instance-implicit foralls,
+        -- not among those that survived the filter. A binder whose domain head is not a
+        -- constant — `DecidableEq`, `DecidablePred`, any `[∀ i, C (f i)]` — is skipped
+        -- here while `weakenBinder` counts every `instImplicit` forall, so a free-running
+        -- counter drifted by one per skipped binder and the kernel was asked about a
+        -- binder the report did not name. That was a soundness bug and it landed in the
+        -- negative control: `theorem skew2 {R} [DecidableEq R] [CommRing R] (a b : R) :
+        -- a - b = a - b := rfl` answered CONFIRMED to "typechecks without CommRing", for a
+        -- statement that cannot be written without `Sub R`. Roughly 10% of Mathlib
+        -- theorems have two or more instance binders.
+        let mut out : Array (Nat × Name × Option FVarId) := #[]
+        let mut raw := 0
+        for x in xs do
+          let d ← x.fvarId!.getDecl
+          unless d.binderInfo == .instImplicit do continue
+          let ty ← whnf d.type
+          if let .const cls _ := ty.getAppFn then
+            out := out.push (raw, cls, ty.getAppArgs.back?.bind (·.fvarId?))
+          raw := raw + 1
+        return (ev, out)
     let mut lines : Array String := #[]
-    let binders ← forallTelescopeReducing (ci.instantiateTypeLevelParams levels) fun xs _ => do
-      let mut out : Array Name := #[]
-      for x in xs do
-        let d ← x.fvarId!.getDecl
-        unless d.binderInfo == .instImplicit do continue
-        let .const cls _ := (← whnf d.type).getAppFn | continue
-        out := out.push cls
-      return out
-    for cls in binders do
-      let v := walk env cls reached
-      if forced.isSome || !reached.contains cls then
+    for (raw, cls, carrierFv) in binders do
+      let here : NameSet := evAll.foldl (init := {}) fun acc (c, fv) =>
+        if fv.isSome && fv == carrierFv then acc.insert c else acc
+      let v := walk env cls here
+      if forced.isSome || !here.contains cls then
         if let some h := forced.orElse (fun _ => v.home) then
-          match weakenBinder ci.type idx h with
+          match weakenBinder ci.type raw h with
           | none => lines := lines.push s!"  [{cls}] -> {h}: could not rebuild the binder"
           | some ty' =>
             -- No timing in the verdict. It was D1's deliverable and is recorded there;
@@ -472,7 +514,6 @@ def confirmCore (name : Name) (forced : Option Name) : CommandElabM Unit := do
               else
                 s!"  [{cls}] -> {h}: REFUTED — even with every instance argument \
                    re-synthesised in the weakened context, the term does not typecheck"
-      idx := idx + 1
     if lines.isEmpty then
       logInfo s!"FH home: `{name}` has no candidate to confirm"
     else
