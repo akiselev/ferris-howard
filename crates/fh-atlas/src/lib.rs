@@ -5,4 +5,5 @@
 
 pub mod graph;
 pub mod json;
+pub mod skel;
 pub mod statement;
