@@ -158,6 +158,9 @@ pub struct Arena {
     level_list_intern: HashMap<Box<[LevelId]>, LevelsId>,
     syms: Vec<Box<str>>,
     sym_intern: HashMap<Box<str>, SymId>,
+    /// Set by `seal`, cleared by the first `intern` after it. See `seal` for why the
+    /// maps cannot simply stay dropped.
+    sealed: bool,
 }
 
 impl Arena {
@@ -166,6 +169,9 @@ impl Arena {
     }
 
     pub fn intern(&mut self, n: Node) -> TermId {
+        if self.sealed {
+            self.unseal();
+        }
         if let Some(&id) = self.intern.get(&n) {
             return id;
         }
@@ -226,6 +232,9 @@ impl Arena {
     }
 
     pub fn intern_sym(&mut self, s: &str) -> SymId {
+        if self.sealed {
+            self.unseal();
+        }
         if let Some(&id) = self.sym_intern.get(s) {
             return id;
         }
@@ -237,6 +246,9 @@ impl Arena {
     }
 
     pub fn intern_level(&mut self, l: LevelNode) -> LevelId {
+        if self.sealed {
+            self.unseal();
+        }
         if let Some(&id) = self.level_intern.get(&l) {
             return id;
         }
@@ -247,6 +259,9 @@ impl Arena {
     }
 
     pub fn intern_levels(&mut self, ls: &[LevelId]) -> LevelsId {
+        if self.sealed {
+            self.unseal();
+        }
         if let Some(&id) = self.level_list_intern.get(ls) {
             return id;
         }
@@ -432,13 +447,49 @@ impl Arena {
         }
     }
 
-    /// Drop the construction-time interner maps. The index does not need them once built,
-    /// and they are roughly a third of the footprint.
+    /// Drop the construction-time interner maps. They are roughly a third of the
+    /// footprint and a pure-query workload never touches them.
+    ///
+    /// This is only sound because `intern` restores them before building anything new.
+    /// Dropping them outright is *not* sound, and the failure is silent: `intern` would
+    /// miss on a term that is already in `nodes`, push a structurally identical duplicate
+    /// under a fresh `TermId`, and every downstream `TermId` comparison would then answer
+    /// "different" for two terms that are equal. `name_with_term` is exactly such a
+    /// comparison, so `transport` reported an *open* target — a lemma Mathlib does not
+    /// have — for subjects whose image was sitting in the corpus all along. Sealing after
+    /// the precomputed levels (Exact, Presentation, Shape) and querying at a lazy one
+    /// (Instances, Carriers) hid it, because both sides of the comparison were then built
+    /// in the same post-seal generation and shared with each other.
     pub fn seal(&mut self) {
         self.intern = HashMap::new();
         self.level_intern = HashMap::new();
         self.level_list_intern = HashMap::new();
         self.sym_intern = HashMap::new();
+        self.sealed = true;
+    }
+
+    /// Rebuild the interner maps from the arena's own vectors, restoring the invariant
+    /// that structurally equal terms share a `TermId`.
+    ///
+    /// `or_insert` rather than `insert`: the earliest id for a node is the one already
+    /// stored in the index's roots and erasure cache, so it must stay canonical.
+    #[cold]
+    fn unseal(&mut self) {
+        for (i, n) in self.nodes.iter().enumerate() {
+            self.intern.entry(*n).or_insert(TermId(i as u32));
+        }
+        for (i, l) in self.levels.iter().enumerate() {
+            self.level_intern.entry(*l).or_insert(LevelId(i as u32));
+        }
+        for (i, ls) in self.level_lists.iter().enumerate() {
+            self.level_list_intern
+                .entry(ls.clone())
+                .or_insert(LevelsId(i as u32));
+        }
+        for (i, s) in self.syms.iter().enumerate() {
+            self.sym_intern.entry(s.clone()).or_insert(SymId(i as u32));
+        }
+        self.sealed = false;
     }
 }
 
@@ -678,6 +729,29 @@ mod tests {
         // Rendering is the parser's own inverse, so a mismatch is a parse bug rather than
         // a formatting preference.
         assert_eq!(format!("fh-stmt-v1;{}", a.render(t)), src);
+    }
+
+    #[test]
+    fn a_sealed_arena_still_shares_ids_with_terms_built_before_the_seal() {
+        // The bug this pins made `transport` report an *open* target — a lemma that does
+        // not exist — for a subject whose image was in the corpus, because the image was
+        // built after `seal` and compared by `TermId` against a root built before it.
+        let src = "fh-stmt-v1;a(a(a(c(2:Eq,1,+(0)),c(3:Nat,0)),a(a(a(c(11:OfNat.ofNat,1,0),\
+                   c(3:Nat,0)),n2),a(c(12:instOfNatNat,0),n2))),a(a(a(c(11:OfNat.ofNat,1,0),\
+                   c(3:Nat,0)),n2),a(c(12:instOfNatNat,0),n2)))";
+        let (mut a, before) = parse1(src);
+        let nodes_before = a.nodes.len();
+        a.seal();
+        let after = a.parse(src).expect("parse");
+        assert_eq!(
+            before, after,
+            "a term rebuilt after `seal` must share the id of its pre-seal twin"
+        );
+        assert_eq!(
+            a.nodes.len(),
+            nodes_before,
+            "rebuilding after `seal` must not push duplicate nodes"
+        );
     }
 
     #[test]

@@ -127,6 +127,37 @@ fn main() {
         }
     }
 
+    // Transporting a declaration along a row whose right side *is* that declaration's
+    // partner must land on a name, not on open ground. This has to hold at every level,
+    // and for a long time it did not: the index seals its arena after precomputing Exact,
+    // Presentation and Shape, so an image built later compared unequal to those roots by
+    // id and `transport` invented an open target. Carriers and Instances are erased
+    // lazily, on the far side of the seal, which is why checking only the default level
+    // kept this quiet. Sweeping the levels is the gate.
+    println!("\ntransport must find an existing target at every level:");
+    let mut open_at = Vec::new();
+    for level in [
+        Level::Exact,
+        Level::Presentation,
+        Level::Instances,
+        Level::Carriers,
+        Level::Shape,
+    ] {
+        match transport(&mut idx, "le_trans", "dvd_trans", "le_trans", level) {
+            Ok(Transported::Exists { name, .. }) => println!("  {level:?}: exists as `{name}`"),
+            Ok(Transported::Open { .. }) => {
+                println!("  {level:?}: OPEN — but the image is `dvd_trans` itself");
+                open_at.push(level);
+            }
+            Err(e) => println!("  {level:?}: refused: {e}"),
+        }
+    }
+    assert!(
+        open_at.is_empty(),
+        "transporting `le_trans` along (le_trans ~ dvd_trans) is `dvd_trans`, a lemma the \
+         slice has; reporting it open at {open_at:?} is the engine inventing research"
+    );
+
     // The negative control: a row with a scoped variable must refuse rather than
     // transport wrongly.
     println!("\nnegative control: transporting a statement that does not match the row");
