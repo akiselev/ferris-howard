@@ -111,7 +111,7 @@ theorem unit_dvd_ok(a: Nat, b: Nat, h: IsUnit(a)) -> a.dvd(b) { IsUnit::dvd(h) }
 
 /-! ## Tier 4 — span -/
 
-/-- info: error @ +0:54-60 «_h.dvd» -/
+/-- info: error @ +0:54-56 «_h» -/
 #guard_msgs in
 #fh_spans in
 fn unit_dvd2(a: Nat, _h: IsUnit(a), b: Nat) -> Prop { _h.dvd(b) }

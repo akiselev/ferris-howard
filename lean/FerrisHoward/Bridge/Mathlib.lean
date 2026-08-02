@@ -96,6 +96,22 @@ scoped macro_rules
 
 end Bridge.Prime
 
+namespace Bridge.LinearMap
+
+/-- `LinearMap<K, V, W>` is `V →ₗ[K] W`.
+
+The one morphism alias that needs a bridge. `RingHom<A, B>` and `MonoidHom<A, B>` are
+already reachable verbatim under design §6's no-mangling policy, but Mathlib's
+`LinearMap` is *semilinear* — its first argument is a ring homomorphism, and the ordinary
+linear case supplies `RingHom.id`. The arrow notation hides that; so does this. -/
+scoped macro_rules
+  | `(fh_ty% LinearMap $k $v $w) => do
+      let c := mkIdent `LinearMap
+      let idh := mkIdent `RingHom.id
+      `($c ($idh $k) $v $w)
+
+end Bridge.LinearMap
+
 namespace Bridge.Poly
 
 /-- `Poly<R>` is `Polynomial R`.

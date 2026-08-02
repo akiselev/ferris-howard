@@ -127,6 +127,26 @@ private def distributeAscriptions (ps : Array (TSyntax ``fhGenericParam)) :
     | _ => Macro.throwErrorAt p "FH: no expansion for this binder"
   return out.reverse
 
+/-- Split a dotted identifier token into receiver and method, giving each the part of the
+source range it actually occupies.
+
+Lean's lexer takes `p.dvd` as *one* identifier, so FH has to split it — and if both halves
+claim the whole token's span, tooling that reasons about positions cannot tell them apart.
+Corpus Group 10 found the symptom: `x.xor(y)` left the unused-variable linter reporting
+`x` unreferenced. -/
+private def splitDotted (x : Ident) (prefixName : Name) (last : String) : Ident × Ident :=
+  match x.raw.getHeadInfo with
+  -- `.original` rather than `.synthetic`: tooling that walks the source — the
+  -- unused-variable linter among it — only counts references it can find in the file.
+  | .original leading pos trailing endPos =>
+    let dot := ⟨endPos.byteIdx - last.utf8ByteSize - 1⟩
+    let empty := "".toRawSubstring
+    let recvInfo := SourceInfo.original leading pos empty dot
+    let mInfo := SourceInfo.original empty ⟨dot.byteIdx + 1⟩ trailing endPos
+    (⟨Syntax.ident recvInfo (toString prefixName).toRawSubstring prefixName []⟩,
+     ⟨Syntax.ident mInfo last.toRawSubstring (Name.mkSimple last) []⟩)
+  | _ => (mkIdentFrom x prefixName, mkIdentFrom x (Name.mkSimple last))
+
 mutual
 
 /-- Translate an FH expression to a Lean term.
@@ -158,8 +178,14 @@ partial def expandExpr (e : TSyntax `fh_expr) : MacroM (TSyntax `term) :=
         | .str p last =>
           if p == .anonymous then pure ⟨x.raw⟩
           else
-            let recv := mkIdentFrom x p
-            let m := mkIdentFrom x (Name.mkSimple last)
+            -- The two halves get the two *halves* of the token's range, not the whole
+            -- of it. Found by corpus Group 10: with both claiming the full span,
+            -- `x.xor(y)` left Lean's unused-variable linter reporting `x` unreferenced,
+            -- because it could not tell the reference from the binder. Splitting the
+            -- range is also what ground rule 3 asks for — a synthesized node points at
+            -- the source it came from, and here that is a substring.
+            let (recv, m) := splitDotted x p last
+            let _ := m
             `(fh_dot% $recv $m)
         | _ => pure ⟨x.raw⟩
     | `(fh_expr| $n:num) => pure ⟨n.raw⟩
