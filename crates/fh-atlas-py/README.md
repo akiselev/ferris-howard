@@ -13,19 +13,23 @@ corpus.skeleton("Nat.add_comm", level="carriers") == corpus.skeleton("Int.add_co
 ```
 
 Every `atlas` CLI invocation re-reads and re-parses the whole slice before answering
-anything — measured at 5.7 s per call on the 131,062-declaration algebra slice. A script
+anything — measured at 6.0 s per call on the 131,062-declaration algebra slice. A script
 that asks twenty questions pays that twenty times. Measured by `tests/smoke.py` on that
-slice, same twenty questions, same release binary:
+slice, same twenty questions, same release binary, both paths asserted to return the same
+answers:
 
 | | time |
 |---|---|
-| 20 × `atlas foundations … --lens proof` | **113.8 s** |
-| `Corpus.load` + 20 × `.foundations(…)` | **4.59 s** (4.59 s load + 1.3 ms of queries) |
+| 20 × `atlas foundations … --lens proof` | **118.6 s** |
+| `Corpus.load` + 20 × `.foundations(…)` | **4.27 s** (4.27 s load + 1.5 ms of queries) |
 
-24.8× end to end; the queries themselves are ~86,000× cheaper than the process that used
-to answer them, and the twenty-first question is free. `scripts/atlas-mathlib-experiment.py`,
-rewritten against this API, went from four CLI re-parses plus a full `json.loads` of the
-146 MB slice to one load: **31.0 s → 7.8 s**, same claims, same negative controls.
+28× end to end; the queries themselves are ~80,000× cheaper than the process that used to
+answer them, and the twenty-first question is free. Across four runs the CLI side ranged
+111.8–120.3 s and the handle side 4.27–4.59 s, so the ratio is 25–28×, not a tuned number.
+
+`scripts/atlas-mathlib-experiment.py`, rewritten against this API, went from four CLI
+re-parses plus a full `json.loads` of the 146 MB slice to one load: **31.0 s → 7.8 s**,
+same claims, same negative controls.
 
 ## Build
 
@@ -121,15 +125,25 @@ locking. Consequences, stated rather than discovered:
 
 ## What is *not* bound, and why
 
-Everything in `python-api.md` except `fa.Corpus`, because the Rust behind it does not exist
-yet. Naming them so nobody looks for them:
+Two groups, and the distinction matters: queries the engine already answers and this
+binding does not reach, versus API surface with no Rust behind it at all.
 
-* **`corpus.similar(…)`** — the one omission whose engine *does* exist. `skel::index`
-  landed mid-session (`atlas similar`), and CLAUDE.md §6 says a query without a binding is
-  a query validation scripts cannot afford to call. It was outside this change's brief;
-  it is the obvious next increment, and it needs a `Match` result type carrying the
-  reported level, the retention and the source that found it.
-* **`corpus.home`, `corpus.transport`, `corpus.resolve`** — B5/B6 are not implemented.
+**Bound in the CLI, not here — the debt this crate owes CLAUDE.md §6.** B4's index, B5 and
+B6 all landed while this binding was being written, and a query validation scripts cannot
+call is a query that does not get exercised. Each needs a result type, which is why none
+of them is a one-liner:
+
+* **`corpus.similar(…)`** (`atlas similar`, `skel::index`) — needs a `Match` carrying the
+  reported level, the retention and which of the three index sources found it.
+* **`corpus.equivalent(…)` / `corpus.classes()`** (`atlas equivalent`, `atlas classes`,
+  `equiv`) — B5's equivalence graph.
+* **`corpus.dictionary(…)` / `corpus.transport(…)` / `corpus.frontier()`** (`dict`) —
+  B6, including the unmatched half, which is the part `python-api.md` §2 calls
+  `.missing_entries` and the part a research script actually reads.
+
+**No Rust behind it yet:**
+
+* **`corpus.home`, `corpus.resolve`** — the residual/home-theory operations of §2.
 * **`fa.Session` / `GoalState`** — no Lean REPL subprocess management exists yet. §1 puts
   the process boundary here deliberately; nothing of it is written.
 * **`fa.vet`, `fa.certs`, `fa.grade`, `fa.converge`, `fa.Trace`, `fa.ledger`** — Tracks C,

@@ -43,7 +43,8 @@ Everything below must be green before a commit. They are slow; run them anyway.
 | Lean build | `cd lean && lake build --wfail` | ~8,700 jobs warm. An uncaptured warning fails it. |
 | Round-trip | `python3 scripts/round-trip.py` | Slow — see §4 on why. |
 | MCP smoke | `python3 scripts/mcp-smoke.py` | Needs `cargo build -p fh-atlas --bins` first. |
-| Atlas experiments | `python3 scripts/atlas-mathlib-experiment.py` | Needs a slice; see §4. |
+| Atlas experiments | `python3 scripts/atlas-mathlib-experiment.py` | Needs a slice (§4) and the `fh_atlas` binding (§6): `maturin develop --release -m crates/fh-atlas-py/Cargo.toml`. |
+| Python binding | `python3 crates/fh-atlas-py/tests/smoke.py` | Differential against `target/release/atlas`; ~5 min, mostly the CLI side. |
 | Rust | `cargo test -p fh-atlas && cargo clippy -p fh-atlas --all-targets && cargo fmt -p fh-atlas -- --check` | Zero warnings, not "few". |
 
 `lake build --wfail` does **not** compile test targets in the Rust sense — and a green
@@ -192,17 +193,41 @@ Concretely, adding a query means touching:
 
 ---
 
-## 7. Layout
+## 7. Layout, and why the extractor is its own package
 
 ```
-lean/FerrisHoward/     the language: Syntax/, Expand/, Bridge/, Lint/, Atlas/, Report/
-lean/Tests/            fixtures — M0/ M1/ M2/ M3/ corpus/ Atlas/
-lean/Fh*.lean          the executables: fh_check, fh_emit, atlas_extract
-crates/fh-atlas/       the Atlas engine: graph, statement digest, skel/ (B4), json
+lean/                  the FerrisHoward package — pinned to leanprover/lean4:v4.32.2
+  FerrisHoward/        the language: Syntax/, Expand/, Bridge/, Lint/, Atlas/, Report/
+  Tests/               fixtures — M0/ M1/ M2/ M3/ corpus/ Atlas/
+  Fh*.lean             the executables: fh_check, fh_emit
+atlas-extract/         the extractor, a package both workspaces share
+physics/               a second workspace for libraries pinned to another toolchain
+crates/fh-atlas/       the Atlas engine: graph, statement digest, skel/ (B4), equiv, dict
 crates/fh-atlas-py/    the Python binding
 scripts/               the gates
 research/              design studies; `codegen.md` carries ADR-006
 ```
+
+**Never copy source between workspaces.** FerrisHoward is pinned to
+`leanprover/lean4:v4.32.2` and that pin is load-bearing — the corpus, the round-trip gate
+and B7's frozen answer key all depend on it. Physics libraries are pinned elsewhere
+(physlib is on `v4.32.0`), so they cannot be a dependency of the main package without
+forcing the toolchains to unify and invalidating all three.
+
+They do not have to be. `atlas-extract` imports **only `Lean`**, no Mathlib, so it compiles
+under any toolchain and each workspace takes a *path dependency* on it. Both emit the same
+`fh-stmt-v1` JSONL, and the Atlas consumes JSONL rather than oleans, so slices from
+different workspaces concatenate.
+
+Its modules live under `FhAtlas.*` while their Lean *namespace* stays `FerrisHoward.Atlas`.
+They have to differ: the main package globs `FerrisHoward.+`, so leaving the modules under
+that prefix makes both packages claim the same names and Lake resolves them to the main
+one, whose source is no longer there.
+
+One caveat when merging slices across workspaces: two Mathlib patch versions can encode
+the *same* lemma differently if that lemma changed between them, so a merged corpus is
+sound for analogy (skeletons) and not for identity (the statement digest, and therefore
+B8's overlay keying).
 
 Every FH feature lands with **four test tiers**: golden expansion, elaboration, negative
 (exact pinned messages), and span. A feature with three tiers is not done.

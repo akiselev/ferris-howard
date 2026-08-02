@@ -95,11 +95,10 @@ def the_handle_and_the_cli_agree_on_honesty(corpus: fa.Corpus, slice_path: str) 
 
 
 def the_handle_and_the_cli_agree_on_skeletons(corpus: fa.Corpus, slice_path: str) -> None:
-    # `skeleton` is a newer CLI query and may not be present in an older binary; the claim
-    # is about agreement where both exist, not about the CLI's version.
     out, code = cli("skeleton", "Nat.add_comm", "--level", "carriers", slice_path=slice_path)
-    if code != 0:
-        return
+    # Failing rather than skipping when the CLI has no `skeleton`: a differential that can
+    # go quiet on a stale binary is not a differential.
+    assert code == 0, f"the CLI answered no skeleton — rebuild it: {out!r}"
     assert corpus.skeleton("Nat.add_comm", level="carriers") == out.strip()
 
 

@@ -2,6 +2,13 @@ name = "FerrisHoward"
 version = "0.1.0"
 defaultTargets = ["FerrisHoward", "Tests"]
 
+# The extractor lives in its own package because it imports only `Lean`, which lets a
+# workspace on a *different* toolchain depend on it by path and emit the same JSONL. See
+# `atlas-extract/lakefile.toml` for why that matters.
+[[require]]
+name = "atlasExtract"
+path = "../atlas-extract"
+
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"
@@ -29,13 +36,6 @@ globs = ["Tests", "Tests.+"]
 
 # The B1 extractor as a program. Its own imports are `Lean` only; the environment it walks
 # is loaded at runtime, so building this does not drag Mathlib through the linker.
-[[lean_exe]]
-name = "atlas_extract"
-root = "AtlasExtract"
-supportInterpreter = true
-
-# `emit-lean`: publication-grade Lean out (ADR-006). Its output has no FH dependency, and
-# the emittable lint fails the run if any FH construct does not expand.
 [[lean_exe]]
 name = "fh_emit"
 root = "FhEmit"

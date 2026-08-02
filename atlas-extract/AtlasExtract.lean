@@ -2,7 +2,7 @@
 Copyright (c) 2026 Ferris–Howard contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import FerrisHoward.Atlas.Extract
+import FhAtlas.Extract
 
 /-!
 # `atlas_extract` — the B1 extractor as a program
@@ -44,6 +44,13 @@ def main (args : List String) : IO UInt32 := do
     else
       allRows env
   let out ← IO.getStdout
+  -- Flushed periodically rather than at exit. A full-Mathlib extraction takes tens of
+  -- minutes, and with the default buffering its output file reads zero bytes throughout —
+  -- which is indistinguishable from a hung process, and was diagnosed as one.
+  let mut written := 0
   for row in rows do
     out.putStrLn row.toJson.compress
+    written := written + 1
+    if written % 1000 == 0 then out.flush
+  out.flush
   return 0
