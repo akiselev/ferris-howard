@@ -30,6 +30,19 @@
 //! The arena is built on the *first* skeleton query, not at load: parsing 131k statement
 //! encodings is work a graph-only session should not pay for.
 //!
+//! # Three statement layers, not one
+//!
+//! B4's `SkeletonIndex` and B5's `EquivIndex` each parse the slice into an arena of their
+//! own, so the handle carries three lazily-built layers behind three locks rather than one.
+//! Merging them would mean either building the postings on the first `skeleton()` call or
+//! building the `Prop` table on the first `similar()` call, and the builds are nowhere near
+//! the same size: measured on the 131,062-row algebra slice, the plain statement arena
+//! costs 4.4 s, the equivalence index 6.5 s, and the full skeleton index — every subterm of
+//! every statement, at two levels, inverted — 105 s. Charging a `corpus.skeleton(…)` caller
+//! 105 s so that one arena can be shared is the wrong trade. Each layer is built by the
+//! first query that needs it and not before, and a session that asks graph questions only
+//! builds none of them.
+//!
 //! # `py.detach` is `py.allow_threads`
 //!
 //! Every operation that walks the graph or the arena runs inside `py.detach(…)`, which is
@@ -40,8 +53,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
+use ::fh_atlas::dict::{
+    self, Row as CoreRow, Status, TransportError, Transported as CoreTransported,
+};
+use ::fh_atlas::equiv::{EquivIndex, Unknown};
 use ::fh_atlas::graph::{Decl as CoreDecl, Graph, Lens};
 use ::fh_atlas::skel::erase::{EraseCache, Level, Signatures, erase};
+use ::fh_atlas::skel::index::{IndexConfig, Neighbour as CoreNeighbour, SkeletonIndex, Sources};
 use ::fh_atlas::skel::lgg;
 use ::fh_atlas::skel::term::{Arena, SymId, TermId};
 use pyo3::create_exception;
