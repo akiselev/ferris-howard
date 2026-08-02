@@ -132,32 +132,33 @@ theorem nobinders (a b : Nat) : a + b = b + a := Nat.add_comm a b
 #guard_msgs in
 #fh_home no_such_thing
 
-/-! ## The limit of a carrier-blind reached set
+/-! ## Carrier-aware evidence (C4 D3)
 
-`#fh_home` now names the carrier each binder constrains, which `instanceClasses`'s own doc
-comment always promised and its `NameSet` return type always discarded.
+`#fh_home` names the carrier each binder constrains **and judges each binder only on the
+evidence found at that carrier**. The second half is what makes the first worth having.
 
-Naming the carrier is not the same as *using* it, and this fixture pins the difference.
-`R` is used only additively and `S` only multiplicatively, so each binder has a clean home —
-`AddCommMagma` and `CommMagma` respectively. The reached set is a flat set of class names
-with no carrier attached, so both classes are attributed to both binders, neither has a
-single weakest ancestor, and **two genuine findings are lost**.
+This fixture pinned the gap while it existed. `R` is used only additively and `S` only
+multiplicatively, so each binder has a clean home. With the evidence flattened to a set of
+class names, both classes were attributed to both binders, neither resolved to a single
+weakest ancestor, and **two genuine findings were lost** — a false negative, which is the
+safe direction, but a loss.
 
-That is a false negative, not a false positive, which is the safe direction — but it is
-still the walk's own comment ("a class reached at *another* carrier says nothing about this
-binder") describing evidence the data cannot supply. The tool now says so on the line where
-it matters rather than leaving a reader to infer it. Fixing it is C4's D3: an `Expr`
-traversal that records the carrier each reached class was reached *at*.
+The evidence is now read where it lives: an instance argument's type is exactly
+`SomeClass carrier`, so every argument whose type is a class application is one piece of
+carrier-attached evidence. Two exclusions carry over from `reachedClasses` and both are
+load-bearing — an argument handed to another *instance* or to a *parent projection* is
+plumbing, and recording it makes a binder evidence for itself, at which point everything
+reads "at home".
 -/
 
 theorem twocarrier {R S : Type} [CommRing R] [CommRing S] (a b : R) (x y : S) :
     a + b = b + a ∧ x * y = y * x := ⟨add_comm a b, mul_comm x y⟩
 
 /--
-info: FH home: `twocarrier` is at home
-  [CommRing R] — reaches [AddCommMagma, CommMagma], no single weakest ancestor
-  [CommRing S] — reaches [AddCommMagma, CommMagma], no single weakest ancestor
-  ⚠ binders span 2 carriers ([R, S]); the reached set is carrier-blind, so these verdicts are approximate
+info: FH home: `twocarrier` has 2 over-hypothesis candidate(s) — a candidate is confirmed by moving the declaration and re-checking it
+  [CommRing R] — CANDIDATE: reaches only AddCommMagma; weaken and re-check
+  [CommRing S] — CANDIDATE: reaches only CommMagma; weaken and re-check
+  (binders span 2 carriers ([R, S]); each verdict uses only its own carrier's evidence)
 -/
 #guard_msgs (whitespace := lax) in
 #fh_home twocarrier

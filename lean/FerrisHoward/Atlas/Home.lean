@@ -107,6 +107,55 @@ def reachedClasses (env : Environment) (ci : ConstantInfo) : MetaM NameSet := do
       out := out.insert c
   return out
 
+/-! ## Carrier-aware evidence (C4 D3)
+
+`reachedClasses` answers *which* classes a declaration reaches and can never answer *at
+which carrier*, because `getUsedConstants` flattens the term to a set of names before the
+question is asked. That is not a cosmetic loss. A declaration binding `[CommRing R]` and
+`[CommRing S]` and using `R` only additively gets both binders' evidence pooled, so neither
+resolves to a home and two genuine findings are lost — pinned as `twocarrier` in
+`Tests/Atlas/Home.lean`.
+
+The fix reads the evidence where it actually lives. **An instance argument's type is
+exactly `SomeClass carrier`**, so every argument of every application whose type is a class
+application is one piece of carrier-attached evidence, and no binder-info lookup on the
+head constant is needed to find it.
+
+`Meta.transform` does the walking because it opens binders through `withLocalDecl`, so
+`inferType` is valid on every subterm it visits — a hand-rolled recursion would meet loose
+de Bruijn indices under the first lambda and infer nothing.
+-/
+
+/-- Classes the declaration reaches, each paired with the carrier it was reached *at*.
+`none` is a carrier that is not one of the declaration's own binders — a class about `ℕ`
+says nothing about a binder over `R`, and conflating the two is what invents findings. -/
+def reachedWithCarrier (env : Environment) (e : Expr) :
+    MetaM (Array (Name × Option FVarId)) := do
+  let isParentProjection (u : Name) : Bool :=
+    let owner := u.getPrefix
+    isStructure env owner && (getStructureParentInfo env owner).any (·.projFn == u)
+  let found ← IO.mkRef (#[] : Array (Name × Option FVarId))
+  let _ ← Meta.transform e (pre := fun sub => do
+    if sub.isApp then
+      -- The same exclusion `reachedClasses` applies, moved to where the evidence is read.
+      -- An instance argument handed to *another instance* or to a parent projection is
+      -- plumbing: `CommRing.toCommSemiring inst` says only that the elaborator threaded
+      -- the declared binder somewhere. An instance argument handed to a **lemma** is a
+      -- real requirement, and lemmas are not instances. Without this the binder's own
+      -- class is recorded as evidence for itself and every binder reads "at home".
+      let skip ← match sub.getAppFn with
+        | .const u _ => pure (isParentProjection u) <||> isInstance u
+        | _ => pure false
+      unless skip do
+        for a in sub.getAppArgs do
+          -- The type is the evidence: `AddCommMagma R` names both class and carrier.
+          let ty ← try inferType a catch _ => pure (mkSort Level.zero)
+          if let some cls ← isClass? ty then
+            let carrier := (← whnf ty).getAppArgs.back?.bind (·.fvarId?)
+            found.modify (·.push (cls, carrier))
+    return .continue)
+  found.get
+
 /-- One binder's verdict. -/
 structure Verdict where
   /-- The class as declared. -/
@@ -144,10 +193,23 @@ elab "#fh_home " n:ident : command => do
   let env ← getEnv
   let some ci := env.find? name | throwErrorAt n s!"unknown declaration `{name}`"
   liftTermElabM do
-    let reached ← reachedClasses env ci
+    -- `reachedClasses` is superseded here by `reachedWithCarrier`: same evidence and the
+    -- same two exclusions, but attached to the carrier it was found at. The flat version
+    -- stays exported — it is the cheaper answer when a caller has one carrier and knows it.
     let levels ← ci.levelParams.mapM fun _ => mkFreshLevelMVar
     let (lines, candidates, carriers) : Array String × Nat × Array String ←
-      forallTelescopeReducing (ci.instantiateTypeLevelParams levels) fun xs _ => do
+      forallTelescopeReducing (ci.instantiateTypeLevelParams levels) fun xs concl => do
+      -- D3: the same evidence, but attached to the carrier it was found at. Gathered
+      -- inside this telescope so the binders are fvars and `inferType` can see them; the
+      -- value is instantiated with the *same* fvars, or its carriers would be a different
+      -- set of variables that could never match a binder.
+      let mut ev ← reachedWithCarrier env concl
+      if let some v := (match ci with
+          | .thmInfo t => some t.value
+          | .defnInfo t => some t.value
+          | _ => none) then
+        let body ← try instantiateLambda v xs catch _ => pure v
+        ev := ev ++ (← reachedWithCarrier env body)
       let mut lines : Array String := #[]
       let mut candidates := 0
       let mut carriers : Array String := #[]
@@ -159,16 +221,26 @@ elab "#fh_home " n:ident : command => do
         -- The carrier the constraint is *about*. `instanceClasses`'s own doc comment has
         -- always promised this pairing; the implementation returned a bare `NameSet` and
         -- dropped it, which is what "home loses carrier identity" means concretely.
+        -- The carrier is the binder type's last argument — the `R` of `CommRing R` — and
+        -- *not* the instance binder's own fvar. Comparing evidence against the latter was
+        -- the first version's bug: `add_comm`'s `AddCommMagma R` argument is carried by
+        -- `R`, so nothing ever matched and every binder read as unused.
+        let carrierFv := ty.getAppArgs.back?.bind (·.fvarId?)
         let carrier : String ← match ty.getAppArgs.back? with
           | some c => do pure (toString (← ppExpr c))
           | none => pure "?"
         carriers := carriers.push carrier
-        let v := walk env cls reached
+        -- Only evidence found *at this binder's carrier* counts. This is the whole of D3:
+        -- with a flat set, a class reached at `S` was indistinguishable from one reached
+        -- at `R`, and both binders were judged on the union.
+        let here : NameSet := ev.foldl (init := {}) fun acc (c, fv) =>
+          if fv.isSome && fv == carrierFv then acc.insert c else acc
+        let v := walk env cls here
         -- Asked first, and about the declared class itself: if some *lemma* requires it
         -- at this carrier, nothing weaker covers the use and the walk has no verdict to
         -- give. Asking this after the lattice walk reported an at-home binder as unused,
         -- because the walk deliberately looks only at strict ancestors.
-        if reached.contains cls then
+        if here.contains cls then
           lines := lines.push s!"  [{cls} {carrier}] — at home"
         else match v.home with
         | some h =>
@@ -196,11 +268,15 @@ elab "#fh_home " n:ident : command => do
     -- rather than left for a reader to discover, because the walk's own comment already
     -- claims "a class reached at another carrier says nothing about this binder" — which
     -- the evidence cannot currently support.
+    -- The caveat this used to carry — "the reached set is carrier-blind, so these
+    -- verdicts are approximate" — is retired by D3: each binder is now judged only on
+    -- evidence found at its own carrier. What is still worth saying is which carriers are
+    -- in play, because a multi-carrier declaration is where the distinction does work.
     let distinct := carriers.toList.eraseDups
     let caveat :=
       if distinct.length > 1 then
-        s!"\n  ⚠ binders span {distinct.length} carriers ({distinct}); the reached set is \
-           carrier-blind, so these verdicts are approximate"
+        s!"\n  (binders span {distinct.length} carriers ({distinct}); each verdict uses \
+           only its own carrier's evidence)"
       else ""
     logInfo (header ++ "\n" ++ String.intercalate "\n" lines.toList ++ caveat)
 
