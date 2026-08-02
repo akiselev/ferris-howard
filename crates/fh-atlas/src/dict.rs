@@ -92,6 +92,57 @@ pub struct Dictionary {
     pub missing_right: Vec<String>,
 }
 
+/// How a dictionary is assembled. A struct rather than five positional arguments,
+/// because the review that produced `pool_width` and `exclude_subprefix` will not be the
+/// last to add one.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DictOptions {
+    /// Rows kept per left declaration.
+    pub per_decl: usize,
+    pub theorems_only: bool,
+    /// Candidates retrieved per left. Distinct from `per_decl` on purpose: the selection
+    /// needs alternatives to choose between, and taking `per_decl * 4` globally left most
+    /// lefts with exactly one right-theory candidate — a "choice" with one option.
+    pub pool_width: usize,
+    /// Right-hand sub-prefixes to drop. `theory_of` files `Mathlib.Algebra.Order.*` under
+    /// `Mathlib.Algebra`, so 27.1% of an Order <-> Algebra dictionary was order theory
+    /// matched against itself. Excluded here rather than by changing `theory_of`, which
+    /// `frontier` shares and which C1 replaces with versioned cluster manifests anyway.
+    pub exclude_subprefix: Vec<String>,
+    /// Final name components treated as administrative rather than mathematical.
+    ///
+    /// The worst collision target on the first run was `instReflDvd_mathlib`, claimed by
+    /// fourteen lefts — a typeclass instance whose extracted `kind` is `"theorem"`, so
+    /// `theorems_only` cannot see it. B1 emits no `is_instance`, so this is a **name
+    /// heuristic and is reported as one**: it caught 6.9% of rows on the first slice, and
+    /// a principled fix needs a field the extractor does not yet have.
+    pub exclude_roles: Vec<String>,
+}
+
+impl Default for DictOptions {
+    fn default() -> DictOptions {
+        DictOptions {
+            per_decl: 1,
+            theorems_only: true,
+            pool_width: 64,
+            exclude_subprefix: Vec::new(),
+            exclude_roles: Vec::new(),
+        }
+    }
+}
+
+/// Is this name administrative under the given heuristics?
+fn excluded_role(name: &str, roles: &[String]) -> bool {
+    let last = name.rsplit('.').next().unwrap_or(name);
+    roles.iter().any(|r| {
+        if let Some(pre) = r.strip_suffix('*') {
+            last.starts_with(pre)
+        } else {
+            last == r
+        }
+    })
+}
+
 /// Assemble the maximal partial functor between two theories.
 /// `theorems_only` for the same reason [`frontier`] wants it: a dictionary row between two
 /// *recursors* (`Compl.rec ~ Star.rec`) is a fact about how Lean compiles inductive types,
@@ -101,9 +152,16 @@ pub fn dictionary(
     left: &str,
     right: &str,
     cfg: &IndexConfig,
-    per_decl: usize,
-    theorems_only: bool,
+    opts: &DictOptions,
 ) -> Dictionary {
+    let (per_decl, theorems_only) = (opts.per_decl, opts.theorems_only);
+    // Retrieval itself is restricted to the target theory, so the pool is candidates that
+    // can become rows rather than a global top-N mostly discarded a line later.
+    let cfg = &IndexConfig {
+        restrict_prefix: Some(right.to_string()),
+        theorems_only,
+        ..cfg.clone()
+    };
     let (mut rows, mut matched_left, mut matched_right) =
         (Vec::new(), BTreeSet::new(), BTreeSet::new());
     let names: Vec<String> = (0..idx.len())
@@ -120,12 +178,22 @@ pub fn dictionary(
         .collect();
 
     for name in &lefts {
-        let Ok(neighbours) = idx.similar(name, per_decl * 4, cfg) else {
+        let Ok(neighbours) = idx.similar(name, opts.pool_width, cfg) else {
             continue;
         };
         let mut kept = 0;
         for n in neighbours {
             if theory_of(&n.module) != right || (theorems_only && !idx.is_theorem(&n.name)) {
+                continue;
+            }
+            if opts
+                .exclude_subprefix
+                .iter()
+                .any(|p| n.module == *p || n.module.starts_with(&format!("{p}.")))
+            {
+                continue;
+            }
+            if excluded_role(&n.name, &opts.exclude_roles) {
                 continue;
             }
             let status = match (idx.is_theorem(name), idx.is_theorem(&n.name)) {

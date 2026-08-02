@@ -5,7 +5,8 @@
 //! of read.
 
 use fh_atlas::dict::{
-    Transported, coherence, dictionary, frontier, shuffle_control, theory_of, transport,
+    DictOptions, Transported, coherence, dictionary, frontier, shuffle_control, theory_of,
+    transport,
 };
 use fh_atlas::graph::Graph;
 use fh_atlas::skel::erase::Level;
@@ -79,7 +80,13 @@ fn main() {
     // A dictionary between two theories that genuinely share structure.
     println!("\ndictionary — Mathlib.Order <-> Mathlib.Algebra:");
     let t2 = std::time::Instant::now();
-    let d = dictionary(&mut idx, "Mathlib.Order", "Mathlib.Algebra", &cfg, 1, true);
+    let d = dictionary(
+        &mut idx,
+        "Mathlib.Order",
+        "Mathlib.Algebra",
+        &cfg,
+        &DictOptions::default(),
+    );
     println!(
         "  {} rows, {} unmatched on the left, {} on the right  ({:.1}s)",
         d.rows.len(),
@@ -140,6 +147,57 @@ fn main() {
         "the greedy dictionary is already almost a map ({:.1}% of rows in a collision), so \
          M3a's premise is wrong and the solver is not the fix",
         100.0 * coh.collision_rate()
+    );
+
+    // How much of the collision is contamination rather than the analogy itself? Two
+    // sources were identified by review and confirmed: `theory_of`'s depth-2 rule files
+    // `Mathlib.Algebra.Order.*` under "Algebra", so part of this dictionary is order theory
+    // against itself; and the worst target is a typeclass instance whose extracted `kind`
+    // is "theorem", which `theorems_only` cannot see. Subtracting both says how much of the
+    // pathology a *selection* policy would still have to explain.
+    println!("\nwith the contaminating families excluded:");
+    let clean_opts = DictOptions {
+        exclude_subprefix: vec!["Mathlib.Algebra.Order".to_string()],
+        exclude_roles: vec!["inst*".to_string()],
+        ..DictOptions::default()
+    };
+    let dc = dictionary(
+        &mut idx,
+        "Mathlib.Order",
+        "Mathlib.Algebra",
+        &cfg,
+        &clean_opts,
+    );
+    let cohc = coherence(&mut idx, &dc, 4);
+    println!(
+        "  {} rows ({} lefts, {} right statements), {} rows ({:.1}%) in a collision",
+        cohc.rows,
+        cohc.distinct_lefts,
+        cohc.distinct_right_statements,
+        cohc.rows_in_collision,
+        100.0 * cohc.collision_rate()
+    );
+    for (name, n) in &cohc.worst {
+        println!("    x{n:<3} {name}");
+    }
+    println!(
+        "  contamination accounts for {:.1} points of the collision rate; {:.1}% remains \
+         and is the selection problem proper.",
+        100.0 * (coh.collision_rate() - cohc.collision_rate()),
+        100.0 * cohc.collision_rate()
+    );
+    // The load-bearing claim, asserted because it is the one that decides whether M3a's
+    // remaining work is worth doing. Two alternative explanations for the incoherence were
+    // proposed by review and both are real defects — but subtracting them moves the
+    // collision rate by under a point, so neither explains it. If this ever drops low
+    // enough to fail, the incoherence *was* contamination and a selection policy is the
+    // wrong fix.
+    assert!(
+        cohc.collision_rate() > 0.50,
+        "excluding the contaminating families leaves only {:.1}% of rows in a collision, so \
+         the incoherence was contamination rather than greedy selection and M3a should be \
+         re-planned around the exclusions instead of around a policy",
+        100.0 * cohc.collision_rate()
     );
 
     println!("\nnegative control: shuffled mappings must be rejected (design §9):");

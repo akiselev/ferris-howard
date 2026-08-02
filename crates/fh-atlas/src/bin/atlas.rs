@@ -15,7 +15,7 @@
 
 use std::process::ExitCode;
 
-use fh_atlas::dict::{Transported, dictionary, frontier, transport};
+use fh_atlas::dict::{DictOptions, Transported, dictionary, frontier, transport};
 use fh_atlas::equiv::EquivIndex;
 use fh_atlas::graph::{Graph, Lens};
 use fh_atlas::logical::LogicalGraph;
@@ -293,7 +293,14 @@ fn run(args: &[String]) -> Result<Report, String> {
             };
             let cfg = IndexConfig::default();
             let mut idx = SkeletonIndex::build(&input, &cfg).map_err(|e| e.to_string())?;
-            let d = dictionary(&mut idx, left, right, &cfg, 1, !all_kinds);
+            let opts = DictOptions {
+                theorems_only: !all_kinds,
+                // The exclusions are opt-in on the CLI so the default output stays
+                // comparable with what was measured before them.
+                exclude_subprefix: exclude.clone(),
+                ..DictOptions::default()
+            };
+            let d = dictionary(&mut idx, left, right, &cfg, &opts);
             let mut out = String::new();
             for r in d.rows.iter().take(top) {
                 out.push_str(&format!(

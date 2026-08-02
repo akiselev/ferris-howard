@@ -150,6 +150,14 @@ pub struct IndexConfig {
     /// scored against a pool that is half definitions and recursors measures the config,
     /// not the scorer, so an experiment sets this.
     pub theorems_only: bool,
+    /// Restrict candidates to declarations whose module is, or sits under, this prefix.
+    ///
+    /// Applied inside retrieval rather than after it. `dictionary` used to take a global
+    /// top-N and *then* discard everything outside the target theory, so a left whose
+    /// partner sat at global rank 5 had no row at all — the selection could only delete,
+    /// never choose. Filtering here means the budget is spent on candidates that can
+    /// actually become rows.
+    pub restrict_prefix: Option<String>,
     /// Ablation knob: query source B with the raw root instead of the `Presentation`
     /// erasure the postings are keyed at. `true` is the repaired behaviour; `false`
     /// reproduces the defect, which is the only honest way to measure what the repair was
@@ -173,6 +181,7 @@ impl Default for IndexConfig {
             cross_weight: 0.15,
             scoped_weight: 0.30,
             theorems_only: false,
+            restrict_prefix: None,
             source_b_at_build_level: true,
         }
     }
@@ -309,6 +318,7 @@ impl IndexConfig {
             self.theorems_only as u8,
             self.source_b_at_build_level as u8,
         ]);
+        h.update(self.restrict_prefix.as_deref().unwrap_or("").as_bytes());
         crate::statement::to_hex(&h.finalize())
     }
 }
@@ -617,6 +627,14 @@ impl SkeletonIndex {
         for (d, sources, rarity) in cands {
             if cfg.theorems_only && self.kinds[d.0 as usize] != "theorem" {
                 continue;
+            }
+            if let Some(prefix) = &cfg.restrict_prefix {
+                let m = &self.modules[d.0 as usize];
+                // Equality or a dotted prefix: bare `starts_with` would let
+                // `Mathlib.AlgebraicGeometry` in under `Mathlib.Algebra`.
+                if m != prefix && !m.starts_with(&format!("{prefix}.")) {
+                    continue;
+                }
             }
             let ct = self.level_term(d, cfg.lgg_level);
             let g: Generalization = generalize(&mut self.arena, qt, ct);

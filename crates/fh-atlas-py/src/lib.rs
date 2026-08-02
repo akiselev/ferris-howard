@@ -1295,7 +1295,17 @@ impl Corpus {
             let cfg = IndexConfig::default();
             let mut guard = self.skeletons()?;
             let idx = guard.as_mut().expect("skeletons() builds it");
-            let d = dict::dictionary(idx, left, right, &cfg, per_decl, theorems_only);
+            let d = dict::dictionary(
+                idx,
+                left,
+                right,
+                &cfg,
+                &dict::DictOptions {
+                    per_decl,
+                    theorems_only,
+                    ..dict::DictOptions::default()
+                },
+            );
             let c: CoreCoherence = dict::coherence(idx, &d, worst);
             Ok(Coherence {
                 rows: c.rows,
@@ -1330,7 +1340,17 @@ impl Corpus {
             let cfg = IndexConfig::default();
             let mut guard = self.skeletons()?;
             let idx = guard.as_mut().expect("skeletons() builds it");
-            let d = dict::dictionary(idx, left, right, &cfg, per_decl, theorems_only);
+            let d = dict::dictionary(
+                idx,
+                left,
+                right,
+                &cfg,
+                &dict::DictOptions {
+                    per_decl,
+                    theorems_only,
+                    ..dict::DictOptions::default()
+                },
+            );
             let s: CoreShuffle = dict::shuffle_control(idx, &d, &cfg);
             Ok(ShuffleControl {
                 pairs: s.pairs,
@@ -1361,8 +1381,11 @@ impl Corpus {
                 left,
                 right,
                 &cfg,
-                per_decl,
-                theorems_only,
+                &dict::DictOptions {
+                    per_decl,
+                    theorems_only,
+                    ..dict::DictOptions::default()
+                },
             ))
         })?;
         let rows = core
