@@ -13,18 +13,19 @@ corpus.skeleton("Nat.add_comm", level="carriers") == corpus.skeleton("Int.add_co
 ```
 
 Every `atlas` CLI invocation re-reads and re-parses the whole slice before answering
-anything — measured at 5.6 s per call on the 131,062-declaration algebra slice. A script
-that asks twenty questions pays that twenty times. Measured, on that slice, same twenty
-questions, same release binary:
+anything — measured at 5.7 s per call on the 131,062-declaration algebra slice. A script
+that asks twenty questions pays that twenty times. Measured by `tests/smoke.py` on that
+slice, same twenty questions, same release binary:
 
 | | time |
 |---|---|
-| 20 × `atlas foundations … --lens proof` | **111.8 s** |
-| `Corpus.load` + 20 × `.foundations(…)` | **4.3 s** (4.28 s load + 1.3 ms of queries) |
+| 20 × `atlas foundations … --lens proof` | **113.8 s** |
+| `Corpus.load` + 20 × `.foundations(…)` | **4.59 s** (4.59 s load + 1.3 ms of queries) |
 
-26× end to end; the queries themselves are ~86,000× cheaper than the process that used to
-answer them. `scripts/atlas-mathlib-experiment.py`, rewritten against this API, went from
-eight re-parses to one and now runs in 7.8 s.
+24.8× end to end; the queries themselves are ~86,000× cheaper than the process that used
+to answer them, and the twenty-first question is free. `scripts/atlas-mathlib-experiment.py`,
+rewritten against this API, went from four CLI re-parses plus a full `json.loads` of the
+146 MB slice to one load: **31.0 s → 7.8 s**, same claims, same negative controls.
 
 ## Build
 
