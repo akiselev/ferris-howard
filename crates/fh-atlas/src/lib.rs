@@ -4,4 +4,5 @@
 //! from the Lean-side extractor (atlas.md §6, Channel 2).
 
 pub mod graph;
+pub mod json;
 pub mod statement;

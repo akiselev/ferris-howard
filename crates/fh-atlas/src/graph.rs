@@ -284,35 +284,21 @@ impl Graph {
     }
 }
 
-// ---------------------------------------------------------------------------
-// A JSON reader for exactly B1's schema.
-//
-// Hand-written rather than pulled in with serde, for the same reason `statement.rs`
-// digests an encoding Lean produced rather than re-deriving it: the schema is small,
-// fixed, and ours, and the fewer moving parts between the extractor and the graph the
-// easier a mismatch is to see. If the schema grows past this, swap in serde — the
-// signature of `from_jsonl` does not change.
-// ---------------------------------------------------------------------------
-
 fn parse_row(line: &str) -> Result<Decl, String> {
-    let obj = json::parse_object(line)?;
-    let get_str = |k: &str| -> Option<String> {
-        obj.get(k).and_then(|v| match v {
-            json::Value::Str(s) => Some(s.clone()),
-            _ => None,
-        })
-    };
+    let obj = crate::json::parse(line)?;
+    let get_str =
+        |k: &str| -> Option<String> { obj.get(k).and_then(|v| v.as_str()).map(str::to_string) };
     let get_list = |k: &str| -> Vec<String> {
-        match obj.get(k) {
-            Some(json::Value::List(items)) => items
-                .iter()
-                .filter_map(|v| match v {
-                    json::Value::Str(s) => Some(s.clone()),
-                    _ => None,
-                })
-                .collect(),
-            _ => Vec::new(),
-        }
+        obj.get(k)
+            .and_then(|v| v.as_list())
+            .map(|items| {
+                items
+                    .iter()
+                    .filter_map(|v| v.as_str())
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default()
     };
     Ok(Decl {
         name: get_str("name").ok_or("row has no `name`")?,
@@ -323,167 +309,6 @@ fn parse_row(line: &str) -> Result<Decl, String> {
         uses_statement: get_list("uses_statement"),
         uses_proof: get_list("uses_proof"),
     })
-}
-
-mod json {
-    //! Just enough JSON for B1's rows: objects of strings and string lists.
-
-    use std::collections::BTreeMap;
-
-    #[derive(Clone, Debug, PartialEq, Eq)]
-    pub enum Value {
-        Str(String),
-        List(Vec<Value>),
-        Other,
-    }
-
-    pub fn parse_object(s: &str) -> Result<BTreeMap<String, Value>, String> {
-        let b: Vec<char> = s.chars().collect();
-        let mut i = 0;
-        skip_ws(&b, &mut i);
-        expect(&b, &mut i, '{')?;
-        let mut out = BTreeMap::new();
-        skip_ws(&b, &mut i);
-        if peek(&b, i) == Some('}') {
-            return Ok(out);
-        }
-        loop {
-            skip_ws(&b, &mut i);
-            let key = parse_string(&b, &mut i)?;
-            skip_ws(&b, &mut i);
-            expect(&b, &mut i, ':')?;
-            skip_ws(&b, &mut i);
-            let value = parse_value(&b, &mut i)?;
-            out.insert(key, value);
-            skip_ws(&b, &mut i);
-            match peek(&b, i) {
-                Some(',') => i += 1,
-                Some('}') => break,
-                other => return Err(format!("expected `,` or `}}`, got {other:?}")),
-            }
-        }
-        Ok(out)
-    }
-
-    fn parse_value(b: &[char], i: &mut usize) -> Result<Value, String> {
-        match peek(b, *i) {
-            Some('"') => Ok(Value::Str(parse_string(b, i)?)),
-            Some('[') => {
-                *i += 1;
-                let mut items = Vec::new();
-                skip_ws(b, i);
-                if peek(b, *i) == Some(']') {
-                    *i += 1;
-                    return Ok(Value::List(items));
-                }
-                loop {
-                    skip_ws(b, i);
-                    items.push(parse_value(b, i)?);
-                    skip_ws(b, i);
-                    match peek(b, *i) {
-                        Some(',') => *i += 1,
-                        Some(']') => {
-                            *i += 1;
-                            break;
-                        }
-                        other => return Err(format!("expected `,` or `]`, got {other:?}")),
-                    }
-                }
-                Ok(Value::List(items))
-            }
-            Some('{') => {
-                // Nested objects are skipped rather than represented: B1's schema has
-                // none, and guessing at one we have not specified would be worse than
-                // ignoring it.
-                let mut depth = 0usize;
-                loop {
-                    match peek(b, *i) {
-                        Some('{') => {
-                            depth += 1;
-                            *i += 1;
-                        }
-                        Some('}') => {
-                            depth -= 1;
-                            *i += 1;
-                            if depth == 0 {
-                                break;
-                            }
-                        }
-                        Some('"') => {
-                            parse_string(b, i)?;
-                        }
-                        Some(_) => *i += 1,
-                        None => return Err("unterminated object".into()),
-                    }
-                }
-                Ok(Value::Other)
-            }
-            _ => {
-                while let Some(c) = peek(b, *i) {
-                    if c == ',' || c == '}' || c == ']' || c.is_whitespace() {
-                        break;
-                    }
-                    *i += 1;
-                }
-                Ok(Value::Other)
-            }
-        }
-    }
-
-    fn parse_string(b: &[char], i: &mut usize) -> Result<String, String> {
-        expect(b, i, '"')?;
-        let mut out = String::new();
-        loop {
-            match peek(b, *i) {
-                None => return Err("unterminated string".into()),
-                Some('"') => {
-                    *i += 1;
-                    return Ok(out);
-                }
-                Some('\\') => {
-                    *i += 1;
-                    let c = peek(b, *i).ok_or("unterminated escape")?;
-                    *i += 1;
-                    out.push(match c {
-                        'n' => '\n',
-                        't' => '\t',
-                        'r' => '\r',
-                        'u' => {
-                            let hex: String =
-                                b.get(*i..*i + 4).ok_or("short \\u")?.iter().collect();
-                            *i += 4;
-                            let n = u32::from_str_radix(&hex, 16).map_err(|e| e.to_string())?;
-                            char::from_u32(n).ok_or("bad code point")?
-                        }
-                        other => other,
-                    });
-                }
-                Some(c) => {
-                    *i += 1;
-                    out.push(c);
-                }
-            }
-        }
-    }
-
-    fn peek(b: &[char], i: usize) -> Option<char> {
-        b.get(i).copied()
-    }
-
-    fn skip_ws(b: &[char], i: &mut usize) {
-        while matches!(peek(b, *i), Some(c) if c.is_whitespace()) {
-            *i += 1;
-        }
-    }
-
-    fn expect(b: &[char], i: &mut usize, c: char) -> Result<(), String> {
-        if peek(b, *i) == Some(c) {
-            *i += 1;
-            Ok(())
-        } else {
-            Err(format!("expected `{c}`, got {:?}", peek(b, *i)))
-        }
-    }
 }
 
 #[cfg(test)]
@@ -661,7 +486,7 @@ mod tests {
             err,
             GraphError::BadRow {
                 line: 2,
-                reason: "expected `{`, got Some('n')".into()
+                reason: "expected `null`".into()
             }
         );
     }

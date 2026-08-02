@@ -113,6 +113,14 @@ jobs:
           fi
           echo "atlas: ok"
 
+      # The M2 exit gate's MCP round-trip: initialize -> tools/list -> elaborate -> goals.
+      # Drives the server over stdio the way a client does, including the `initialized`
+      # notification that must draw no reply.
+      - name: mcp round-trip smoke
+        run: |
+          cargo build -p fh-atlas --bins
+          python3 scripts/mcp-smoke.py
+
   rust:
     name: rust
     runs-on: ubuntu-latest
