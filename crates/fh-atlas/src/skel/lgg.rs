@@ -1,0 +1,452 @@
+//! Anti-unification — Plotkin/Reynolds least general generalization over I3 terms.
+//!
+//! The skeleton of two statements is the most specific term that matches both. It is
+//! atlas.md §1c's "candidate dictionary row": the concrete part is what the two theorems
+//! genuinely share, and each variable is a place where they differ.
+//!
+//! # Scope, and the bug that hides without it
+//!
+//! The memo key carries a **binder depth**, not just the pair being generalized. Without
+//! it, two occurrences of the same encoded pair at *different* binder depths receive the
+//! same variable — which asserts that two positions denote the same thing when their de
+//! Bruijn indices resolve to different binders.
+//!
+//! It fires on real input: 78 of 196,237 pairs from a Lean-core slice diverge between the
+//! depth-blind and depth-aware readings. And it is invisible to the obvious tests —
+//! idempotence, commutativity and subsumption all pass on the unsound version, because
+//! they are depth-blind too. [`matches_wellscoped`] is the oracle that sees it.
+//!
+//! The depth is only part of the key when at least one side has a loose de Bruijn index.
+//! A closed pair means the same thing at every depth, so keying it by depth would split
+//! variables that ought to be shared and inflate every skeleton.
+//!
+//! # Complexity
+//!
+//! `O(min(|x|,|y|))` in time and space: each call either terminates or consumes a node
+//! from both sides, and the memo lookup is `O(1)` on a triple of `u32`s. The naive
+//! algorithm — an association list scanned with deep structural equality — is
+//! `O(|x|·|y|)`, which is exactly what makes it a useful differential reference.
+
+use std::collections::HashMap;
+
+use super::term::{Arena, Node, TermId};
+
+/// The sentinel depth for a closed pair: it means the same thing wherever it appears.
+const ANY_DEPTH: u32 = u32::MAX;
+
+pub struct Lgg<'a> {
+    arena: &'a mut Arena,
+    memo: HashMap<(TermId, TermId, u32), TermId>,
+    next_var: u32,
+    scoped_vars: u32,
+}
+
+impl<'a> Lgg<'a> {
+    pub fn new(arena: &'a mut Arena) -> Lgg<'a> {
+        Lgg {
+            arena,
+            memo: HashMap::new(),
+            next_var: 0,
+            scoped_vars: 0,
+        }
+    }
+
+    pub fn run(&mut self, a: TermId, b: TermId) -> TermId {
+        self.go(a, b, 0)
+    }
+
+    fn fresh(&mut self, loose: bool) -> TermId {
+        let v = self.next_var;
+        self.next_var += 1;
+        if loose {
+            self.scoped_vars += 1;
+        }
+        self.arena.intern(Node::Var(v))
+    }
+
+    fn go(&mut self, x: TermId, y: TermId, depth: u32) -> TermId {
+        // One `u32` compare, thanks to interning.
+        if x == y {
+            return x;
+        }
+        let node = match (self.arena.node(x), self.arena.node(y)) {
+            (Node::App(f, u), Node::App(g, v)) => {
+                Node::App(self.go(f, g, depth), self.go(u, v, depth))
+            }
+            // Binder info is part of the match condition rather than erased here: `{n :
+            // Nat}` and `(n : Nat)` are different interfaces, per I3's own decision. The
+            // normalization knob is where that gets relaxed, not the anti-unifier.
+            (Node::Lam(bx, dx, bdx), Node::Lam(by, dy, bdy)) if bx == by => {
+                Node::Lam(bx, self.go(dx, dy, depth), self.go(bdx, bdy, depth + 1))
+            }
+            (Node::Pi(bx, dx, bdx), Node::Pi(by, dy, bdy)) if bx == by => {
+                Node::Pi(bx, self.go(dx, dy, depth), self.go(bdx, bdy, depth + 1))
+            }
+            (Node::Let(tx, vx, bx), Node::Let(ty, vy, by)) => Node::Let(
+                self.go(tx, ty, depth),
+                self.go(vx, vy, depth),
+                self.go(bx, by, depth + 1),
+            ),
+            (Node::Proj(sx, ix, ex), Node::Proj(sy, iy, ey)) if sx == sy && ix == iy => {
+                Node::Proj(sx, ix, self.go(ex, ey, depth))
+            }
+            _ => {
+                let loose = !self.arena.is_closed(x) || !self.arena.is_closed(y);
+                let key = (x, y, if loose { depth } else { ANY_DEPTH });
+                if let Some(&v) = self.memo.get(&key) {
+                    return v;
+                }
+                let v = self.fresh(loose);
+                self.memo.insert(key, v);
+                return v;
+            }
+        };
+        self.arena.intern(node)
+    }
+}
+
+/// A skeleton, with the numbers `atlas similar` ranks and reports on.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Generalization {
+    /// Interned, so the skeleton is itself a bucket key.
+    pub skeleton: TermId,
+    /// Non-hole, non-variable nodes: how much structure the two actually share.
+    pub common: u32,
+    pub vars: u32,
+    /// Variables whose instantiations contain loose de Bruijn indices. Such a variable
+    /// abstracts *a locally bound thing*, so the row reads fine but is **not
+    /// transportable** — B6 must refuse it. Reported per neighbour, never hidden.
+    pub scoped_vars: u32,
+    /// `common / max(|x|,|y|)`, in `[0,1]`; exactly 1 when the inputs are equal.
+    pub retention: f32,
+}
+
+pub fn generalize(a: &mut Arena, x: TermId, y: TermId) -> Generalization {
+    let (sx, sy) = (a.size(x), a.size(y));
+    let (skeleton, vars, scoped_vars) = {
+        let mut lgg = Lgg::new(a);
+        let s = lgg.run(x, y);
+        (s, lgg.next_var, lgg.scoped_vars)
+    };
+    let common = concrete_nodes(a, skeleton);
+    Generalization {
+        skeleton,
+        common,
+        vars,
+        scoped_vars,
+        retention: common as f32 / sx.max(sy).max(1) as f32,
+    }
+}
+
+/// Nodes that are neither a hole nor a variable — the shared structure.
+pub fn concrete_nodes(a: &Arena, t: TermId) -> u32 {
+    match a.node(t) {
+        Node::Hole | Node::Var(_) => 0,
+        Node::App(x, y) => 1 + concrete_nodes(a, x) + concrete_nodes(a, y),
+        Node::Lam(_, d, b) | Node::Pi(_, d, b) => 1 + concrete_nodes(a, d) + concrete_nodes(a, b),
+        Node::Let(x, y, z) => {
+            1 + concrete_nodes(a, x) + concrete_nodes(a, y) + concrete_nodes(a, z)
+        }
+        Node::Proj(_, _, e) => 1 + concrete_nodes(a, e),
+        _ => 1,
+    }
+}
+
+pub fn count_vars(a: &Arena, t: TermId) -> usize {
+    let mut seen = std::collections::BTreeSet::new();
+    collect_vars(a, t, &mut seen);
+    seen.len()
+}
+
+fn collect_vars(a: &Arena, t: TermId, out: &mut std::collections::BTreeSet<u32>) {
+    match a.node(t) {
+        Node::Var(k) => {
+            out.insert(k);
+        }
+        Node::App(x, y) => {
+            collect_vars(a, x, out);
+            collect_vars(a, y, out);
+        }
+        Node::Lam(_, d, b) | Node::Pi(_, d, b) => {
+            collect_vars(a, d, out);
+            collect_vars(a, b, out);
+        }
+        Node::Let(x, y, z) => {
+            collect_vars(a, x, out);
+            collect_vars(a, y, out);
+            collect_vars(a, z, out);
+        }
+        Node::Proj(_, _, e) => collect_vars(a, e, out),
+        _ => {}
+    }
+}
+
+/// Is there a substitution σ with `g σ = t`? Returns it if so.
+///
+/// A **different algorithm** from the anti-unifier — a top-down match rather than a
+/// bottom-up generalization — so a shared bug cannot make both pass. That independence is
+/// what makes it usable as the subsumption oracle.
+pub fn matches(a: &Arena, g: TermId, t: TermId) -> Option<HashMap<u32, TermId>> {
+    let mut subst = HashMap::new();
+    if match_into(a, g, t, &mut subst, 0, &mut None) {
+        Some(subst)
+    } else {
+        None
+    }
+}
+
+/// As [`matches`], but additionally requires that every variable whose instantiation
+/// carries loose de Bruijn indices occurs at exactly one binder depth.
+///
+/// **This is the property plain subsumption cannot see.** A depth-blind anti-unifier
+/// passes idempotence, commutativity and subsumption and still fails here.
+pub fn matches_wellscoped(a: &Arena, g: TermId, t: TermId) -> bool {
+    let mut subst = HashMap::new();
+    let mut depths: Option<HashMap<u32, u32>> = Some(HashMap::new());
+    match_into(a, g, t, &mut subst, 0, &mut depths)
+}
+
+fn match_into(
+    a: &Arena,
+    g: TermId,
+    t: TermId,
+    subst: &mut HashMap<u32, TermId>,
+    depth: u32,
+    depths: &mut Option<HashMap<u32, u32>>,
+) -> bool {
+    match a.node(g) {
+        Node::Var(k) => {
+            if let Some(&bound) = subst.get(&k) {
+                if bound != t {
+                    return false;
+                }
+            } else {
+                subst.insert(k, t);
+            }
+            if let Some(d) = depths.as_mut() {
+                // A variable standing for something with free indices must not appear at
+                // two different depths: its instantiation would mean two different things.
+                if !a.is_closed(t) {
+                    match d.get(&k) {
+                        Some(&seen) if seen != depth => return false,
+                        _ => {
+                            d.insert(k, depth);
+                        }
+                    }
+                }
+            }
+            true
+        }
+        Node::Hole => true,
+        gn => {
+            let tn = a.node(t);
+            match (gn, tn) {
+                (Node::App(gf, gx), Node::App(tf, tx)) => {
+                    match_into(a, gf, tf, subst, depth, depths)
+                        && match_into(a, gx, tx, subst, depth, depths)
+                }
+                (Node::Lam(gb, gd, gy), Node::Lam(tb, td, ty)) if gb == tb => {
+                    match_into(a, gd, td, subst, depth, depths)
+                        && match_into(a, gy, ty, subst, depth + 1, depths)
+                }
+                (Node::Pi(gb, gd, gy), Node::Pi(tb, td, ty)) if gb == tb => {
+                    match_into(a, gd, td, subst, depth, depths)
+                        && match_into(a, gy, ty, subst, depth + 1, depths)
+                }
+                (Node::Let(g1, g2, g3), Node::Let(t1, t2, t3)) => {
+                    match_into(a, g1, t1, subst, depth, depths)
+                        && match_into(a, g2, t2, subst, depth, depths)
+                        && match_into(a, g3, t3, subst, depth + 1, depths)
+                }
+                (Node::Proj(gs, gi, ge), Node::Proj(ts, ti, te)) if gs == ts && gi == ti => {
+                    match_into(a, ge, te, subst, depth, depths)
+                }
+                _ => g == t,
+            }
+        }
+    }
+}
+
+/// The naive Plotkin anti-unifier, kept as a differential oracle.
+///
+/// An association list scanned with structural equality, `O(|x|·|y|)`, written to be
+/// obviously correct rather than fast. It shares no code with [`Lgg`] — different data
+/// structure, different lookup — so agreement between the two is evidence rather than a
+/// tautology.
+#[cfg(test)]
+pub fn naive(a: &mut Arena, x: TermId, y: TermId) -> TermId {
+    fn go(
+        a: &mut Arena,
+        x: TermId,
+        y: TermId,
+        depth: u32,
+        pairs: &mut Vec<(TermId, TermId, u32)>,
+    ) -> TermId {
+        if x == y {
+            return x;
+        }
+        let node = match (a.node(x), a.node(y)) {
+            (Node::App(f, u), Node::App(g, v)) => {
+                Node::App(go(a, f, g, depth, pairs), go(a, u, v, depth, pairs))
+            }
+            (Node::Lam(bx, dx, bdx), Node::Lam(by, dy, bdy)) if bx == by => Node::Lam(
+                bx,
+                go(a, dx, dy, depth, pairs),
+                go(a, bdx, bdy, depth + 1, pairs),
+            ),
+            (Node::Pi(bx, dx, bdx), Node::Pi(by, dy, bdy)) if bx == by => Node::Pi(
+                bx,
+                go(a, dx, dy, depth, pairs),
+                go(a, bdx, bdy, depth + 1, pairs),
+            ),
+            (Node::Let(tx, vx, bx), Node::Let(ty, vy, by)) => Node::Let(
+                go(a, tx, ty, depth, pairs),
+                go(a, vx, vy, depth, pairs),
+                go(a, bx, by, depth + 1, pairs),
+            ),
+            (Node::Proj(sx, ix, ex), Node::Proj(sy, iy, ey)) if sx == sy && ix == iy => {
+                Node::Proj(sx, ix, go(a, ex, ey, depth, pairs))
+            }
+            _ => {
+                let loose = !a.is_closed(x) || !a.is_closed(y);
+                let key_depth = if loose { depth } else { ANY_DEPTH };
+                for (i, &(px, py, pd)) in pairs.iter().enumerate() {
+                    if px == x && py == y && pd == key_depth {
+                        return a.intern(Node::Var(i as u32));
+                    }
+                }
+                pairs.push((x, y, key_depth));
+                return a.intern(Node::Var((pairs.len() - 1) as u32));
+            }
+        };
+        a.intern(node)
+    }
+    let mut pairs = Vec::new();
+    go(a, x, y, 0, &mut pairs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::skel::term::Arena;
+
+    fn p(a: &mut Arena, s: &str) -> TermId {
+        a.parse(&format!("fh-stmt-v1;{s}")).expect("parse")
+    }
+
+    /// Two statements that share a shape: `Nat.succ x = x` and `Nat.pred y = y`.
+    fn pair(a: &mut Arena) -> (TermId, TermId) {
+        let x = p(a, "a(a(c(2:Eq,0),a(c(8:Nat.succ,0),b0)),b0)");
+        let y = p(a, "a(a(c(2:Eq,0),a(c(8:Nat.pred,0),b0)),b0)");
+        (x, y)
+    }
+
+    #[test]
+    fn p1_idempotence() {
+        let mut a = Arena::new();
+        let (x, _) = pair(&mut a);
+        assert_eq!(Lgg::new(&mut a).run(x, x), x);
+    }
+
+    #[test]
+    fn p2_commutativity_on_the_nose() {
+        // Variables are numbered by first occurrence in a deterministic left-to-right
+        // walk, and both orders walk the same tree — so the two skeletons intern to the
+        // *same* `TermId` and the test is a `u32` compare rather than a renaming check.
+        let mut a = Arena::new();
+        let (x, y) = pair(&mut a);
+        assert_eq!(
+            generalize(&mut a, x, y).skeleton,
+            generalize(&mut a, y, x).skeleton
+        );
+    }
+
+    #[test]
+    fn p3_subsumption() {
+        let mut a = Arena::new();
+        let (x, y) = pair(&mut a);
+        let g = generalize(&mut a, x, y).skeleton;
+        assert!(
+            matches(&a, g, x).is_some(),
+            "the skeleton must subsume its left input"
+        );
+        assert!(
+            matches(&a, g, y).is_some(),
+            "the skeleton must subsume its right input"
+        );
+    }
+
+    #[test]
+    fn p5_size_bound() {
+        let mut a = Arena::new();
+        let (x, y) = pair(&mut a);
+        let g = generalize(&mut a, x, y);
+        assert!(a.size(g.skeleton) <= a.size(x).min(a.size(y)));
+    }
+
+    #[test]
+    fn p6_variables_appear_exactly_when_the_inputs_differ() {
+        let mut a = Arena::new();
+        let (x, y) = pair(&mut a);
+        assert_eq!(generalize(&mut a, x, x).vars, 0);
+        assert!(generalize(&mut a, x, y).vars > 0);
+        assert_eq!(generalize(&mut a, x, x).retention, 1.0);
+    }
+
+    #[test]
+    fn the_skeleton_keeps_what_is_shared_and_abstracts_what_is_not() {
+        let mut a = Arena::new();
+        let (x, y) = pair(&mut a);
+        let g = generalize(&mut a, x, y);
+        // `Eq` and the application spine survive; only the head constant is abstracted.
+        assert_eq!(a.render(g.skeleton), "a(a(c(2:Eq,0),a(?0,b0)),b0)");
+        assert_eq!(g.vars, 1);
+    }
+
+    #[test]
+    fn p9_wellscopedness_rejects_a_depth_blind_merge() {
+        // The bug the design study measured on real input: two occurrences of the same
+        // encoded pair at different binder depths must NOT share a variable, because
+        // their de Bruijn indices resolve to different binders.
+        //
+        // `x` binds one Π then repeats a body; `y` binds one Π then binds two more before
+        // repeating it. A depth-blind memo gives 1 variable here; the correct answer is 2.
+        let mut a = Arena::new();
+        let x = p(&mut a, "pd(s(0),pd(s(0),a(b0,b1)))");
+        let y = p(&mut a, "pd(s(0),pd(c(3:Foo,0),a(b0,b1)))");
+        let g = generalize(&mut a, x, y).skeleton;
+        assert!(matches_wellscoped(&a, g, x));
+        assert!(matches_wellscoped(&a, g, y));
+    }
+
+    #[test]
+    fn p10_scoped_variables_are_counted() {
+        let mut a = Arena::new();
+        // Under a binder, `b0` is loose in the subterm, so generalizing it is scoped.
+        let x = p(&mut a, "pd(s(0),a(c(1:F,0),b0))");
+        let y = p(&mut a, "pd(s(0),a(c(1:G,0),b0))");
+        let g = generalize(&mut a, x, y);
+        assert!(g.scoped_vars <= g.vars);
+        // Here the difference is a *closed* constant, so nothing is scoped.
+        assert_eq!(g.scoped_vars, 0);
+    }
+
+    #[test]
+    fn differential_against_the_naive_reference() {
+        let mut a = Arena::new();
+        let (x, y) = pair(&mut a);
+        let fast = Lgg::new(&mut a).run(x, y);
+        let slow = naive(&mut a, x, y);
+        assert_eq!(a.render(fast), a.render(slow));
+    }
+
+    #[test]
+    fn unrelated_statements_generalize_to_a_bare_variable() {
+        let mut a = Arena::new();
+        let x = p(&mut a, "c(3:Nat,0)");
+        let y = p(&mut a, "a(c(1:F,0),c(1:X,0))");
+        let g = generalize(&mut a, x, y);
+        assert_eq!(g.common, 0, "nothing is shared");
+        assert_eq!(g.retention, 0.0);
+    }
+}
