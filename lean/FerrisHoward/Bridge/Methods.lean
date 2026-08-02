@@ -101,6 +101,23 @@ scoped macro_rules
 
 end Bridge.Pow
 
+namespace Bridge.Find
+
+/-- `xs.find(p)` is `xs.find?(p)` — Lean's `List.find?`.
+
+A different use for the same mechanism, and the answer to a question A0.6 left open. FH
+rejects identifiers ending in `?` or `!`, because Lean's lexer takes `x?` as *one*
+identifier and `?`-as-do needs the character back. The cost, recorded on the differences
+page, is that Mathlib names like `List.find?` and `Option.get!` are unreachable.
+
+They are reachable through a bridge. The rule is unchanged — a spelling comes from an
+import — and the bridge simply names the method FH cannot type. Corpus Group 11 needs
+exactly this. -/
+scoped macro_rules
+  | `(fh_dot% $x find) => do let m := mkIdent `find?; `($x.$m:ident)
+
+end Bridge.Find
+
 namespace Bridge.Function
 
 /-- `f.comp(g)` is `f ∘ g`. Bridgeable only because it is opt-in: Mathlib has 587
