@@ -46,3 +46,10 @@ supportInterpreter = true
 name = "fh_check"
 root = "FhCheck"
 supportInterpreter = true
+
+# B7's validation clusters. Plain Lean statement-level formalization, deliberately not FH:
+# `atlas-validation.md` §2 rules that the clusters carry no dependency on FH milestones, so
+# the Atlas can be scored before the language is finished.
+[[lean_lib]]
+name = "Validation"
+globs = ["Validation", "Validation.+"]

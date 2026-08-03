@@ -44,11 +44,17 @@ pub enum RelationKind {
     DictionaryRowConfirmed,
     TransportRefuted,
     TransportProved,
+    /// An `Iff` **stated as an axiom** rather than proved. The Formal-Conjectures genre:
+    /// `atlas-validation.md` §2 mandates statement-level corpora with no proofs, so an
+    /// edge from one is asserted by its author and carries exactly that authority.
+    AssertedIff,
+    /// An implication stated as an axiom. See [`RelationKind::AssertedIff`].
+    AssertedImplies,
 }
 
-/// The three grades of warrant an edge can have. This is the distinction the engine doc
-/// forbids collapsing, so it is derived from the kind rather than stored alongside it —
-/// a caller cannot construct a relation that lies about its own grade.
+/// The grades of warrant an edge can have. This is the distinction the engine doc forbids
+/// collapsing, so it is derived from the kind rather than stored alongside it — a caller
+/// cannot construct a relation that lies about its own grade.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Warrant {
     /// A Lean proof exists and is named. The strongest grade the Atlas can report.
@@ -56,6 +62,14 @@ pub enum Warrant {
     /// A decidable property of the canonical encodings — no proof, but no judgement
     /// either. Reproducible exactly from the corpus and the normalization level.
     Structural,
+    /// Stated as an axiom by the corpus author. Exactly as true as they say it is.
+    ///
+    /// Ranked below `Structural` deliberately: a canonical-encoding equality is machine
+    /// checkable, whereas this is a human stipulation. It is *not* [`Warrant::Heuristic`]
+    /// either — nothing was guessed, and a statement-level corpus's whole content lives
+    /// at this grade, so collapsing it into "a ranking produced this" would make the
+    /// Formal-Conjectures genre unreadable.
+    Asserted,
     /// A ranking or a search result. Real information, and not a claim about
     /// mathematics.
     Heuristic,
@@ -79,6 +93,7 @@ impl RelationKind {
             | StructuralAnalogy
             | ProofShapeAnalogy
             | DictionaryRowCandidate => Warrant::Heuristic,
+            AssertedIff | AssertedImplies => Warrant::Asserted,
         }
     }
 
@@ -92,6 +107,7 @@ impl RelationKind {
             ExactStatement
                 | PresentationEqual
                 | ProvedIff
+                | AssertedIff
                 | TypeEquiv
                 | SharedInstance
                 | SharedHomeCandidate
@@ -109,6 +125,8 @@ impl RelationKind {
             DefinitionalRewrite => "DefinitionalRewrite",
             ProvedIff => "ProvedIff",
             ProvedImplies => "ProvedImplies",
+            AssertedIff => "AssertedIff",
+            AssertedImplies => "AssertedImplies",
             TypeEquiv => "TypeEquiv",
             SharedInstance => "SharedInstance",
             SharedHomeCandidate => "SharedHomeCandidate",
@@ -214,6 +232,9 @@ pub enum Evidence {
     /// A falsifying assignment. Carries [`Warrant::Proved`] for `TransportRefuted`
     /// because a counterexample settles the question.
     Counterexample { witness: String },
+    /// A Lean **axiom** whose statement is the edge. Earns [`Warrant::Asserted`]: the
+    /// declaration exists and says this, and nothing has proved it.
+    LeanAxiom { name: String },
     /// The engine could not decide, and says why rather than dropping the edge
     /// (Engine 1 §6 C3).
     Unsupported { reason: UnsupportedReason },
@@ -249,6 +270,7 @@ impl Evidence {
         match self {
             Evidence::LeanTheorem { .. } | Evidence::Counterexample { .. } => Warrant::Proved,
             Evidence::CanonicalEq { .. } | Evidence::DependencyPath { .. } => Warrant::Structural,
+            Evidence::LeanAxiom { .. } => Warrant::Asserted,
             Evidence::AntiUnification { .. }
             | Evidence::RankingFeatures { .. }
             | Evidence::Unsupported { .. } => Warrant::Heuristic,
@@ -258,6 +280,7 @@ impl Evidence {
     pub fn tag(&self) -> &'static str {
         match self {
             Evidence::LeanTheorem { .. } => "lean_theorem",
+            Evidence::LeanAxiom { .. } => "lean_axiom",
             Evidence::CanonicalEq { .. } => "canonical_eq",
             Evidence::AntiUnification { .. } => "anti_unification",
             Evidence::DependencyPath { .. } => "dependency_path",
@@ -392,6 +415,10 @@ impl Relation {
         };
         let because = match &self.evidence {
             Evidence::LeanTheorem { name } => format!("proved by `{name}`"),
+            Evidence::LeanAxiom { name } => format!(
+                "asserted by the axiom `{name}` — stated without proof, so this edge \
+                 carries its author's authority and no more"
+            ),
             Evidence::CanonicalEq { level } => {
                 format!("identical canonical statements at level `{level}`")
             }

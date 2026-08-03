@@ -20,6 +20,20 @@ this hypothesis" is the first question, "what breaks if this proof is wrong" the
 """
 
 Level = Literal["exact", "presentation", "instances", "carriers", "shape"]
+Anchor = Literal["root", "conclusion"]
+"""Where a statement is compared *from*.
+
+Anti-unification aligns two terms from their roots, so a theorem carrying a hypothesis
+prefix cannot match one without — even when both conclude the same thing. Measured on B7's
+validation clusters: `RH.zeros_subset_critical_line` and `Spectral.spectrum_subset_real`
+are both literally `S subset {x | P x}`, and their lgg is `common 0, retention 0.0`.
+
+`"conclusion"` discards the binder prefix and compares what the statement concludes, which
+is the question cross-theory analogy needs. On B7 it moved spectrum-is-real from absent-in-
+top-8 to rank 3; on physlib's 2,287 quantum declarations it costs one percentage point of
+cross-subfield noise (9% -> 10%). Not the default: the two settings answer different
+questions and a call site should say which one it meant.
+"""
 """How much to squint. The levels are a chain: coarser buckets are unions of finer ones."""
 
 class AtlasError(Exception):
@@ -146,6 +160,27 @@ class LogicalStats:
         because "we did not look" and "there is nothing there" are different answers."""
 
     @property
+    def axioms_scanned(self) -> int:
+        """Axioms scanned for logical edges.
+
+        Extraction used to skip anything whose kind was not `theorem`, which made a
+        statement-level corpus invisible: B7's validation clusters produced zero edges,
+        including `RiemannHypothesis <-> Lambda <= 0` sitting in the corpus. Edges from an
+        axiom carry `warrant == "asserted"`, never `"proved"`.
+        """
+
+    @property
+    def same_head_sides(self) -> int:
+        """`Iff`s whose two sides key to the same `(head, arity)`, so the edge would be a
+        self-loop and is dropped.
+
+        The largest missing category, and until recently uncounted: on physlib 184 of 516
+        `Iff`-headed theorems land here against 71 flex-headed. Dominated by extensionality
+        lemmas (`X.ext_iff : a = b ↔ a.f = b.f` is `Eq/3` on both sides), which carry real
+        content that carrier-blind head keying cannot represent.
+        """
+
+    @property
     def non_prop_sides(self) -> int:
         """Non-dependent `Pi`s rejected because a side does not head a proposition."""
 
@@ -239,6 +274,19 @@ class ScoreFactors:
     @property
     def cross_boost(self) -> float:
         """`1 + w` when the candidate is under another module root, else 1."""
+
+    @property
+    def derivative_penalty(self) -> float:
+        """`1 - w * derivativeness(candidate)` — how auto-generated the candidate looks.
+
+        Structural, never nominal: short proof, cites recursors and constructors rather
+        than theorems, nothing cites it back. Measured against a name-based label set it
+        reaches AUC 0.899 on physlib and 0.886 on a 131k Mathlib slice.
+
+        A penalty rather than a filter. At a hard threshold the measure runs precision
+        0.62-0.67, so filtering would discard a genuine declaration for roughly every piece
+        of boilerplate removed; recall is what cannot be recovered downstream.
+        """
 
     @property
     def scoped_penalty(self) -> float:
@@ -531,7 +579,9 @@ class Corpus:
             ValueError: `level` is not one of the five names.
         """
 
-    def generalize(self, left: str, right: str) -> Generalization:
+    def generalize(
+        self, left: str, right: str, anchor: Anchor = "root"
+    ) -> Generalization:
         """Anti-unify two statements: the most specific term that matches both.
 
         Over the statements as encoded, not as erased — the concrete part is what the two
@@ -559,6 +609,7 @@ class Corpus:
         min_retention: float = 0.30,
         min_common: int = 6,
         theorems_only: bool = False,
+        anchor: Anchor = "root",
     ) -> list[Neighbour]:
         """Declarations whose statements anti-unify with this one, best score first.
 

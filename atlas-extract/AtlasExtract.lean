@@ -27,7 +27,7 @@ def usage : String :=
    Writes one JSONL row per declaration to stdout: name, kind, module, canonical\n\
    statement encoding (statement-hash.md), and used constants.\n\
    \n\
-     --local   only declarations of the last module named, not of its imports"
+     --local   only declarations of the modules named, not of their imports"
 
 def main (args : List String) : IO UInt32 := do
   let localOnly := args.contains "--local"
@@ -37,12 +37,28 @@ def main (args : List String) : IO UInt32 := do
     return 1
   let imports := moduleArgs.toArray.map fun m => ({ module := m.toName } : Import)
   initSearchPath (← findSysroot)
+  -- Phase timings on stderr. An extraction that sits at 100% CPU for twenty minutes is
+  -- indistinguishable from a hung one without them, and the two phases below have entirely
+  -- different cost models: selection is linear in the imported environment, encoding is
+  -- linear in what was selected. Diagnosing this by guessing cost three rebuild cycles.
+  let t0 ← IO.monoMsNow
   let env ← importModules imports {}
-  let rows :=
-    if localOnly then
-      moduleRows env (moduleArgs.getLast!).toName
-    else
-      allRows env
+  let t1 ← IO.monoMsNow
+  IO.eprintln s!"[import] {env.constants.toList.length} constants in {t1 - t0} ms"
+  let rows ←
+    if localOnly then do
+      let names := selectNames env (moduleArgs.toArray.map (·.toName))
+      let t2 ← IO.monoMsNow
+      IO.eprintln s!"[select] {names.size} selected in {t2 - t1} ms"
+      let rs := rowsOfNames env names
+      let t3 ← IO.monoMsNow
+      IO.eprintln s!"[encode] {rs.size} rows in {t3 - t2} ms"
+      pure rs
+    else do
+      let rs := allRows env
+      let t2 ← IO.monoMsNow
+      IO.eprintln s!"[encode-all] {rs.size} rows in {t2 - t1} ms"
+      pure rs
   let out ← IO.getStdout
   -- Flushed periodically rather than at exit. A full-Mathlib extraction takes tens of
   -- minutes, and with the default buffering its output file reads zero bytes throughout —

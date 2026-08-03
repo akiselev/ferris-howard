@@ -92,6 +92,11 @@ private def valueOf? : ConstantInfo → Option Expr
   | .thmInfo v => some v.value
   | _ => none
 
+/-- The module a declaration was compiled in. Absent from the module index means the
+current file, which is the `#fh_extract` case. -/
+def moduleOf (env : Environment) (n : Name) : Name :=
+  (env.getModuleIdxFor? n).bind (env.header.moduleNames[·.toNat]?) |>.getD env.mainModule
+
 /-- Extract one declaration. -/
 def rowOf (env : Environment) (n : Name) (info : ConstantInfo) : Row :=
   let (stmt, stmtError) :=
@@ -100,10 +105,21 @@ def rowOf (env : Environment) (n : Name) (info : ConstantInfo) : Row :=
     | .error e => (none, some e)
   { name := n
     kind := kindOf info
-    module := (env.getModuleIdxFor? n).bind (env.header.moduleNames[·.toNat]?) |>.getD env.mainModule
+    module := moduleOf env n
     stmt, stmtError
     usesStatement := sortedConstants info.type
     usesProof := ((valueOf? info).map sortedConstants).getD #[] }
+
+/-- Sort names by their printed form, computing each string **once**.
+
+`qsort (fun a b => a.toString < b.toString)` calls `Name.toString` inside the comparator, so
+it allocates a fresh string on every one of the O(n log n) comparisons rather than O(n)
+times. On a whole-library extraction that is the dominant cost and it looks exactly like a
+hang: the process sits at 100% CPU with a flat resident set, because it is allocating and
+freeing short-lived strings instead of building rows. Decorate–sort–undecorate instead. -/
+def sortedByString (names : Array Name) : Array Name :=
+  let decorated := names.map fun n => (n.toString, n)
+  (decorated.qsort (fun a b => a.1 < b.1)).map (·.2)
 
 /-- Extract every extractable declaration of the *current module*, in name order. Used by
 `#fh_extract`, where "current module" is the file being elaborated. -/
@@ -111,8 +127,7 @@ def localRows (env : Environment) : Array Row := Id.run do
   let mut names := #[]
   for (n, _) in env.constants.map₂.toList do
     if isExtractable n then names := names.push n
-  let sorted := names.qsort (fun a b => a.toString < b.toString)
-  return sorted.filterMap fun n => (env.find? n).map (rowOf env n)
+  return (sortedByString names).filterMap fun n => (env.find? n).map (rowOf env n)
 
 /-- Extract every extractable declaration in the environment, in name order. This is the
 whole-Mathlib pass; `localRows` is the per-file one the fixtures use. -/
@@ -120,14 +135,58 @@ def allRows (env : Environment) : Array Row := Id.run do
   let mut names := #[]
   for (n, _) in env.constants.toList do
     if isExtractable n then names := names.push n
-  let sorted := names.qsort (fun a b => a.toString < b.toString)
-  return sorted.filterMap fun n => (env.find? n).map (rowOf env n)
+  return (sortedByString names).filterMap fun n => (env.find? n).map (rowOf env n)
 
-/-- Extract the declarations belonging to one named module of the import closure. This is
-the extractor program's `--local` form: after `importModules` everything lives in the
-imported map, so "just this module" is a filter rather than a different traversal. -/
+/-- Extract the declarations belonging to any of the named modules of the import closure,
+in name order.
+
+The module test runs **before** `rowOf`, and that is the whole point. The previous spelling
+filtered `allRows`, so asking for one file's declarations encoded every statement in the
+closure and discarded all but a handful — a `--local` on a Mathlib-importing module cost a
+full Mathlib extraction, which is tens of minutes. Importing the closure still costs what
+it costs; only the encoding is now proportional to what was asked for.
+
+Split from the encoding so a caller can time the two separately. They have completely
+different cost models — selection is linear in the *imported environment*, encoding is
+linear in what was *selected* — and when an extraction sits at 100% CPU for twenty minutes,
+which of the two is running is the whole diagnosis. -/
+def selectNames (env : Environment) (ms : Array Name) : Array Name := Id.run do
+  -- Iterate the **modules asked for**, not every constant in the environment.
+  --
+  -- The obvious spelling walks `env.constants` and asks `moduleOf` per declaration. That
+  -- is linear in the closure rather than in the request, and the closure here is 818,835
+  -- constants — physlib pulls Mathlib, Batteries, Qq, Aesop, ProofWidgets and doc-gen4.
+  -- Measured: **30 minutes and still running**, against an 8.3 s import. The environment
+  -- walk, not the import and not the encoding, was the whole cost.
+  --
+  -- Lean already stores the inverse relation. `moduleData[i].constNames` is exactly the
+  -- declarations compiled in module `i`, so selecting 608 modules touches only their own
+  -- names and never the 810k belonging to something else.
+  let wanted : NameSet := ms.foldl (·.insert ·) {}
+  let mut names := #[]
+  for i in [0 : env.header.moduleNames.size] do
+    if wanted.contains env.header.moduleNames[i]! then
+      for n in env.header.moduleData[i]!.constNames do
+        if isExtractable n then names := names.push n
+  -- Declarations elaborated in *this* process rather than loaded from an olean carry no
+  -- module index. `atlas_extract` imports everything, so this is empty for it, but
+  -- `#fh_extract` runs inside a file being elaborated and its declarations live only here.
+  if wanted.contains env.mainModule then
+    for (n, _) in env.constants.map₂.toList do
+      if isExtractable n then names := names.push n
+  return sortedByString names
+
+/-- Encode a chosen set of names. -/
+def rowsOfNames (env : Environment) (names : Array Name) : Array Row :=
+  names.filterMap fun n => (env.find? n).map (rowOf env n)
+
+/-- Extract the declarations belonging to any of the named modules. -/
+def modulesRows (env : Environment) (ms : Array Name) : Array Row :=
+  rowsOfNames env (selectNames env ms)
+
+/-- Extract the declarations belonging to one named module of the import closure. -/
 def moduleRows (env : Environment) (m : Name) : Array Row :=
-  (allRows env).filter (·.module == m)
+  modulesRows env #[m]
 
 end FerrisHoward.Atlas
 

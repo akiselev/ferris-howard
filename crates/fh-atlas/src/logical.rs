@@ -54,6 +54,17 @@ pub struct Edge {
     pub theorem: String,
     /// `true` for an `Iff`, which is traversable both ways.
     pub biconditional: bool,
+    /// The edge came from an `axiom` rather than a `theorem`, so it is *asserted*.
+    ///
+    /// The extraction used to skip anything whose kind was not `theorem`, which made the
+    /// entire Formal-Conjectures genre invisible: `atlas-validation.md` §2 mandates
+    /// statement-level corpora with no proofs, so B7's own validation clusters produced
+    /// **zero** edges — including `RiemannHypothesis ↔ Λ ≤ 0`, sitting in the corpus and
+    /// walked past on a `kind` check.
+    ///
+    /// Carried rather than collapsed, because an axiom's `Iff` is not a proved one and
+    /// reporting it as `ProvedIff` would make the graph claim a warrant it has not got.
+    pub asserted: bool,
 }
 
 /// Counts that say what the extraction actually saw. Reported rather than summarised,
@@ -66,6 +77,19 @@ pub struct LogicalStats {
     pub implication_edges: usize,
     /// Statements that *are* `Iff`s or implications but whose sides could not be keyed.
     pub flex_head_sides: usize,
+    /// `Iff`s whose two sides key to the *same* `(head, arity)`, so the edge would be a
+    /// self-loop and is dropped.
+    ///
+    /// Counted because it used to be the silent branch of the match, and it is the
+    /// **largest** one: on physlib, 184 of 516 `Iff`-headed theorems land here against 71
+    /// flex-headed, so "the reformulation layer found 261 edges" was reporting half the
+    /// story. Dominated by extensionality lemmas — `X.ext_iff : a = b ↔ a.f = b.f` is
+    /// `Eq/3` on both sides — which carry real content that head-level keying cannot see.
+    pub same_head_sides: usize,
+    /// Axioms scanned. Separate from `theorems_scanned` because an edge from an axiom is
+    /// asserted rather than proved, and a corpus of one kind reads very differently from
+    /// a corpus of the other.
+    pub axioms_scanned: usize,
     /// Implication-shaped statements rejected because a side does not head a
     /// proposition — mostly `∀ (n : ℕ), …`, which is a binder and not an implication.
     pub non_prop_sides: usize,
@@ -99,10 +123,17 @@ impl LogicalGraph {
 
         let mut edges: Vec<Edge> = Vec::new();
         for i in 0..idx.len() {
-            if idx.kind_at(i) != "theorem" {
-                continue;
+            let kind = idx.kind_at(i);
+            let asserted = match kind {
+                "theorem" => false,
+                "axiom" => true,
+                _ => continue,
+            };
+            if asserted {
+                stats.axioms_scanned += 1;
+            } else {
+                stats.theorems_scanned += 1;
             }
-            stats.theorems_scanned += 1;
             let name = idx.name_at(i).to_string();
             let t = idx.stmt_at(i);
 
@@ -114,8 +145,17 @@ impl LogicalGraph {
                             to: rk,
                             theorem: name,
                             biconditional: true,
+                            asserted,
                         });
                         stats.iff_edges += 1;
+                    }
+                    (Some(lk), Some(rk)) if lk == rk => {
+                        // Refining the key here would reintroduce the carrier this module
+                        // deliberately abstracts (see `Head`), so the edge is still
+                        // dropped — but it is now *counted*, which is the difference
+                        // between "there is nothing here" and "we could not represent it".
+                        let _ = (lk, rk);
+                        stats.same_head_sides += 1;
                     }
                     (Some(_), Some(_)) => {}
                     _ => stats.flex_head_sides += 1,
@@ -134,6 +174,7 @@ impl LogicalGraph {
                                 to: qk,
                                 theorem: name,
                                 biconditional: false,
+                                asserted,
                             });
                             stats.implication_edges += 1;
                         }
@@ -280,9 +321,23 @@ impl LogicalGraph {
     fn relation(&self, n: usize, reversed: bool) -> Relation {
         let e = &self.edges[n];
         let (kind, direction) = if e.biconditional {
-            (RelationKind::ProvedIff, Direction::Both)
+            (
+                if e.asserted {
+                    RelationKind::AssertedIff
+                } else {
+                    RelationKind::ProvedIff
+                },
+                Direction::Both,
+            )
         } else {
-            (RelationKind::ProvedImplies, Direction::LeftToRight)
+            (
+                if e.asserted {
+                    RelationKind::AssertedImplies
+                } else {
+                    RelationKind::ProvedImplies
+                },
+                Direction::LeftToRight,
+            )
         };
         let (l, r) = if reversed {
             (&e.to, &e.from)
@@ -294,12 +349,18 @@ impl LogicalGraph {
             format!("{}/{}", r.0, r.1),
             kind,
             direction,
-            Evidence::LeanTheorem {
-                name: e.theorem.clone(),
+            if e.asserted {
+                Evidence::LeanAxiom {
+                    name: e.theorem.clone(),
+                }
+            } else {
+                Evidence::LeanTheorem {
+                    name: e.theorem.clone(),
+                }
             },
             GENERATOR,
         )
-        .expect("a proved edge always carries the theorem that proves it")
+        .expect("an edge always carries the declaration it came from")
     }
 
     /// The heads with the most proved edges — where the corpus's logical structure is
@@ -321,11 +382,7 @@ const GENERATOR: &str = concat!("fh-atlas/logical@", env!("CARGO_PKG_VERSION"));
 
 /// Strip the `Pi` prefix to reach what the statement actually concludes.
 fn conclusion(a: &Arena, t: TermId) -> TermId {
-    let mut cur = t;
-    while let Node::Pi(_, _, body) = a.node(cur) {
-        cur = body;
-    }
-    cur
+    a.conclusion(t)
 }
 
 fn head_symbol(a: &Arena, t: TermId) -> Option<String> {

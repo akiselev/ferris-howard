@@ -125,6 +125,32 @@ impl Postings {
     }
 }
 
+/// Where a statement is compared *from*.
+///
+/// Anti-unification aligns two terms from their roots, so a theorem carrying a hypothesis
+/// prefix cannot match one without — even when the two conclude exactly the same thing.
+/// Measured on B7's validation clusters: `RH.zeros_subset_critical_line` and
+/// `Spectral.spectrum_subset_real` are both literally `S ⊆ {x | P x}`, and their lgg is
+/// `common 0, retention 0.0000`, because one roots at `LE.le` and the other at a five-deep
+/// binder chain. Every cross-theory analogy has that shape mismatch, because the same
+/// claim carries different hypotheses in different theories.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Anchor {
+    /// Compare whole statements, hypotheses included. Answers "what has the same overall
+    /// shape". The shipped default, and the right question when the hypotheses are part of
+    /// what is being compared.
+    Root,
+    /// Compare conclusions, discarding the binder prefix. Answers "what concludes the same
+    /// thing", which is the question cross-theory analogy needs.
+    ///
+    /// Measured: on B7 this moved spectrum-is-real from absent-in-top-8 to **rank 3**,
+    /// passing V2. The precision cost on an independent corpus (physlib, 2,287 quantum
+    /// declarations) is one percentage point — cross-subfield noise 9% → 10%. It is *not*
+    /// the default because the two settings answer different questions and the caller
+    /// should say which one they meant.
+    Conclusion,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct IndexConfig {
     pub min_concrete_closed: u32,
@@ -145,6 +171,12 @@ pub struct IndexConfig {
     pub rarity_weight: f32,
     pub cross_weight: f32,
     pub scoped_weight: f32,
+    /// Weight of the derivativeness penalty. 0 disables it, restoring the pre-B4.1 score
+    /// exactly — which is what the ablation in `tests/golden.rs` needs in order to show the
+    /// factor is doing work rather than being decorative.
+    pub derivative_weight: f32,
+    /// Whether statements are compared from their root or from their conclusion.
+    pub anchor: Anchor,
     /// Restrict the ranked pool to theorems. Default `false`, which preserves the query
     /// "what looks like this declaration" for any kind — but a *ground truth* of theorems
     /// scored against a pool that is half definitions and recursors measures the config,
@@ -180,6 +212,8 @@ impl Default for IndexConfig {
             rarity_weight: 0.5,
             cross_weight: 0.15,
             scoped_weight: 0.30,
+            derivative_weight: 0.45,
+            anchor: Anchor::Root,
             theorems_only: false,
             restrict_prefix: None,
             source_b_at_build_level: true,
@@ -203,6 +237,24 @@ pub struct ScoreFactors {
     pub cross_boost: f32,
     /// `1 - w * scoped/vars` — a row abstracting locally bound things is not transportable.
     pub scoped_penalty: f32,
+    /// `1 - w * derivativeness(candidate)` — how much the candidate looks auto-generated.
+    ///
+    /// Every layer of the Atlas is led by declarations Lean emitted rather than a human
+    /// wrote: cross-theory `similar` on Mathlib returns `.mk.inj` pairs, and physlib's
+    /// `Relativity ~ QFT` dictionary opens with `CausalCharacter.lightLike ~
+    /// annihilate.sizeOf_spec`. The standing workaround was a list of name suffixes, which
+    /// is library-specific and is name matching — the thing the index exists to replace.
+    ///
+    /// `derivativeness` is structural instead: short proof, cites recursors and
+    /// constructors rather than theorems, and nothing cites it back. Measured against a
+    /// name-based label set it reaches AUC 0.899 on physlib and 0.886 on a 131k Mathlib
+    /// slice, with precision 1.000 over the top 100 physlib rows.
+    ///
+    /// A **penalty and not a filter**, deliberately. At a hard threshold the measure runs
+    /// precision 0.62–0.67, so filtering would discard a genuine declaration for roughly
+    /// every piece of boilerplate removed. Recall is the thing that cannot be recovered
+    /// downstream, so this reorders and never drops.
+    pub derivative_penalty: f32,
     pub total: f32,
 }
 
@@ -260,6 +312,93 @@ pub struct Neighbour {
     pub factors: ScoreFactors,
 }
 
+/// How auto-generated each declaration looks, in `[0,1]`, from citation structure alone.
+///
+/// Three signals, combined as **percentile ranks within the corpus** rather than through
+/// fitted coefficients. A fitted logistic scores better — AUC 0.899 on physlib against
+/// 0.886 on a Mathlib slice — but its weights differ per corpus (`proof_size` dominates one,
+/// `frac_inst_binders` the other), so shipping them would tune the engine to whichever
+/// library they were fitted on. Rank-averaging needs no constants and adapts to the corpus
+/// it is given, at some cost in separation.
+///
+/// * **proof length** — a longer argument means a human wrote it.
+/// * **fraction of the proof citing recursors or constructors** — a generated lemma is
+///   discharged by its type's own eliminator; a theorem cites other theorems. This is the
+///   signal that only works in combination: alone it scores 0.579, but it carries the third
+///   largest weight in the fitted model, so testing features one at a time misses it.
+/// * **in-degree** — something cites a real theorem.
+///
+/// Citations leaving the indexed set are counted in the denominator but cannot contribute
+/// to anyone's in-degree, so a slice that omits a declaration's users understates how real
+/// it looks. That is the honest direction: it can only make something look *more*
+/// derivative, and the factor is a penalty rather than a filter.
+fn derivativeness(
+    kinds: &[String],
+    proofs: &[Vec<String>],
+    by_name: &HashMap<String, DeclId>,
+) -> Vec<f32> {
+    let n = kinds.len();
+    let mut in_degree = vec![0u32; n];
+    let mut struct_frac = vec![0f32; n];
+    let mut proof_len = vec![0u32; n];
+
+    for (i, cites) in proofs.iter().enumerate() {
+        proof_len[i] = cites.len() as u32;
+        let mut structural = 0u32;
+        for u in cites {
+            if let Some(&DeclId(j)) = by_name.get(u.as_str()) {
+                in_degree[j as usize] += 1;
+                let k = kinds[j as usize].as_str();
+                if k == "recursor" || k == "constructor" {
+                    structural += 1;
+                }
+            }
+        }
+        struct_frac[i] = structural as f32 / (cites.len().max(1)) as f32;
+    }
+
+    // Percentile rank of each value, ties averaged, oriented so that 1.0 = most derivative.
+    fn ranks<T: PartialOrd + Copy>(v: &[T], ascending: bool) -> Vec<f32> {
+        let n = v.len();
+        if n == 0 {
+            return Vec::new();
+        }
+        let mut idx: Vec<usize> = (0..n).collect();
+        idx.sort_by(|&a, &b| {
+            let o = v[a].partial_cmp(&v[b]).unwrap_or(std::cmp::Ordering::Equal);
+            if ascending { o } else { o.reverse() }
+        });
+        let mut out = vec![0f32; n];
+        let mut i = 0;
+        while i < n {
+            let mut j = i;
+            while j + 1 < n
+                && v[idx[j + 1]]
+                    .partial_cmp(&v[idx[i]])
+                    .map(|o| o == std::cmp::Ordering::Equal)
+                    .unwrap_or(false)
+            {
+                j += 1;
+            }
+            let avg = (i + j) as f32 / 2.0 / (n.max(2) - 1) as f32;
+            for &k in &idx[i..=j] {
+                out[k] = avg;
+            }
+            i = j + 1;
+        }
+        out
+    }
+
+    // Ascending rank of a *small* proof, a *small* in-degree, and a *large* structural
+    // fraction all point the same way: derivative.
+    let r_len = ranks(&proof_len, false);
+    let r_deg = ranks(&in_degree, false);
+    let r_str = ranks(&struct_frac, true);
+    (0..n)
+        .map(|i| ((r_len[i] + r_deg[i] + r_str[i]) / 3.0).clamp(0.0, 1.0))
+        .collect()
+}
+
 pub struct SkeletonIndex {
     arena: Arena,
     sigs: Signatures,
@@ -267,6 +406,8 @@ pub struct SkeletonIndex {
     names: Vec<String>,
     modules: Vec<String>,
     kinds: Vec<String>,
+    /// How auto-generated each declaration looks, in [0,1]. See `ScoreFactors`.
+    derivative: Vec<f32>,
     by_name: HashMap<String, DeclId>,
     roots: Vec<TermId>,
     shape: Vec<TermId>,
@@ -310,11 +451,13 @@ impl IndexConfig {
             self.rarity_weight,
             self.cross_weight,
             self.scoped_weight,
+            self.derivative_weight,
         ] {
             h.update(v.to_le_bytes());
         }
         h.update([
             self.lgg_level as u8,
+            self.anchor as u8,
             self.theorems_only as u8,
             self.source_b_at_build_level as u8,
         ]);
@@ -336,6 +479,7 @@ impl SkeletonIndex {
         let mut arena = Arena::new();
         let (mut names, mut modules, mut kinds, mut roots) =
             (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        let mut proofs: Vec<Vec<String>> = Vec::new();
         let mut sig_rows = Vec::new();
 
         for (i, line) in jsonl.lines().enumerate() {
@@ -360,6 +504,14 @@ impl SkeletonIndex {
                 continue;
             };
             let Ok(t) = arena.parse(stmt) else { continue };
+            // Applied once, here, so every downstream structure — postings, buckets,
+            // erasures, the query term — sees the same term. Transforming at query time
+            // instead would compare a conclusion against whole-statement postings.
+            let t = if cfg.anchor == Anchor::Conclusion {
+                arena.conclusion(t)
+            } else {
+                t
+            };
             let sym = arena.intern_sym(name);
             sig_rows.push((sym, t));
             names.push(name.to_string());
@@ -374,6 +526,16 @@ impl SkeletonIndex {
                     .and_then(|s| s.as_str())
                     .unwrap_or("")
                     .to_string(),
+            );
+            proofs.push(
+                v.get("uses_proof")
+                    .and_then(|a| a.as_list())
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(|x| x.as_str().map(str::to_string))
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default(),
             );
             roots.push(t);
         }
@@ -428,11 +590,14 @@ impl SkeletonIndex {
         let concrete = Postings::build(concrete_pairs, n, max_len);
         let shape_sub = Postings::build(shape_pairs, n, max_len);
 
-        let by_name = names
+        let by_name: HashMap<String, DeclId> = names
             .iter()
             .enumerate()
             .map(|(i, n)| (n.clone(), DeclId(i as u32)))
             .collect();
+
+        let derivative = derivativeness(&kinds, &proofs, &by_name);
+        drop(proofs);
 
         arena.seal();
         Ok(SkeletonIndex {
@@ -442,6 +607,7 @@ impl SkeletonIndex {
             names,
             modules,
             kinds,
+            derivative,
             by_name,
             roots,
             shape,
@@ -653,13 +819,15 @@ impl SkeletonIndex {
                 cross_boost: 1.0 + if cross { cfg.cross_weight } else { 0.0 },
                 scoped_penalty: 1.0
                     - cfg.scoped_weight * g.scoped_vars as f32 / g.vars.max(1) as f32,
+                derivative_penalty: 1.0 - cfg.derivative_weight * self.derivative[d.0 as usize],
                 total: 0.0,
             };
             let factors = ScoreFactors {
                 total: factors.retention
                     * factors.rarity_boost
                     * factors.cross_boost
-                    * factors.scoped_penalty,
+                    * factors.scoped_penalty
+                    * factors.derivative_penalty,
                 ..factors
             };
             let score = factors.total;
@@ -860,10 +1028,17 @@ mod tests {
             rarity_boost: 1.25,
             cross_boost: 1.15,
             scoped_penalty: 0.85,
-            total: 0.9 * 1.25 * 1.15 * 0.85,
+            derivative_penalty: 0.90,
+            total: 0.9 * 1.25 * 1.15 * 0.85 * 0.90,
         };
         assert!(
-            (f.total - f.retention * f.rarity_boost * f.cross_boost * f.scoped_penalty).abs()
+            (f.total
+                - f.retention
+                    * f.rarity_boost
+                    * f.cross_boost
+                    * f.scoped_penalty
+                    * f.derivative_penalty)
+                .abs()
                 < 1e-6
         );
     }

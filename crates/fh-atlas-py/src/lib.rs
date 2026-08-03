@@ -64,7 +64,9 @@ use ::fh_atlas::graph::{Decl as CoreDecl, Graph, Lens};
 use ::fh_atlas::logical::LogicalGraph;
 use ::fh_atlas::relation::{Evidence, Relation as CoreRelation, Warrant};
 use ::fh_atlas::skel::erase::{EraseCache, Level, Signatures, erase};
-use ::fh_atlas::skel::index::{IndexConfig, Neighbour as CoreNeighbour, SkeletonIndex, Sources};
+use ::fh_atlas::skel::index::{
+    Anchor, IndexConfig, Neighbour as CoreNeighbour, SkeletonIndex, Sources,
+};
 use ::fh_atlas::skel::lgg;
 use ::fh_atlas::skel::term::{Arena, SymId, TermId};
 use pyo3::create_exception;
@@ -287,6 +289,12 @@ pub struct LogicalStats {
     /// Sides whose head is a bound variable, needing higher-order matching. Surfaced
     /// because "we did not look" and "there is nothing there" are different answers.
     pub flex_head_sides: usize,
+    /// `Iff`s whose sides key to the same `(head, arity)`, so the edge would be a
+    /// self-loop. The **largest** missing category — 184 of physlib's 516 `Iff`-headed
+    /// theorems against 71 flex-headed — and until now it was not counted at all.
+    pub same_head_sides: usize,
+    /// Axioms scanned. An edge from an axiom is *asserted*, not proved.
+    pub axioms_scanned: usize,
     /// Non-dependent `Pi`s rejected because a side does not head a proposition.
     pub non_prop_sides: usize,
     pub prop_heads: usize,
@@ -297,12 +305,13 @@ impl LogicalStats {
     fn __repr__(&self) -> String {
         format!(
             "LogicalStats(edges={}, heads={}, iff={}, implication={}, flex_head={}, \
-             non_prop={})",
+             same_head={}, non_prop={})",
             self.edges,
             self.heads,
             self.iff_edges,
             self.implication_edges,
             self.flex_head_sides,
+            self.same_head_sides,
             self.non_prop_sides
         )
     }
@@ -317,12 +326,13 @@ fn to_py_relation(r: &CoreRelation) -> Relation {
         warrant: match r.warrant() {
             Warrant::Proved => "proved",
             Warrant::Structural => "structural",
+            Warrant::Asserted => "asserted",
             Warrant::Heuristic => "heuristic",
         }
         .to_string(),
         evidence: r.evidence.tag().to_string(),
         witness: match &r.evidence {
-            Evidence::LeanTheorem { name } => Some(name.clone()),
+            Evidence::LeanTheorem { name } | Evidence::LeanAxiom { name } => Some(name.clone()),
             _ => None,
         },
         generator: r.generator.clone(),
@@ -474,6 +484,7 @@ pub struct ScoreFactors {
     pub cross_boost: f32,
     /// `1 - w * scoped/vars`; below 1 exactly when the row is not transportable.
     pub scoped_penalty: f32,
+    pub derivative_penalty: f32,
     pub total: f32,
 }
 
@@ -482,8 +493,13 @@ impl ScoreFactors {
     fn __repr__(&self) -> String {
         format!(
             "ScoreFactors(retention={:.3}, rarity_boost={:.3}, cross_boost={:.3}, \
-             scoped_penalty={:.3}, total={:.3})",
-            self.retention, self.rarity_boost, self.cross_boost, self.scoped_penalty, self.total
+             scoped_penalty={:.3}, derivative_penalty={:.3}, total={:.3})",
+            self.retention,
+            self.rarity_boost,
+            self.cross_boost,
+            self.scoped_penalty,
+            self.derivative_penalty,
+            self.total
         )
     }
 }
@@ -535,6 +551,7 @@ impl From<CoreNeighbour> for Neighbour {
                 rarity_boost: n.factors.rarity_boost,
                 cross_boost: n.factors.cross_boost,
                 scoped_penalty: n.factors.scoped_penalty,
+                derivative_penalty: n.factors.derivative_penalty,
                 total: n.factors.total,
             },
         }
@@ -750,6 +767,13 @@ pub struct Corpus {
     graph: Graph,
     skel: Mutex<Option<Skel>>,
     index: Mutex<Option<SkeletonIndex>>,
+    /// The conclusion-anchored index, built lazily and separately.
+    ///
+    /// The anchor is a *build*-time property — postings, buckets and erasures all derive
+    /// from the anchored term — so it cannot be a per-query flag over one index. Two
+    /// caches rather than a rebuild, because a caller comparing the two modes will ask
+    /// both questions repeatedly and a Mathlib-sized rebuild is 14 s.
+    index_concl: Mutex<Option<SkeletonIndex>>,
     equiv: Mutex<Option<EquivIndex>>,
     /// The proved-edge layer (Engine 1 §6 C3). Built on top of `equiv`'s arena, so it is
     /// cheap once that exists — 0.2 s against the equivalence index's 6.3 s.
@@ -888,6 +912,7 @@ impl Corpus {
             graph,
             skel: Mutex::new(None),
             index: Mutex::new(None),
+            index_concl: Mutex::new(None),
             equiv: Mutex::new(None),
             logical: Mutex::new(None),
         })
@@ -1055,13 +1080,31 @@ impl Corpus {
     ///
     /// Over the statements as encoded, not as erased — the concrete part is what the two
     /// theorems genuinely share and each variable is a place where they differ.
-    fn generalize(&self, py: Python<'_>, left: &str, right: &str) -> PyResult<Generalization> {
+    #[pyo3(signature = (left, right, anchor = "root"))]
+    fn generalize(
+        &self,
+        py: Python<'_>,
+        left: &str,
+        right: &str,
+        anchor: &str,
+    ) -> PyResult<Generalization> {
+        // The same `anchor` `similar` takes, and for the same reason. Without it the two
+        // APIs answer differently about one pair: the norm-shaped Euclidean-division
+        // statements anti-unify to `common 0` through `generalize` while `similar` finds
+        // them at rank 4, because one saw the conclusion and the other did not. That is a
+        // trap for anyone using `generalize` to explain a `similar` result.
+        let anchor = parse_anchor(anchor)?;
         self.known(left)?;
         self.known(right)?;
         Ok(py.detach(|| -> Result<Generalization, SkelFail> {
             let mut guard = self.statements()?;
             let s = guard.as_mut().expect("statements() builds it");
             let (x, y) = (self.term_of(s, left)?, self.term_of(s, right)?);
+            let (x, y) = if anchor == Anchor::Conclusion {
+                (s.arena.conclusion(x), s.arena.conclusion(y))
+            } else {
+                (x, y)
+            };
             let g = lgg::generalize(&mut s.arena, x, y);
             Ok(Generalization {
                 skeleton: s.arena.render(g.skeleton),
@@ -1088,7 +1131,7 @@ impl Corpus {
     // Six knobs and a name. They are the engine's own, and collapsing them into a config
     // object would make the common call site worse to read for the sake of a lint.
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (name, top = 10, level = "carriers", min_retention = 0.30, min_common = 6, theorems_only = false))]
+    #[pyo3(signature = (name, top = 10, level = "carriers", min_retention = 0.30, min_common = 6, theorems_only = false, anchor = "root"))]
     fn similar(
         &self,
         py: Python<'_>,
@@ -1098,8 +1141,10 @@ impl Corpus {
         min_retention: f32,
         min_common: u32,
         theorems_only: bool,
+        anchor: &str,
     ) -> PyResult<Vec<Neighbour>> {
         let level = parse_level(level)?;
+        let anchor = parse_anchor(anchor)?;
         self.known(name)?;
         let found = py.detach(|| -> Result<Vec<CoreNeighbour>, SkelFail> {
             let cfg = IndexConfig {
@@ -1107,9 +1152,10 @@ impl Corpus {
                 min_retention,
                 min_common,
                 theorems_only,
+                anchor,
                 ..IndexConfig::default()
             };
-            let mut guard = self.skeletons()?;
+            let mut guard = self.skeletons_at(anchor)?;
             let idx = guard.as_mut().expect("skeletons() builds it");
             idx.similar(name, top, &cfg)
                 .map_err(|_| self.not_indexed(name))
@@ -1162,6 +1208,8 @@ impl Corpus {
                 iff_edges: s.iff_edges,
                 implication_edges: s.implication_edges,
                 flex_head_sides: s.flex_head_sides,
+                same_head_sides: s.same_head_sides,
+                axioms_scanned: s.axioms_scanned,
                 non_prop_sides: s.non_prop_sides,
                 prop_heads: s.prop_heads,
             })
@@ -1595,9 +1643,24 @@ impl Corpus {
     /// posting-list cutoff) are the engine's defaults and are not exposed: they change what
     /// the index *contains*, so a per-call value would silently mean a rebuild.
     fn skeletons(&self) -> Result<MutexGuard<'_, Option<SkeletonIndex>>, SkelFail> {
-        let mut guard = self.index.lock().map_err(|_| SkelFail::Poisoned)?;
+        self.skeletons_at(Anchor::Root)
+    }
+
+    fn skeletons_at(
+        &self,
+        anchor: Anchor,
+    ) -> Result<MutexGuard<'_, Option<SkeletonIndex>>, SkelFail> {
+        let slot = match anchor {
+            Anchor::Root => &self.index,
+            Anchor::Conclusion => &self.index_concl,
+        };
+        let mut guard = slot.lock().map_err(|_| SkelFail::Poisoned)?;
         if guard.is_none() {
-            let built = SkeletonIndex::build(&self.source, &IndexConfig::default())
+            let cfg = IndexConfig {
+                anchor,
+                ..IndexConfig::default()
+            };
+            let built = SkeletonIndex::build(&self.source, &cfg)
                 .map_err(|e| SkelFail::Build(format!("{}: {e}", self.path)))?;
             *guard = Some(built);
         }
@@ -1686,6 +1749,18 @@ fn parse_lens(s: &str) -> PyResult<Lens> {
             )));
         }
     })
+}
+
+/// `"root"` or `"conclusion"`. Spelled out rather than a bool so a reader of a call site
+/// can tell which question was asked.
+fn parse_anchor(s: &str) -> PyResult<Anchor> {
+    match s {
+        "root" => Ok(Anchor::Root),
+        "conclusion" => Ok(Anchor::Conclusion),
+        other => Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "anchor must be `root` or `conclusion`, got `{other}`"
+        ))),
+    }
 }
 
 fn parse_level(s: &str) -> PyResult<Level> {

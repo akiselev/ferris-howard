@@ -237,6 +237,22 @@ impl Arena {
     pub fn is_closed(&self, t: TermId) -> bool {
         self.loose(t) == 0
     }
+    /// Strip the `Pi` prefix to reach what a statement actually concludes.
+    ///
+    /// The result is an **open** term: its loose de Bruijn indices refer to binders that
+    /// are no longer there. That is the same situation source B's open subterm keys are
+    /// already in, and it carries the same caveat — index `0` in two different conclusions
+    /// need not mean the same thing, so a match found this way is weaker evidence than one
+    /// found on closed terms. Measured cost on physlib: cross-subfield noise rises from 9%
+    /// to 10%.
+    pub fn conclusion(&self, t: TermId) -> TermId {
+        let mut cur = t;
+        while let Node::Pi(_, _, body) = self.node(cur) {
+            cur = body;
+        }
+        cur
+    }
+
     pub fn sym(&self, s: SymId) -> &str {
         &self.syms[s.0 as usize]
     }

@@ -229,11 +229,14 @@ pub fn dictionary(
         .filter(|n| !theorems_only || idx.is_theorem(n))
         .cloned()
         .collect();
-    rows.sort_by(|a, b| {
-        b.retention
-            .total_cmp(&a.retention)
-            .then(a.left.cmp(&b.left))
-    });
+    // By `score`, not by `retention`. `Row::score`'s own doc comment already says why —
+    // retention omits every ranking factor, so ordering by it "would systematically prefer
+    // rows that cannot be transported" — and the sort did it anyway, which meant the
+    // scorer had no effect on what a reader saw first. Measured consequence: the
+    // `Relativity ~ QFT` dictionary opened with `CausalCharacter.lightLike ~
+    // annihilate.sizeOf_spec`, and adding a derivativeness penalty to the score changed
+    // the presented rows not at all, because the presentation never consulted the score.
+    rows.sort_by(|a, b| b.score.total_cmp(&a.score).then(a.left.cmp(&b.left)));
     Dictionary {
         left_theory: left.to_string(),
         right_theory: right.to_string(),
