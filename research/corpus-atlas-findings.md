@@ -4317,3 +4317,44 @@ cap-20000 populations are unattributed; and the 154 remain humanly unread. Raw
 per-relation data: `research/data/dim-k-attribution.json`; reproducing script
 `scripts/dim-k-attribution.py` gates non-zero if the published populations fail to
 reproduce.
+
+---
+
+## 74. The cross-domain hunt: the controls tie the field, one entropy bridge in the rubble, and the false-negative front moves downstream
+
+The repaired channel (§72) pointed at the unknown sky: all 210 theory pairs of the
+95,268-row physics corpus, both arms, no truncation. Budget-only rows — analogies the
+shipped cutoff deleted — number 4,652 on physics pairs against 15 on the nonsense
+controls, so the channel is real and selective. Then the grading, blind controls shuffled
+in before any statement was read: **top-40 real rows A 0 / B 5 / C 24 / D 11; the ten
+nonsense-control rows all C — indistinguishable from 60% of the real list.** Through the
+assigned pipeline, the hunt found nothing worth a physicist's minute that was not already
+known. That verdict is the controls doing their job, and it stands.
+
+Two measured meta-findings turn the negative into a diagnosis:
+
+1. **The ranking key is inverted for this task.** Under retention × support-as-`common`,
+   the four *validated* correspondences T1–T4 would themselves rank 437–1,150 of 3,029
+   budget-only rows (against 17–525 under retention alone). Support-as-common rewards
+   shared framework mass — rows agreeing on 43,774 nodes of distribution-space plumbing
+   and no claim — which is anti-correlated with cross-domain content. §53 measured recall
+   dying at the prefilter; the prefilter is fixed, and the loss has moved one layer down,
+   into the ranker and the uncontrolled `per_decl` assignment (315 rows displaced).
+
+2. **The channel contains an unregistered A-caliber correspondence, found post-hoc and
+   labeled as such:** `Sᵥₙ_nonneg ~ CanonicalEnsemble.entropy_nonneg` — von Neumann
+   entropy nonnegativity against Gibbs-ensemble Shannon entropy nonnegativity, two
+   formalizations with **no citation link**. It is proposed and above `similar` floors
+   only with the budget on (rank 92/379; absent at the shipped cutoff), and it was then
+   crowded out of the dictionary by a content-free positivity lookalike (`0 ≤ Z`,
+   retention 0.9412) and buried by the rank key. The same holds for `Hₛ_nonneg`. This is
+   the fifth member of the classical↔quantum information family, surfaced by structure
+   alone — and the pipeline manufactured its false negative twice after retrieval got it
+   right.
+
+Engine asks recorded in the report, not implemented here: a rank key that does not
+multiply by apparatus mass, a crowding control on `per_decl` assignment, and a
+`dictionary` option to exclude citation-linked pairs as `frontier` does.
+
+Deliverables: `research/cross-domain-hunt.md`, `research/data/cross-domain-hunt.json`,
+pipeline archived as `scripts/cross-domain-hunt-*.py`.
