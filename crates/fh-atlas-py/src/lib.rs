@@ -65,9 +65,10 @@ use ::fh_atlas::logical::LogicalGraph;
 use ::fh_atlas::relation::{Evidence, Relation as CoreRelation, Warrant};
 use ::fh_atlas::skel::erase::{EraseCache, Level, Signatures, erase};
 use ::fh_atlas::skel::index::{
-    Anchor, IndexConfig, Neighbour as CoreNeighbour, SkeletonIndex, Sources,
+    Adjacent as CoreAdjacent, Anchor, IndexConfig, Neighbour as CoreNeighbour, SkeletonIndex,
+    Sources, Variant as CoreVariant, VocabAdjacent as CoreVocabAdjacent,
 };
-use ::fh_atlas::skel::lgg;
+use ::fh_atlas::skel::lgg::{self, SimilarityScore};
 use ::fh_atlas::skel::term::{Arena, SymId, TermId};
 use pyo3::create_exception;
 use pyo3::exceptions::{PyException, PyFileNotFoundError, PyOSError, PyValueError};
@@ -485,6 +486,8 @@ pub struct ScoreFactors {
     /// `1 - w * scoped/vars`; below 1 exactly when the row is not transportable.
     pub scoped_penalty: f32,
     pub derivative_penalty: f32,
+    /// The configured scorer's value — what actually multiplies into `total`.
+    pub base: f32,
     pub total: f32,
 }
 
@@ -552,6 +555,7 @@ impl From<CoreNeighbour> for Neighbour {
                 cross_boost: n.factors.cross_boost,
                 scoped_penalty: n.factors.scoped_penalty,
                 derivative_penalty: n.factors.derivative_penalty,
+                base: n.factors.base,
                 total: n.factors.total,
             },
         }
@@ -725,6 +729,10 @@ pub struct FrontierPair {
     pub right: String,
     /// Shape buckets both theories occupy, as a fraction of the smaller theory's buckets.
     pub similarity: f32,
+    /// What two theories of these sizes would share by chance.
+    pub expected_similarity: f32,
+    /// `similarity - expected_similarity`.
+    pub excess: f32,
     /// Declarations in one theory whose statement or proof cites the other.
     pub cross_citations: usize,
     pub left_size: usize,
@@ -766,14 +774,19 @@ pub struct Corpus {
     source: String,
     graph: Graph,
     skel: Mutex<Option<Skel>>,
-    index: Mutex<Option<SkeletonIndex>>,
-    /// The conclusion-anchored index, built lazily and separately.
+    /// Skeleton indexes, one per `(anchor, normalize_arity, work-budget admission)`
+    /// combination.
     ///
-    /// The anchor is a *build*-time property — postings, buckets and erasures all derive
-    /// from the anchored term — so it cannot be a per-query flag over one index. Two
-    /// caches rather than a rebuild, because a caller comparing the two modes will ask
-    /// both questions repeatedly and a Mathlib-sized rebuild is 14 s.
-    index_concl: Mutex<Option<SkeletonIndex>>,
+    /// All three are *build*-time properties — postings, buckets and erasures all derive
+    /// from the transformed term, and the work budget decides which posting keys exist at
+    /// all — so none can be a per-query flag over one index. Cached rather than rebuilt
+    /// because a caller comparing modes asks repeatedly and a Mathlib-sized build is 14 s.
+    ///
+    /// The budget dimension is keyed on `is_some()` only: `build` reads nothing but the
+    /// presence (admission is keep-all under any `Some`), while the *value* bounds the
+    /// walk per query, so two budget values share one index and differ only in the query
+    /// config handed to `candidates`.
+    indexes: [Mutex<Option<SkeletonIndex>>; 8],
     equiv: Mutex<Option<EquivIndex>>,
     /// The proved-edge layer (Engine 1 §6 C3). Built on top of `equiv`'s arena, so it is
     /// cheap once that exists — 0.2 s against the equivalence index's 6.3 s.
@@ -911,8 +924,7 @@ impl Corpus {
             source,
             graph,
             skel: Mutex::new(None),
-            index: Mutex::new(None),
-            index_concl: Mutex::new(None),
+            indexes: std::array::from_fn(|_| Mutex::new(None)),
             equiv: Mutex::new(None),
             logical: Mutex::new(None),
         })
@@ -1014,6 +1026,15 @@ impl Corpus {
                     && !allowed.contains(name)
                     && name != "sorryAx"
                 {
+                    // The axiom itself, and *then* what rests on it. Reporting only the
+                    // users made a corpus of unproved assertions pass clean: measured on
+                    // B7's validation clusters, 113 of 114 declarations are `axiom` and
+                    // every one is a graph leaf, so `impact` was empty and honesty
+                    // reported **zero findings** on a corpus that is nothing but
+                    // assertions. `atlas-validation.md` §2 mandates exactly that genre,
+                    // so the scan was blind precisely where it is most needed — the
+                    // "tool that says everything is fine" CLAUDE.md warns about.
+                    findings.push((name.clone(), name.clone()));
                     for user in self.graph.impact(name, Lens::Proof) {
                         findings.push((user, name.clone()));
                     }
@@ -1130,8 +1151,13 @@ impl Corpus {
     /// shared structure is punctuation.
     // Six knobs and a name. They are the engine's own, and collapsing them into a config
     // object would make the common call site worse to read for the sake of a lint.
+    //
+    // `posting_work_budget` switches the prefilter to work-budget admission (findings
+    // §66): every posting key is kept at build time and the query walks at most this many
+    // postings, rarest key first, instead of dropping the common keys cross-theory
+    // analogy rides on. `None` is the shipped cutoff, bit for bit.
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (name, top = 10, level = "carriers", min_retention = 0.30, min_common = 6, theorems_only = false, anchor = "root"))]
+    #[pyo3(signature = (name, top = 10, level = "carriers", min_retention = 0.30, min_common = 6, theorems_only = false, anchor = "root", normalize_arity = false, score = "retention", posting_work_budget = None))]
     fn similar(
         &self,
         py: Python<'_>,
@@ -1142,9 +1168,13 @@ impl Corpus {
         min_common: u32,
         theorems_only: bool,
         anchor: &str,
+        normalize_arity: bool,
+        score: &str,
+        posting_work_budget: Option<usize>,
     ) -> PyResult<Vec<Neighbour>> {
         let level = parse_level(level)?;
         let anchor = parse_anchor(anchor)?;
+        let score = parse_score(score)?;
         self.known(name)?;
         let found = py.detach(|| -> Result<Vec<CoreNeighbour>, SkelFail> {
             let cfg = IndexConfig {
@@ -1153,14 +1183,268 @@ impl Corpus {
                 min_common,
                 theorems_only,
                 anchor,
+                normalize_arity,
+                score,
+                posting_work_budget,
                 ..IndexConfig::default()
             };
-            let mut guard = self.skeletons_at(anchor)?;
+            let mut guard = self.skeletons_at(anchor, normalize_arity, posting_work_budget)?;
             let idx = guard.as_mut().expect("skeletons() builds it");
             idx.similar(name, top, &cfg)
                 .map_err(|_| self.not_indexed(name))
         })?;
         Ok(found.into_iter().map(Neighbour::from).collect())
+    }
+
+    /// The corpus's recurring sub-patterns, read off the posting lists.
+    ///
+    /// Not a ranking and not a query: the inventory of shared structure the corpus
+    /// actually contains. Grouping a *query's* candidates by shared pattern beats ranking
+    /// them, and grouping whole statements corpus-wide does not work at all — real theorems
+    /// are structurally unique (mean family size 1.00 at every erasure level but `shape`).
+    /// The unit that works is the shared **sub**-pattern, which the postings already index.
+    ///
+    /// `source` is `"subterm"` (concrete subterms at `Presentation`) or `"shape"`
+    /// (`Shape`-level subterms — the only level that holes constants, so the only one where
+    /// a motif can cross carriers).
+    #[pyo3(signature = (source = "shape", min_family = 3, min_size = 6, top = 40))]
+    fn motifs(
+        &self,
+        py: Python<'_>,
+        source: &str,
+        min_family: usize,
+        min_size: u32,
+        top: usize,
+    ) -> PyResult<Vec<(String, Vec<String>, u32, f32)>> {
+        let found = py.detach(
+            || -> Result<Vec<(String, Vec<String>, u32, f32)>, SkelFail> {
+                let mut guard = self.skeletons()?;
+                let idx = guard.as_mut().expect("skeletons() builds it");
+                let mut m = idx.motifs(source, min_family, min_size);
+                m.truncate(top);
+                Ok(m)
+            },
+        )?;
+        Ok(found)
+    }
+
+    /// Closure coverage **restricted to one module prefix**.
+    ///
+    /// Returns `(known_heads, unknown_heads, coverage, worst)` for declarations whose
+    /// module starts with `prefix`.
+    ///
+    /// Call this whenever the corpus is a mixture and you care about one part of it. A
+    /// global figure is dominated by whatever the corpus is mostly made of: a merged
+    /// corpus that is 97% Mathlib reports 99.59% while saying **nothing** about whether the
+    /// 3% of physics statements are closed — and physics is the part being studied. The
+    /// number is real; it is about the wrong population.
+    #[pyo3(signature = (prefix, top = 20))]
+    fn closure_by(
+        &self,
+        py: Python<'_>,
+        prefix: &str,
+        top: usize,
+    ) -> PyResult<(u64, u64, f64, Vec<(String, u32)>)> {
+        let out = py.detach(
+            || -> Result<(u64, u64, f64, Vec<(String, u32)>), SkelFail> {
+                let mut guard = self.skeletons()?;
+                let idx = guard.as_mut().expect("skeletons() builds it");
+                let (known, unknown, worst) = idx.closure_by(prefix, top);
+                let total = known + unknown;
+                let coverage = if total == 0 {
+                    1.0
+                } else {
+                    known as f64 / total as f64
+                };
+                Ok((known, unknown, coverage, worst))
+            },
+        )?;
+        Ok(out)
+    }
+
+    /// Is this slice closed under the constants its statements mention?
+    ///
+    /// Returns `(known_heads, unknown_heads, coverage, worst)`. `coverage` is
+    /// `known / (known + unknown)` over every application head in every statement, and
+    /// `worst` names the missing constants by how many statements mention them.
+    ///
+    /// **Check this before trusting any result at `instances` or above.** The erasure holes
+    /// arguments in `InstImplicit` positions *of the head constant's signature*, so a head
+    /// the slice does not contain holes nothing and that spine is silently normalised at
+    /// `presentation` instead. There is no error and no empty result — just a weaker
+    /// normalisation than the level name promises, which is the direction that keeps tests
+    /// green.
+    ///
+    /// In practice this goes wrong via `--local`, which filters the extractor's *output*
+    /// rather than its import: a Mathlib-only slice has no `Eq`, `Iff`, `LE.le` or `Monad`
+    /// and its coverage collapses. Measured cost on the same corpus restricted that way:
+    /// 34.5% of generalization candidates lost and 11.0% fabricated.
+    #[pyo3(signature = (top = 20))]
+    fn closure(&self, py: Python<'_>, top: usize) -> PyResult<(u64, u64, f64, Vec<(String, u32)>)> {
+        let out = py.detach(
+            || -> Result<(u64, u64, f64, Vec<(String, u32)>), SkelFail> {
+                let mut guard = self.skeletons()?;
+                let idx = guard.as_mut().expect("skeletons() builds it");
+                let (known, unknown, worst) = idx.closure(top);
+                let total = known + unknown;
+                let coverage = if total == 0 {
+                    1.0
+                } else {
+                    known as f64 / total as f64
+                };
+                Ok((known, unknown, coverage, worst))
+            },
+        )?;
+        Ok(out)
+    }
+
+    /// Declarations that are this statement with at most `max_subs` constants swapped,
+    /// each with the substitution that reaches it.
+    ///
+    /// Returns `[(name, [(from, to), ...]), ...]`, fewest edits first. Not a ranking and
+    /// not a score: two statements either share a rigid skeleton — the tree with every
+    /// constant name blanked — or they do not, and when they do the answer is an edit a
+    /// caller can act on. `Ne`<->`Eq`, `Injective`<->`Surjective`, `Monotone`<->`Antitone`,
+    /// `<=`<->`<`.
+    ///
+    /// This is the part `generalize` throws away. It reports the lgg's node counts and
+    /// discards the substitutions, which are the actionable half.
+    ///
+    /// The first call builds a rigid-skeleton index over the corpus and caches it.
+    #[pyo3(signature = (name, max_subs = 1, top = 50))]
+    fn variants(
+        &self,
+        py: Python<'_>,
+        name: &str,
+        max_subs: usize,
+        top: usize,
+    ) -> PyResult<Vec<(String, Vec<(String, String)>)>> {
+        let out = py.detach(|| -> Result<Option<Vec<CoreVariant>>, SkelFail> {
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            Ok(idx.variants(name, max_subs, top))
+        })?;
+        out.map(|v| {
+            v.into_iter()
+                .map(|x| (x.name, x.substitutions))
+                .collect::<Vec<_>>()
+        })
+        .ok_or_else(|| UnknownDeclaration::new_err(name.to_string()))
+    }
+
+    /// What sits just **outside** this declaration's equivalence class, and by which edit.
+    ///
+    /// Returns `[(name, adjacent_to, [(from, to), ...]), ...]`, closest first.
+    ///
+    /// The sharpening question a similarity ranking cannot express: a near miss and a
+    /// distant cousin both come back as floats, but "this is your class with `<=` swapped
+    /// for `>=`" is actionable. B7's V6 target scored PARTIAL for want of exactly this —
+    /// the cluster assembled and nothing could surface the adjacent non-member.
+    ///
+    /// The class is computed at `level` (`equivalent`'s levels) and then excluded, so
+    /// members never come back as their own neighbours.
+    #[pyo3(signature = (name, level = "instances", max_subs = 1, top = 50))]
+    fn adjacent(
+        &self,
+        py: Python<'_>,
+        name: &str,
+        level: &str,
+        max_subs: usize,
+        top: usize,
+    ) -> PyResult<Vec<(String, String, Vec<(String, String)>)>> {
+        let lvl = parse_level(level)?;
+        // The class first — membership is the equivalence index's job — then the structural
+        // neighbourhood around it, which is the skeleton index's.
+        self.known(name)?;
+        let mut members = py.detach(|| -> Result<Vec<String>, SkelFail> {
+            let mut guard = self.equivalences()?;
+            let idx = guard.as_mut().expect("equivalences() builds it");
+            // Propagate rather than defaulting. `unwrap_or_default()` turned "this is not
+            // a proposition" into "this class is empty", so the query answered about a
+            // one-member class it had silently invented — and returned a declaration as a
+            // non-member of its own class.
+            idx.equivalent(name, lvl)
+                .map_err(|_| SkelFail::NotAProposition(name.to_string()))
+        })?;
+        members.push(name.to_string());
+        let out = py.detach(|| -> Result<Vec<CoreAdjacent>, SkelFail> {
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            Ok(idx.adjacent(&members, max_subs, top))
+        })?;
+        Ok(out
+            .into_iter()
+            .map(|a| (a.name, a.adjacent_to, a.substitutions))
+            .collect())
+    }
+
+    /// What shares this declaration's equivalence class's **distinguished vocabulary**
+    /// without being in the class.
+    ///
+    /// Returns `[(name, [shared constants], rarest_df), ...]`, most-shared first.
+    ///
+    /// The companion to `adjacent`. That one asks "same tree, which constants differ" and
+    /// cannot cross a change of *shape*: an `Iff` and a bare inequality about the same
+    /// object are not one substitution apart. This one asks "what else is about the same
+    /// distinguished things", which is the relation B7's V6 target is after.
+    ///
+    /// "Distinguished" is document frequency: a constant counts when it occurs in at most
+    /// `max_df_fraction` of the corpus, so sharing `Eq` is not evidence and sharing
+    /// `Lambda` is. Applied as an admission test rather than a weight, so each row *names*
+    /// what it shares instead of scoring it.
+    #[pyo3(signature = (name, level = "instances", max_df_fraction = 0.05, top = 50))]
+    fn vocabulary_adjacent(
+        &self,
+        py: Python<'_>,
+        name: &str,
+        level: &str,
+        max_df_fraction: f32,
+        top: usize,
+    ) -> PyResult<Vec<(String, Vec<String>, u32)>> {
+        let lvl = parse_level(level)?;
+        self.known(name)?;
+        let mut members = py.detach(|| -> Result<Vec<String>, SkelFail> {
+            let mut guard = self.equivalences()?;
+            let idx = guard.as_mut().expect("equivalences() builds it");
+            // Propagate rather than defaulting. `unwrap_or_default()` turned "this is not
+            // a proposition" into "this class is empty", so the query answered about a
+            // one-member class it had silently invented — and returned a declaration as a
+            // non-member of its own class.
+            idx.equivalent(name, lvl)
+                .map_err(|_| SkelFail::NotAProposition(name.to_string()))
+        })?;
+        members.push(name.to_string());
+        let out = py.detach(|| -> Result<Vec<CoreVocabAdjacent>, SkelFail> {
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            Ok(idx.vocabulary_adjacent(&members, max_df_fraction, top))
+        })?;
+        Ok(out
+            .into_iter()
+            .map(|a| (a.name, a.shared, a.rarest_df))
+            .collect())
+    }
+
+    /// The typeclasses a declaration's instance binders require, in binder order.
+    ///
+    /// `Additive.ofMul_le` returns `["Preorder"]`. Repeats are kept — two binders over
+    /// different carriers can name the same class, and collapsing them would lose that.
+    ///
+    /// Answers from the loaded arena, so a caller checking "does this other declaration
+    /// need a weaker hypothesis than mine" does not re-parse the slice. The novelty screen
+    /// used to telescope all 470,435 statements in Python to build the same table — 35
+    /// minutes for something needed on a handful of declarations per query, which is why
+    /// the generalization pipeline ended up probing before screening.
+    ///
+    /// Read off the *unerased* statement: `instances` and above hole binder domains, which
+    /// is precisely the information this returns.
+    fn requires(&self, py: Python<'_>, name: &str) -> PyResult<Vec<String>> {
+        let out = py.detach(|| -> Result<Option<Vec<String>>, SkelFail> {
+            let mut guard = self.skeletons()?;
+            let idx = guard.as_mut().expect("skeletons() builds it");
+            Ok(idx.requires(name))
+        })?;
+        out.ok_or_else(|| UnknownDeclaration::new_err(name.to_string()))
     }
 
     /// The same ranking with the index switched off: every declaration, compared.
@@ -1497,7 +1781,12 @@ impl Corpus {
         .map_err(Into::into)
     }
 
-    #[pyo3(signature = (left, right, per_decl = 1, theorems_only = true))]
+    // `posting_work_budget` for the same reason it is on `similar`, and this is the
+    // surface where the defect was measured: at the shipped cutoff the ClassicalInfo ~
+    // Entropy dictionary returns none of the four pre-registered correspondences — none
+    // is even a candidate — and with the keys admitted they are its top rows (§66).
+    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (left, right, per_decl = 1, theorems_only = true, anchor = "root", normalize_arity = false, score = "retention", max_per_right = None, posting_work_budget = None))]
     fn dictionary(
         &self,
         py: Python<'_>,
@@ -1505,10 +1794,27 @@ impl Corpus {
         right: &str,
         per_decl: usize,
         theorems_only: bool,
+        anchor: &str,
+        normalize_arity: bool,
+        score: &str,
+        max_per_right: Option<usize>,
+        posting_work_budget: Option<usize>,
     ) -> PyResult<Dictionary> {
+        // The anchor reaches `dictionary` for the same reason it reaches `similar` and
+        // `generalize`. Without it the Z~FF dictionary returned **0 rows** while the pairs
+        // it should have contained anti-unified at retention up to 1.00 conclusion-anchored
+        // — the rows existed and the query could not see them.
+        let anchor = parse_anchor(anchor)?;
+        let score = parse_score(score)?;
         let core = py.detach(|| -> Result<dict::Dictionary, SkelFail> {
-            let cfg = IndexConfig::default();
-            let mut guard = self.skeletons()?;
+            let cfg = IndexConfig {
+                anchor,
+                normalize_arity,
+                score,
+                posting_work_budget,
+                ..IndexConfig::default()
+            };
+            let mut guard = self.skeletons_at(anchor, normalize_arity, posting_work_budget)?;
             let idx = guard.as_mut().expect("skeletons() builds it");
             Ok(dict::dictionary(
                 idx,
@@ -1518,6 +1824,7 @@ impl Corpus {
                 &dict::DictOptions {
                     per_decl,
                     theorems_only,
+                    max_per_right,
                     ..dict::DictOptions::default()
                 },
             ))
@@ -1604,6 +1911,8 @@ impl Corpus {
                 left: f.left,
                 right: f.right,
                 similarity: f.similarity,
+                expected_similarity: f.expected_similarity,
+                excess: f.excess,
                 cross_citations: f.cross_citations,
                 left_size: f.left_size,
                 right_size: f.right_size,
@@ -1643,21 +1952,27 @@ impl Corpus {
     /// posting-list cutoff) are the engine's defaults and are not exposed: they change what
     /// the index *contains*, so a per-call value would silently mean a rebuild.
     fn skeletons(&self) -> Result<MutexGuard<'_, Option<SkeletonIndex>>, SkelFail> {
-        self.skeletons_at(Anchor::Root)
+        self.skeletons_at(Anchor::Root, false, None)
     }
 
     fn skeletons_at(
         &self,
         anchor: Anchor,
+        normalize_arity: bool,
+        posting_work_budget: Option<usize>,
     ) -> Result<MutexGuard<'_, Option<SkeletonIndex>>, SkelFail> {
-        let slot = match anchor {
-            Anchor::Root => &self.index,
-            Anchor::Conclusion => &self.index_concl,
-        };
-        let mut guard = slot.lock().map_err(|_| SkelFail::Poisoned)?;
+        // The budget slot is presence-keyed: admission is keep-all under any `Some`, so
+        // every budget value shares the keep-all index and the caller's exact value
+        // travels in the query config instead. See the field doc on `indexes`.
+        let slot = (anchor as usize) * 4
+            + usize::from(normalize_arity) * 2
+            + usize::from(posting_work_budget.is_some());
+        let mut guard = self.indexes[slot].lock().map_err(|_| SkelFail::Poisoned)?;
         if guard.is_none() {
             let cfg = IndexConfig {
                 anchor,
+                normalize_arity,
+                posting_work_budget,
                 ..IndexConfig::default()
             };
             let built = SkeletonIndex::build(&self.source, &cfg)
@@ -1753,6 +2068,25 @@ fn parse_lens(s: &str) -> PyResult<Lens> {
 
 /// `"root"` or `"conclusion"`. Spelled out rather than a bool so a reader of a call site
 /// can tell which question was asked.
+/// The scorer's name. Spelled out rather than an index so a call site says which formula
+/// it meant, and so adding one cannot silently renumber the others.
+fn parse_score(s: &str) -> PyResult<SimilarityScore> {
+    match s {
+        "retention" => Ok(SimilarityScore::Retention),
+        "min_normalised" | "min_normalized" => Ok(SimilarityScore::MinNormalised),
+        "dice" => Ok(SimilarityScore::Dice),
+        "jaccard" => Ok(SimilarityScore::Jaccard),
+        "geometric_mean" => Ok(SimilarityScore::GeometricMean),
+        "common" => Ok(SimilarityScore::Common),
+        "info_weighted" => Ok(SimilarityScore::InfoWeighted),
+        "info_dice" => Ok(SimilarityScore::InfoDice),
+        other => Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "score must be one of retention, min_normalised, dice, jaccard, \
+             geometric_mean, common, info_weighted, info_dice; got `{other}`"
+        ))),
+    }
+}
+
 fn parse_anchor(s: &str) -> PyResult<Anchor> {
     match s {
         "root" => Ok(Anchor::Root),

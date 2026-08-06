@@ -3,6 +3,7 @@ Copyright (c) 2026 Ferris–Howard contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Validation.Clusters
+import Validation.Extra
 
 /-!
 # B7 validation clusters

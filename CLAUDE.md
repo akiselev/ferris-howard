@@ -49,6 +49,7 @@ Everything below must be green before a commit. They are slow; run them anyway.
 | Ranking golden | `FH_SLICE=/tmp/mathlib-algebra.jsonl cargo test -p fh-atlas --test golden` | **Skips silently without `FH_SLICE`** — a plain `cargo test` does not run it. ~95 s. |
 | Retrieval sources | `FH_SLICE=… cargo test -p fh-atlas --test sources` | Per-source fixtures run without a slice; only the differential needs one. ~115 s with it. |
 | Baselines (M1 D4/D5) | `./target/release/examples/baselinecheck /tmp/mathlib-algebra.jsonl` | Asserts the deletion control collapses. ~60 s. |
+| Slice closure | `uv run scripts/slice-closure.py` | Paired: the closure must pass at 95%, the foundation-stripped control must fail. ~23 s. Run it on any *new* slice before trusting it — `--slice <f>` exits non-zero below the floor. |
 
 Read a gate's **own** exit status, not the status of whatever you piped it into.
 `gate.py > log; tail log` exits with `tail`'s status, which is always 0 — a red gate read
@@ -82,10 +83,29 @@ would demonstrate the engine does *not* work.
 
 **Report measured numbers, never expected ones.** If you did not run it, say so.
 
+**False positives are cheap; false negatives are not.** The consumer is an agent that can
+read ten thousand candidates and reject 99% of them autonomously. It cannot recover a
+candidate that was never proposed. So when a knob trades recall for precision, take recall:
+lower the floors, widen the sweep, report the noise rather than filtering it away. A query
+that returns 500 rows of which 20 matter is working; one that returns 20 rows and silently
+dropped 5 real ones is not, and nothing downstream can tell.
+
+This has a corollary for controls: a filter that *narrows* output needs its own negative
+control, because narrowing is where false negatives are manufactured. §16 of
+`research/corpus-atlas-findings.md` is the cautionary case — a "≥3 subfields" criterion
+looked like it was selecting real cross-field structure and was in fact selecting *against*
+it, by 6.6x, which only a label-shuffle control revealed.
+
 **Negative controls.** A tool that says everything is fine is worse than no tool. Several
 gates here assert that something *must* be found: `atlas honesty` under a narrow whitelist,
 the depth-blind anti-unifier's divergence, the normalization knob's cross-carrier collapse.
 Each exits non-zero if the check goes quiet.
+
+**An expert event log is not a recall denominator.** Mathlib history records accepted
+positive changes, not every opportunity maintainers considered. Commit messages may locate
+candidate diffs, but a source-diff set becomes detector recall only after the detector is
+replayed on the historical parent under a frozen population rule. Until then report
+message-selection enrichment and structurally validated events, not “human recall”.
 
 ---
 
@@ -137,6 +157,15 @@ binaries rather than scripts.
 - **Universe *parameters* must be freed before substituting into a type.** `general.{u}`
   states `@Eq.{u} A …`; substituting `A := Bool` without `mkFreshLevelMVar` leaves an
   ill-typed term for which no instance can exist.
+- **A target class does not identify the binder a prover should weaken.** Instance binders
+  commonly share an arity. The first `#fh_home_attempt` replaced the first same-arity binder
+  and could therefore prove a different statement while printing the intended target.
+  Proof-search probes name `source => target`, assert the source head, and refuse duplicate
+  source binders until an exact index is available.
+- **A failed tactic writes to two channels.** Restoring the message log suppresses its
+  unsolved goal, but its InfoTree still drives unused/unreachable-tactic warnings after the
+  command. An exploratory tactic ladder must isolate both, and still reject `sorryAx` and
+  metavariables before asking the kernel.
 - **`#guard_msgs` cannot see parse errors.** Use the `#fh_parse` harness.
 - **`MessageLog.toList` returns only *unreported* messages, and `eoi` resets the log.** Drain
   per command or a whole file's diagnostics vanish.
@@ -316,6 +345,28 @@ One caveat when merging slices across workspaces: two Mathlib patch versions can
 the *same* lemma differently if that lemma changed between them, so a merged corpus is
 sound for analogy (skeletons) and not for identity (the statement digest, and therefore
 B8's overlay keying).
+
+And a second, sharper one — **a slice must be closed under the constants its statements
+mention, or every query over it degrades silently.**
+
+Two consumers look constants up by name and neither reports a miss. The erasure holes
+arguments in `InstImplicit` positions *of the head constant's signature* (`erase.rs:334`),
+so a missing head holes nothing and falls back to `Presentation`. The evidence rule reads a
+cited constant's row for the classes it requires, so a missing row contributes no evidence
+and the hypothesis it justified reads as unused. Both degrade toward "no information" — in
+the direction that still produces output.
+
+`--local` is how you get an unclosed slice: it filters the **output**, not the import. The
+`Mathlib`-only extraction has 348,793 `Mathlib.*` rows and no `Eq`, `Iff`, `LE.le` or
+`Monad` at all. Measured against the same corpus restricted the same way (§31), that costs
+**34.5% of candidates lost and 11.0% fabricated** — the fabrications being confident claims
+like "`Commute.mul_pow` needs only `[Mul M]`", which is false because `pow` is a `Monoid`
+field whose row was missing.
+
+So: extract closures for anything that erases or follows citations, and never shrink a
+corpus to make a query cheaper. If you must restrict, assert that a known-holed skeleton is
+*still holed* afterwards — otherwise restriction is indistinguishable from a change in the
+answer. `scripts/foundation-control.py` is that check, and it aborts rather than report.
 
 Every FH feature lands with **four test tiers**: golden expansion, elaboration, negative
 (exact pinned messages), and span. A feature with three tiers is not done.

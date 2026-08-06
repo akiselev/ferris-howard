@@ -1,0 +1,94 @@
+{
+  "schema": "fh-kuna-e1-result-v1",
+  "executed_at": "2026-08-05",
+  "status": "completed-negative",
+  "manifest": {
+    "path": "research/data/kuna-e1-manifest.json",
+    "sha256": "331ba062801e2005a94018437e4cb6b33d5552ec031c2292a0cae0b32f60d61e"
+  },
+  "replay": {
+    "parent": "f469a458bcdb9e2d5d58594871deb33644477e62",
+    "child": "d292472f13fc10eb063e6efd93601f976a387055",
+    "toolchain": "leanprover/lean4:v4.31.0",
+    "module": "Mathlib.Algebra.Star.Subalgebra",
+    "declaration": "StarAlgEquiv.restrictScalars_injective",
+    "parent_build": {
+      "command": "elan run leanprover/lean4:v4.31.0 lake build Mathlib.Algebra.Star.Subalgebra",
+      "jobs": 1222,
+      "exit": 0,
+      "source_worktree_clean": true
+    },
+    "child_build": {
+      "command": "elan run leanprover/lean4:v4.31.0 lake build Mathlib.Algebra.Star.Subalgebra",
+      "jobs": 1222,
+      "exit": 0,
+      "source_worktree_clean": true
+    }
+  },
+  "crash_recovery": {
+    "interrupted_step": "historical parent cache download",
+    "observed_failure": "generated cache executable exited 139 before main",
+    "diagnosis": "corrupt ELF dynamic section and string table; no OOM or disk exhaustion",
+    "preserved_binary": "/tmp/fh-kuna-e1-cache-corrupt-20260805",
+    "recovery": "created a fresh detached parent worktree and rebuilt with the explicit 4.31.0 toolchain"
+  },
+  "extractor": {
+    "source_files": {
+      "atlas-extract/lakefile.toml": "a194f71d7d0349c4954805363c5b6b8b3d06415445d982e957251aa77f04104c",
+      "atlas-extract/AtlasExtract.lean": "be49b34cb3ad684bcdcd19d81b756bbde6332ee60bc8d2eddc01a6215305bf5d",
+      "atlas-extract/FhAtlas/Extract.lean": "e296f1be37209a52f95549bccde795b1212c8624cd86a6f4a886de64b0b86528",
+      "atlas-extract/FhAtlas/Statement.lean": "e0d5a35d91dd6a7cc3333a978dcb8173041ba7144c1849f172d0fcc2db57203c"
+    },
+    "command": "lake exe atlas_extract Mathlib.Algebra.Star.Subalgebra",
+    "rows": 164151,
+    "bytes": 225320408,
+    "sha256": "6c3c34e25d04b8dc7d35fd2eb39fe819664064479af6240a4da8ae02dab2b7af",
+    "import_ms": 1466,
+    "encode_write_ms": 107588,
+    "json_validation": "164151 of 164151 rows parsed",
+    "raw_path": "/tmp/fh-kuna-e1-parent-f469a458.jsonl",
+    "raw_path_is_ephemeral": true
+  },
+  "unchanged_detector": {
+    "path": "scripts/fh_home.py",
+    "sha256": "612bbe49285994b4e0d7d01d5caa8b00a3856b1aeebe4865f95f3215a407ce11",
+    "rows": 164151,
+    "classes": 833,
+    "lattice_edges": 914,
+    "forgetful_instances": 4943,
+    "parse_errors": 0,
+    "load_seconds": 5.635,
+    "index_seconds": 62.005,
+    "peak_rss_gib": 0.771,
+    "instance_binders": 13,
+    "verdict": {
+      "skipped": "multi-carrier",
+      "carriers": 7
+    },
+    "event_verdicts": [
+      {"source": "Semiring", "target": "NonUnitalNonAssocSemiring", "args": "A", "verdict": "refused"},
+      {"source": "Semiring", "target": "NonUnitalNonAssocSemiring", "args": "B", "verdict": "refused"},
+      {"source": "Algebra", "target": "MulAction", "args": "R S", "verdict": "refused"},
+      {"source": "Algebra", "target": "Module", "args": "S A", "verdict": "refused"},
+      {"source": "Algebra", "target": "Module", "args": "S B", "verdict": "refused"},
+      {"source": "Algebra", "target": "Module", "args": "R A", "verdict": "refused"},
+      {"source": "Algebra", "target": "Module", "args": "R B", "verdict": "refused"}
+    ]
+  },
+  "counterfactual": {
+    "carrier_aware_source": "lean/FerrisHoward/Atlas/Home.lean",
+    "carrier_aware_sha256": "87d06bfa6097f09040c2fa17fa0ee92ddea1663b978f0bcb511be81435e9e6ae",
+    "carrier_aware_exit": 0,
+    "carrier_aware_candidates": 3,
+    "carrier_aware_exact_manifest_proposals": 0,
+    "exact_child_signature_in_parent_exit": 1,
+    "exact_child_signature_in_child_exit": 0,
+    "interpretation": "the child signature depends on a co-generalized StarAlgEquiv.restrictScalars; it is not an available standalone parent theorem edit"
+  },
+  "decision": {
+    "detector_change": "rejected",
+    "reason": "the selected E0 group is a coordinated dependency and telescope refactor, while E0 counted seven binder moves as independent events",
+    "benchmark_change": "before detector tuning, replay units must pass a parent-environment expressibility gate; coordinated changes remain one grouped event and do not enter a single-binder recall denominator",
+    "claim": "E1 validates a real coverage refusal and falsifies this event group's use as seven detector opportunities; it does not measure detector recall"
+  }
+}

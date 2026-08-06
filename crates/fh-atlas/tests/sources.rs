@@ -233,6 +233,174 @@ fn source_c_respects_its_size_floor() {
 }
 
 // ---------------------------------------------------------------------------
+// Work-budget posting admission (prefilter §10 S1, findings §66)
+// ---------------------------------------------------------------------------
+//
+// The defect these fixtures pin: `max_posting_fraction` drops a key by holder count, and
+// the keys cross-theory analogy rides on are precisely the *common* ones — measured 0/4
+// pre-registered classical<->quantum correspondences at the shipped cutoff, 4/4 with the
+// keys admitted. The fixture is built so it can fail in both directions (§5's per-source
+// trap): the only route from `p` to `q` is one concrete subterm key crowded over the
+// cutoff, so the positive case proves admission and each ablation proves one half of the
+// knob — `None` that the cutoff still drops the key, `Some(0)` that the walk bound is
+// real and not a synonym for admission.
+
+/// `p` and `q` share exactly one concrete subterm, and three crowd rows push that key's
+/// document frequency over the cutoff. `q` carries a binder prefix so the two only align
+/// at the conclusion anchor — the setting cross-theory retrieval actually runs at — and
+/// so their shapes differ, keeping source A out of the way.
+fn crowded_key_corpus() -> String {
+    let shared = "a(c(5:LE.le,0),c(4:Real,0))";
+    corpus(&[
+        row("p", &format!("a({shared},c(1:x,0))")),
+        row("q", &format!("pi(s(0),a({shared},b0))")),
+        row("c0", &format!("a(a(c(2:Eq,0),{shared}),c(1:u,0))")),
+        row("c1", &format!("a(a(c(2:Eq,0),{shared}),c(1:v,0))")),
+        row("c2", &format!("a(a(c(2:Eq,0),{shared}),c(1:w,0))")),
+    ])
+}
+
+/// `min_posting_len: 2` puts the five-holder shared key over the cutoff on a five-row
+/// corpus — the regime the shipped constants only reach at Mathlib scale (§5c: the
+/// fraction *tightens* as a corpus grows).
+fn budget_cfg(posting_work_budget: Option<usize>) -> IndexConfig {
+    IndexConfig {
+        min_posting_len: 2,
+        min_common: 1,
+        min_retention: 0.0,
+        anchor: fh_atlas::skel::index::Anchor::Conclusion,
+        posting_work_budget,
+        ..IndexConfig::default()
+    }
+}
+
+#[test]
+fn the_work_budget_admits_the_crowded_key_the_cutoff_drops() {
+    let c = crowded_key_corpus();
+    let on = budget_cfg(Some(1_000));
+    let off = budget_cfg(None);
+    let mut idx_on = SkeletonIndex::build(&c, &on).expect("build");
+    let idx_off = SkeletonIndex::build(&c, &off).expect("build");
+    // Admission is observable on the index itself, not only through a query: the
+    // budget build must hold keys the cutoff build does not.
+    assert!(
+        idx_on.key_counts().0 > idx_off.key_counts().0,
+        "keep-all admission must retain concrete keys the cutoff drops: {:?} vs {:?}",
+        idx_on.key_counts(),
+        idx_off.key_counts()
+    );
+    assert!(
+        sources_for(&mut idx_on, "p", "q", &on).has(Sources::SUBTERM),
+        "the crowded key is the only route to `q`, so admitting it must fire source B"
+    );
+}
+
+#[test]
+fn without_the_budget_the_fraction_cutoff_silences_the_same_pair() {
+    // The ablation that makes the positive case a measurement (CLAUDE.md §5): if `q`
+    // arrives with the knob off, the fixture's key was never over the cutoff and the
+    // test above passes whatever the admission rule does.
+    let c = crowded_key_corpus();
+    let off = budget_cfg(None);
+    let mut idx = SkeletonIndex::build(&c, &off).expect("build");
+    let ns = idx.similar("p", 50, &off).expect("query");
+    assert!(
+        !ns.iter().any(|n| n.name == "q"),
+        "the five-holder key must be over the two-holder cutoff, so `q` has no route: {ns:?}"
+    );
+}
+
+#[test]
+fn a_zero_budget_walks_no_postings_even_though_the_keys_are_admitted() {
+    // Separates the knob's two halves: `Some(0)` builds the same keep-all index as any
+    // other `Some`, so if `q` still arrives, the walk bound is decorative and the recall
+    // gain above is admission alone wearing a budget's name.
+    let c = crowded_key_corpus();
+    let starved = budget_cfg(Some(0));
+    let mut idx = SkeletonIndex::build(&c, &starved).expect("build");
+    let ns = idx.similar("p", 50, &starved).expect("query");
+    assert!(
+        ns.iter()
+            .all(|n| !n.sources.has(Sources::SUBTERM) && !n.sources.has(Sources::SHAPE_SUBTERM)),
+        "zero postings walked must starve sources B and C: {ns:?}"
+    );
+    assert!(
+        !ns.iter().any(|n| n.name == "q"),
+        "`q`'s only route is a posting, and none may be walked at budget 0: {ns:?}"
+    );
+}
+
+/// The knob against the real slice, in both directions.
+///
+/// With every key admitted and the walk unbounded, the candidate set can only grow — the
+/// budget walk's prefix is byte-identical to the shipped walk, so anything the cutoff
+/// found is still found. With the walk bound at zero, sources B and C must go silent on a
+/// corpus where they otherwise dominate. Between them the two assertions pin that the
+/// admission half and the walk half each do their own work at scale, not just on a
+/// five-row fixture.
+#[test]
+fn on_the_real_slice_the_budget_grows_candidates_monotonically() {
+    let Ok(path) = std::env::var("FH_SLICE") else {
+        println!("SKIPPED: set FH_SLICE to a B1 JSONL slice for the work-budget gate");
+        return;
+    };
+    let src = std::fs::read_to_string(&path).expect("read slice");
+    let off = IndexConfig::default();
+    let idx_off = SkeletonIndex::build(&src, &off).expect("build");
+    let unbounded = IndexConfig {
+        posting_work_budget: Some(usize::MAX),
+        ..IndexConfig::default()
+    };
+    let idx_on = SkeletonIndex::build(&src, &unbounded).expect("build");
+
+    let (con_off, shp_off) = idx_off.key_counts();
+    let (con_on, shp_on) = idx_on.key_counts();
+    assert!(
+        con_on > con_off,
+        "the cutoff drops real concrete keys on this corpus, so keep-all must hold more: \
+         {con_on} vs {con_off}"
+    );
+    assert!(
+        shp_on >= shp_off,
+        "keep-all admission must never hold fewer shape keys: {shp_on} vs {shp_off}"
+    );
+
+    let starved = IndexConfig {
+        posting_work_budget: Some(0),
+        ..IndexConfig::default()
+    };
+    for q in ["le_trans", "Nat.mul_comm", "And.comm"] {
+        let d = idx_off.id_of(q).expect("query is in the slice");
+        let base: std::collections::BTreeSet<_> = idx_off
+            .candidates(d, &off)
+            .into_iter()
+            .map(|(d, _, _)| d)
+            .collect();
+        let wide: std::collections::BTreeSet<_> = idx_on
+            .candidates(d, &unbounded)
+            .into_iter()
+            .map(|(d, _, _)| d)
+            .collect();
+        let lost: Vec<_> = base.difference(&wide).collect();
+        assert!(
+            lost.is_empty(),
+            "an unbounded work budget must be a superset of the shipped walk for `{q}`, \
+             lost {lost:?}"
+        );
+        // The paired direction on the same index: a zero budget must starve B and C, so
+        // every surviving candidate arrived through the shape bucket alone.
+        for (_, sources, _) in idx_on.candidates(d, &starved) {
+            assert!(
+                sources.has(Sources::SHAPE)
+                    && !sources.has(Sources::SUBTERM)
+                    && !sources.has(Sources::SHAPE_SUBTERM),
+                "budget 0 walked a posting for `{q}`: {sources:?}"
+            );
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // The differential, in the direction that has content
 // ---------------------------------------------------------------------------
 

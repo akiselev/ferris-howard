@@ -169,6 +169,13 @@ fn run(args: &[String]) -> Result<Report, String> {
                     && !allowed.contains(name)
                     && name != "sorryAx"
                 {
+                    // The axiom itself, then its users — matching the binding, which
+                    // gained the self-finding first: on an axiom-only corpus (B7's
+                    // genre) every axiom is a graph leaf, `impact` is empty, and
+                    // users-only reported zero findings on a corpus that is nothing
+                    // but assertions. The 13-row disagreement between the two routes
+                    // was caught by the smoke differential, which is its job.
+                    findings.push((name.clone(), name.clone()));
                     for user in g.impact(name, Lens::Proof) {
                         findings.push((user, name.clone()));
                     }

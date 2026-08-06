@@ -20,6 +20,38 @@ this hypothesis" is the first question, "what breaks if this proof is wrong" the
 """
 
 Level = Literal["exact", "presentation", "instances", "carriers", "shape"]
+Score = Literal[
+    "retention",
+    "min_normalised",
+    "dice",
+    "jaccard",
+    "geometric_mean",
+    "common",
+    "info_weighted",
+    "info_dice",
+]
+"""Which formula turns shared structure into a number.
+
+Pluggable because **no single one wins everywhere**, measured by ROC AUC against labelled
+pairs on two corpora with independently-sourced labels:
+
+| score | size-asymmetric pairs | size-symmetric pairs |
+|---|---|---|
+| `min_normalised` | 0.933 | 1.000 |
+| `retention` (default) | 0.756 | 1.000 |
+| `common` | 0.943 | 0.762 |
+
+`retention` divides shared structure by the *larger* side, so it is perfect when the two
+sides are the same size and collapses when they are not — and cross-theory pairs are wildly
+asymmetric, because the same claim carries different type and instance machinery in
+different theories (`Z.euclid_lemma` is 65 nodes, `FF.poly_euclid_lemma` 1,059). The default
+stays `retention` so results remain comparable; `min_normalised` is the more robust choice.
+
+The floor `min_retention` applies to whichever score is selected, not to retention —
+flooring on one and ranking on another would discard exactly the pairs a different scorer
+exists to rescue.
+"""
+
 Anchor = Literal["root", "conclusion"]
 """Where a statement is compared *from*.
 
@@ -289,6 +321,14 @@ class ScoreFactors:
         """
 
     @property
+    def base(self) -> float:
+        """The configured scorer's value — what actually multiplies into `total`.
+
+        Separate from `retention`, which is always the classic formula so two runs under
+        different scorers stay comparable on one axis.
+        """
+
+    @property
     def scoped_penalty(self) -> float:
         """`1 - w * scoped/vars`; below 1 exactly when the row is not transportable."""
 
@@ -474,6 +514,25 @@ class FrontierPair:
         """Shape buckets both theories occupy, over the smaller theory's bucket count."""
 
     @property
+    def expected_similarity(self) -> float:
+        """What two theories of these sizes would share **by chance**.
+
+        Under random assignment of shapes to theories, `E|A cap B| = |A||B|/M`, so dividing
+        by `min(|A|,|B|)` leaves `max(|A|,|B|)/M`. A large theory therefore has high
+        expected similarity with everything, which is why the uncorrected ranking returned
+        the biggest theory pairs rather than the most similar ones.
+        """
+
+    @property
+    def excess(self) -> float:
+        """`similarity - expected_similarity` — shared shape beyond what size explains.
+
+        Often negative: most theory pairs are *less* alike than chance. Measured on two
+        corpora, aggregate cross-theory similarity is indistinguishable from chance while
+        within-theory concentration is a very strong signal (findings section 17-18).
+        """
+
+    @property
     def cross_citations(self) -> int:
         """Declarations in one theory whose statement or proof cites the other."""
 
@@ -610,6 +669,9 @@ class Corpus:
         min_common: int = 6,
         theorems_only: bool = False,
         anchor: Anchor = "root",
+        normalize_arity: bool = False,
+        score: Score = "retention",
+        posting_work_budget: int | None = None,
     ) -> list[Neighbour]:
         """Declarations whose statements anti-unify with this one, best score first.
 
@@ -619,10 +681,131 @@ class Corpus:
         clear to be reported at all; lowering them buys recall by admitting rows whose
         shared structure is punctuation.
 
+        `posting_work_budget` switches the prefilter to work-budget admission: every
+        posting key is kept at build time and the query walks at most this many postings,
+        rarest key first, instead of dropping keys held by too many declarations. The
+        flat cutoff deletes the *common* keys cross-domain analogy rides on — measured
+        0/4 pre-registered classical<->quantum correspondences at the shipped cutoff,
+        4/4 with the keys admitted (findings §66). `None` is the shipped cutoff, bit for
+        bit. The first call at each (anchor, normalize_arity, budget-on) combination
+        builds and caches its own index.
+
         Raises:
             UnknownDeclaration: `name` is not in the slice.
             NoStatement: it is, and carries no comparable statement.
             ValueError: `level` is not one of the five names.
+        """
+
+    def adjacent(
+        self,
+        name: str,
+        level: Level = "instances",
+        max_subs: int = 1,
+        top: int = 50,
+    ) -> list[tuple[str, str, list[tuple[str, str]]]]:
+        """What sits just **outside** this declaration's equivalence class, and by which edit.
+
+        Returns `[(name, adjacent_to, [(from, to), ...]), ...]`, closest first.
+
+        The sharpening question a similarity ranking cannot express: a near miss and a
+        distant cousin both come back as floats, but "this is your class with `<=` swapped
+        for `>=`" is actionable. B7's V6 target scored PARTIAL for want of exactly this —
+        the cluster assembled and nothing could surface the adjacent non-member.
+
+        The class is computed at `level` and then excluded, so members never come back as
+        their own neighbours.
+
+        Raises:
+            UnknownDeclaration: `name` is not in the slice.
+        """
+
+    def variants(
+        self, name: str, max_subs: int = 1, top: int = 50
+    ) -> list[tuple[str, list[tuple[str, str]]]]:
+        """Declarations that are this statement with at most `max_subs` constants swapped.
+
+        Returns `[(name, [(from, to), ...]), ...]`, fewest edits first.
+
+        Not a ranking and not a score. Two statements either share a **rigid skeleton** —
+        the tree with every constant name blanked — or they do not, and when they do the
+        answer is an edit you can act on: `Ne`<->`Eq`, `Injective`<->`Surjective`,
+        `Monotone`<->`Antitone`, `<=`<->`<`.
+
+        This is the half `generalize` discards: it reports the lgg's node counts and drops
+        the substitutions. Measured on Mathlib, 11.2% of claims have a one-substitution
+        partner, against 18.5x fewer under a permuted-constant control.
+
+        The first call builds and caches a rigid-skeleton index over the corpus.
+
+        Raises:
+            UnknownDeclaration: `name` is not in the slice.
+        """
+
+    def requires(self, name: str) -> list[str]:
+        """The typeclasses this declaration's instance binders require, in binder order.
+
+        `Additive.ofMul_le` gives `["Preorder"]`. Repeats are kept: two binders over
+        different carriers can name the same class, and collapsing them loses that.
+
+        Answered from the loaded arena, so checking "does this other declaration need a
+        weaker hypothesis than mine" costs nothing beyond the corpus already in memory.
+        Read off the *unerased* statement — `instances` and above hole binder domains,
+        which is exactly what this reports.
+
+        Raises:
+            UnknownDeclaration: `name` is not in the slice.
+        """
+
+    def closure_by(
+        self, prefix: str, top: int = 20
+    ) -> tuple[int, int, float, list[tuple[str, int]]]:
+        """Closure coverage **restricted to one module prefix**.
+
+        Returns `(known_heads, unknown_heads, coverage, worst)` over declarations whose
+        module starts with `prefix`.
+
+        Use this whenever the corpus is a mixture and you care about one part of it. A
+        global figure is dominated by whatever the corpus is mostly made of: a merged
+        corpus that is 97% Mathlib reports 99.59% while saying nothing about whether the 3%
+        of physics statements are closed — and physics is the part being studied. The
+        number is real; it is about the wrong population.
+        """
+
+    def closure(self, top: int = 20) -> tuple[int, int, float, list[tuple[str, int]]]:
+        """Is this slice closed under the constants its statements mention?
+
+        Returns `(known_heads, unknown_heads, coverage, worst)`. `coverage` is
+        `known / (known + unknown)` over every application head in every statement; `worst`
+        names the missing constants by how many statements mention them.
+
+        **Check this before trusting any result at `instances` or above.** The erasure holes
+        arguments in `InstImplicit` positions *of the head constant's signature*, so a head
+        the slice does not contain holes nothing and that spine is normalized at
+        `presentation` instead. No error, no empty result — a weaker normalization than the
+        level name promises, which is the direction that keeps tests green.
+
+        The usual cause is `atlas_extract --local`, which filters the extractor's *output*
+        and not its import: the resulting Mathlib-only slice has no `Eq`, `Iff`, `LE.le` or
+        `Monad` at all. Measured cost of that on the same corpus restricted the same way:
+        34.5% of generalization candidates lost, 11.0% fabricated.
+        """
+
+    def motifs(
+        self,
+        source: Literal["shape", "subterm"] = "shape",
+        min_family: int = 3,
+        min_size: int = 6,
+        top: int = 40,
+    ) -> list[tuple[str, list[str], int, float]]:
+        """The corpus's recurring sub-patterns: `(pattern, members, size, idf)`.
+
+        Not a ranking and not a query — the inventory of shared structure the corpus
+        contains. Ordered by `size * log(family)`, because a large family sharing a trivial
+        motif is punctuation and a large motif shared by two declarations is a coincidence.
+
+        Whole-statement grouping does not work corpus-wide: real theorems are structurally
+        unique (mean family size 1.00 at every erasure level but `shape`). The shared
+        *sub*-pattern is the unit that does, and the posting lists already index it.
         """
 
     def similar_brute(
@@ -718,7 +901,16 @@ class Corpus:
         """Re-pair each left with a different right; genuine pairs must separate."""
 
     def dictionary(
-        self, left: str, right: str, per_decl: int = 1, theorems_only: bool = True
+        self,
+        left: str,
+        right: str,
+        per_decl: int = 1,
+        theorems_only: bool = True,
+        anchor: Anchor = "root",
+        normalize_arity: bool = False,
+        score: Score = "retention",
+        max_per_right: int | None = None,
+        posting_work_budget: int | None = None,
     ) -> Dictionary:
         """The maximal partial functor between two theories.
 
@@ -726,6 +918,11 @@ class Corpus:
         `"Mathlib.Order"` and `"Mathlib.Algebra"` are two theories and
         `Mathlib.Algebra.Group.Defs` is inside one. `per_decl` caps how many partners one
         declaration may contribute.
+
+        `posting_work_budget` as on `similar`, and this is the surface the defect was
+        measured on: at the shipped cutoff the ClassicalInfo ~ Entropy dictionary returns
+        none of the four pre-registered correspondences — none is even a candidate — and
+        with the keys admitted they are its top rows (findings §66).
         """
 
     def transport(

@@ -1,0 +1,458 @@
+{
+ "census": {
+  "Counting": 7,
+  "Deformation": 9,
+  "FF": 27,
+  "LFamily": 9,
+  "PairCorrelation": 6,
+  "Positivity": 11,
+  "RH": 8,
+  "Spectral": 13,
+  "Z": 18,
+  "ZeroDensity": 6,
+  "CorpusControl": 84
+ },
+ "targets": [
+  {
+   "target": "V1 + V4 (T1) \u2014 the Z~FF dictionary and the missing-entry report",
+   "requirement": "complete row set {prime~irreducible, |n|~p^deg, gcd~gcd, UF~UF, Euler~Euler}; missing-entry report names no Z-side match for Frobenius and for base-field/product-over-base (the F1 hole)",
+   "evidence": [
+    "--- shipped: root anchor ---",
+    "   0 rows, 18 unmatched Z-side, 27 unmatched FF-side",
+    "   missing Z-side : bezout, crt, dvd_gcd, euclid_lemma, euclidean_division, euler_product, gcd_assoc, gcd_comm, gcd_dvd_left, gcd_dvd_right, int_division_via_norm, int_unique_factorization, irreducible_iff_prime, moebius_inversion",
+    "   missing FF-side: base_field_constants, castelnuovo_severi, curve_over_base, degree_additive, eigenvalues_on_circle, eigenvalues_subset_circle, frobenius_eigenvalue_abs, frobenius_eigenvalues_pair, frobenius_endomorphism, frobenius_fixed_field, pointCount, pointCount_eigenvalue, poly_bezout, poly_crt",
+    "   F1-hole check \u2014 Frobenius unmatched on the FF side: ['frobenius_eigenvalue_abs', 'frobenius_eigenvalues_pair', 'frobenius_endomorphism', 'frobenius_fixed_field']",
+    "   F1-hole check \u2014 base-field unmatched on the FF side: ['base_field_constants', 'curve_over_base', 'product_over_base_field']",
+    "   control: genuine 0.000 vs shuffled 0.000, separation 0.000",
+    "   control is UNINFORMATIVE: both arms are zero, so it cannot distinguish a real dictionary from a shuffled one here",
+    "--- shipped: conclusion anchor ---",
+    "   1 rows, 17 unmatched Z-side, 26 unmatched FF-side",
+    "   ROW  norm_multiplicative            ~ castelnuovo_severi             ret 0.36 neither-proven",
+    "   missing Z-side : bezout, crt, dvd_gcd, euclid_lemma, euclidean_division, euler_product, gcd_assoc, gcd_comm, gcd_dvd_left, gcd_dvd_right, int_division_via_norm, int_unique_factorization, irreducible_iff_prime, moebius_inversion",
+    "   missing FF-side: base_field_constants, curve_over_base, degree_additive, eigenvalues_on_circle, eigenvalues_subset_circle, frobenius_eigenvalue_abs, frobenius_eigenvalues_pair, frobenius_endomorphism, frobenius_fixed_field, pointCount, pointCount_eigenvalue, poly_bezout, poly_crt, poly_division_via_norm",
+    "   F1-hole check \u2014 Frobenius unmatched on the FF side: ['frobenius_eigenvalue_abs', 'frobenius_eigenvalues_pair', 'frobenius_endomorphism', 'frobenius_fixed_field']",
+    "   F1-hole check \u2014 base-field unmatched on the FF side: ['base_field_constants', 'curve_over_base', 'product_over_base_field']",
+    "   control: genuine 0.000 vs shuffled 0.000, separation 0.000",
+    "   control is UNINFORMATIVE: both arms are zero, so it cannot distinguish a real dictionary from a shuffled one here",
+    "--- SIMULATED arity fix + conclusion anchor ---",
+    "   9 rows, 11 unmatched Z-side, 20 unmatched FF-side",
+    "   ROW  euclid_lemma                   ~ poly_euclid_lemma              ret 1.00 neither-proven",
+    "   ROW  crt                            ~ poly_crt                       ret 0.77 neither-proven",
+    "   ROW  int_unique_factorization       ~ poly_unique_factorization      ret 0.45 neither-proven",
+    "   ROW  euclidean_division             ~ poly_division_via_norm         ret 0.51 neither-proven",
+    "   ROW  int_division_via_norm          ~ poly_division_via_norm         ret 0.51 neither-proven",
+    "   ROW  zeta_functional_equation       ~ frobenius_endomorphism         ret 0.47 neither-proven",
+    "   ROW  euclidean_division             ~ poly_euclidean_division        ret 0.39 neither-proven",
+    "   ROW  int_division_via_norm          ~ poly_euclidean_division        ret 0.39 neither-proven",
+    "   ROW  bezout                         ~ poly_bezout                    ret 0.31 neither-proven",
+    "   missing Z-side : dvd_gcd, euler_product, gcd_assoc, gcd_comm, gcd_dvd_left, gcd_dvd_right, irreducible_iff_prime, moebius_inversion, norm_multiplicative, primes_infinite, zeta_pole_at_one",
+    "   missing FF-side: base_field_constants, castelnuovo_severi, curve_over_base, degree_additive, eigenvalues_on_circle, eigenvalues_subset_circle, frobenius_eigenvalue_abs, frobenius_eigenvalues_pair, frobenius_fixed_field, pointCount, pointCount_eigenvalue, poly_dvd_gcd, poly_gcd_comm, poly_gcd_dvd_left",
+    "   F1-hole check \u2014 Frobenius unmatched on the FF side: ['frobenius_eigenvalue_abs', 'frobenius_eigenvalues_pair', 'frobenius_fixed_field']",
+    "   F1-hole check \u2014 base-field unmatched on the FF side: ['base_field_constants', 'curve_over_base', 'product_over_base_field']",
+    "   control: genuine 0.000 vs shuffled 0.000, separation 0.000",
+    "   control is UNINFORMATIVE: both arms are zero, so it cannot distinguish a real dictionary from a shuffled one here"
+   ],
+   "verdict": "PARTIAL",
+   "dictionary": {
+    "shipped: root anchor": {
+     "rows": [],
+     "missing_left": [
+      "Validation.Z.bezout",
+      "Validation.Z.crt",
+      "Validation.Z.dvd_gcd",
+      "Validation.Z.euclid_lemma",
+      "Validation.Z.euclidean_division",
+      "Validation.Z.euler_product",
+      "Validation.Z.gcd_assoc",
+      "Validation.Z.gcd_comm",
+      "Validation.Z.gcd_dvd_left",
+      "Validation.Z.gcd_dvd_right",
+      "Validation.Z.int_division_via_norm",
+      "Validation.Z.int_unique_factorization",
+      "Validation.Z.irreducible_iff_prime",
+      "Validation.Z.moebius_inversion",
+      "Validation.Z.norm_multiplicative",
+      "Validation.Z.primes_infinite",
+      "Validation.Z.zeta_functional_equation",
+      "Validation.Z.zeta_pole_at_one"
+     ],
+     "missing_right": [
+      "Validation.FF.base_field_constants",
+      "Validation.FF.castelnuovo_severi",
+      "Validation.FF.curve_over_base",
+      "Validation.FF.degree_additive",
+      "Validation.FF.eigenvalues_on_circle",
+      "Validation.FF.eigenvalues_subset_circle",
+      "Validation.FF.frobenius_eigenvalue_abs",
+      "Validation.FF.frobenius_eigenvalues_pair",
+      "Validation.FF.frobenius_endomorphism",
+      "Validation.FF.frobenius_fixed_field",
+      "Validation.FF.pointCount",
+      "Validation.FF.pointCount_eigenvalue",
+      "Validation.FF.poly_bezout",
+      "Validation.FF.poly_crt",
+      "Validation.FF.poly_division_via_norm",
+      "Validation.FF.poly_dvd_gcd",
+      "Validation.FF.poly_euclid_lemma",
+      "Validation.FF.poly_euclidean_division",
+      "Validation.FF.poly_gcd_comm",
+      "Validation.FF.poly_gcd_dvd_left",
+      "Validation.FF.poly_gcd_dvd_right",
+      "Validation.FF.poly_irreducible_iff_prime",
+      "Validation.FF.poly_irreducibles_infinite",
+      "Validation.FF.poly_unique_factorization",
+      "Validation.FF.product_over_base_field",
+      "Validation.FF.zeta_functional_equation",
+      "Validation.FF.zeta_rational"
+     ],
+     "frobenius_unmatched": [
+      "frobenius_eigenvalue_abs",
+      "frobenius_eigenvalues_pair",
+      "frobenius_endomorphism",
+      "frobenius_fixed_field"
+     ],
+     "basefield_unmatched": [
+      "base_field_constants",
+      "curve_over_base",
+      "product_over_base_field"
+     ]
+    },
+    "shipped: conclusion anchor": {
+     "rows": [
+      [
+       "Validation.Z.norm_multiplicative",
+       "Validation.FF.castelnuovo_severi",
+       0.35555556416511536,
+       "neither-proven"
+      ]
+     ],
+     "missing_left": [
+      "Validation.Z.bezout",
+      "Validation.Z.crt",
+      "Validation.Z.dvd_gcd",
+      "Validation.Z.euclid_lemma",
+      "Validation.Z.euclidean_division",
+      "Validation.Z.euler_product",
+      "Validation.Z.gcd_assoc",
+      "Validation.Z.gcd_comm",
+      "Validation.Z.gcd_dvd_left",
+      "Validation.Z.gcd_dvd_right",
+      "Validation.Z.int_division_via_norm",
+      "Validation.Z.int_unique_factorization",
+      "Validation.Z.irreducible_iff_prime",
+      "Validation.Z.moebius_inversion",
+      "Validation.Z.primes_infinite",
+      "Validation.Z.zeta_functional_equation",
+      "Validation.Z.zeta_pole_at_one"
+     ],
+     "missing_right": [
+      "Validation.FF.base_field_constants",
+      "Validation.FF.curve_over_base",
+      "Validation.FF.degree_additive",
+      "Validation.FF.eigenvalues_on_circle",
+      "Validation.FF.eigenvalues_subset_circle",
+      "Validation.FF.frobenius_eigenvalue_abs",
+      "Validation.FF.frobenius_eigenvalues_pair",
+      "Validation.FF.frobenius_endomorphism",
+      "Validation.FF.frobenius_fixed_field",
+      "Validation.FF.pointCount",
+      "Validation.FF.pointCount_eigenvalue",
+      "Validation.FF.poly_bezout",
+      "Validation.FF.poly_crt",
+      "Validation.FF.poly_division_via_norm",
+      "Validation.FF.poly_dvd_gcd",
+      "Validation.FF.poly_euclid_lemma",
+      "Validation.FF.poly_euclidean_division",
+      "Validation.FF.poly_gcd_comm",
+      "Validation.FF.poly_gcd_dvd_left",
+      "Validation.FF.poly_gcd_dvd_right",
+      "Validation.FF.poly_irreducible_iff_prime",
+      "Validation.FF.poly_irreducibles_infinite",
+      "Validation.FF.poly_unique_factorization",
+      "Validation.FF.product_over_base_field",
+      "Validation.FF.zeta_functional_equation",
+      "Validation.FF.zeta_rational"
+     ],
+     "frobenius_unmatched": [
+      "frobenius_eigenvalue_abs",
+      "frobenius_eigenvalues_pair",
+      "frobenius_endomorphism",
+      "frobenius_fixed_field"
+     ],
+     "basefield_unmatched": [
+      "base_field_constants",
+      "curve_over_base",
+      "product_over_base_field"
+     ]
+    },
+    "SIMULATED arity fix + conclusion anchor": {
+     "rows": [
+      [
+       "Validation.Z.euclid_lemma",
+       "Validation.FF.poly_euclid_lemma",
+       1.0,
+       "neither-proven"
+      ],
+      [
+       "Validation.Z.crt",
+       "Validation.FF.poly_crt",
+       0.774193525314331,
+       "neither-proven"
+      ],
+      [
+       "Validation.Z.int_unique_factorization",
+       "Validation.FF.poly_unique_factorization",
+       0.4492753744125366,
+       "neither-proven"
+      ],
+      [
+       "Validation.Z.euclidean_division",
+       "Validation.FF.poly_division_via_norm",
+       0.5087719559669495,
+       "neither-proven"
+      ],
+      [
+       "Validation.Z.int_division_via_norm",
+       "Validation.FF.poly_division_via_norm",
+       0.5087719559669495,
+       "neither-proven"
+      ],
+      [
+       "Validation.Z.zeta_functional_equation",
+       "Validation.FF.frobenius_endomorphism",
+       0.46666666865348816,
+       "neither-proven"
+      ],
+      [
+       "Validation.Z.euclidean_division",
+       "Validation.FF.poly_euclidean_division",
+       0.38805970549583435,
+       "neither-proven"
+      ],
+      [
+       "Validation.Z.int_division_via_norm",
+       "Validation.FF.poly_euclidean_division",
+       0.38805970549583435,
+       "neither-proven"
+      ],
+      [
+       "Validation.Z.bezout",
+       "Validation.FF.poly_bezout",
+       0.31182795763015747,
+       "neither-proven"
+      ]
+     ],
+     "missing_left": [
+      "Validation.Z.dvd_gcd",
+      "Validation.Z.euler_product",
+      "Validation.Z.gcd_assoc",
+      "Validation.Z.gcd_comm",
+      "Validation.Z.gcd_dvd_left",
+      "Validation.Z.gcd_dvd_right",
+      "Validation.Z.irreducible_iff_prime",
+      "Validation.Z.moebius_inversion",
+      "Validation.Z.norm_multiplicative",
+      "Validation.Z.primes_infinite",
+      "Validation.Z.zeta_pole_at_one"
+     ],
+     "missing_right": [
+      "Validation.FF.base_field_constants",
+      "Validation.FF.castelnuovo_severi",
+      "Validation.FF.curve_over_base",
+      "Validation.FF.degree_additive",
+      "Validation.FF.eigenvalues_on_circle",
+      "Validation.FF.eigenvalues_subset_circle",
+      "Validation.FF.frobenius_eigenvalue_abs",
+      "Validation.FF.frobenius_eigenvalues_pair",
+      "Validation.FF.frobenius_fixed_field",
+      "Validation.FF.pointCount",
+      "Validation.FF.pointCount_eigenvalue",
+      "Validation.FF.poly_dvd_gcd",
+      "Validation.FF.poly_gcd_comm",
+      "Validation.FF.poly_gcd_dvd_left",
+      "Validation.FF.poly_gcd_dvd_right",
+      "Validation.FF.poly_irreducible_iff_prime",
+      "Validation.FF.poly_irreducibles_infinite",
+      "Validation.FF.product_over_base_field",
+      "Validation.FF.zeta_functional_equation",
+      "Validation.FF.zeta_rational"
+     ],
+     "frobenius_unmatched": [
+      "frobenius_eigenvalue_abs",
+      "frobenius_eigenvalues_pair",
+      "frobenius_fixed_field"
+     ],
+     "basefield_unmatched": [
+      "base_field_constants",
+      "curve_over_base",
+      "product_over_base_field"
+     ]
+    }
+   },
+   "shipped_rows": 1,
+   "why": "scored on SHIPPED behaviour: V1 row set 1 rows against a 5-row requirement (FAIL); V4 F1-hole named: Frobenius=True, base=True (pass). The simulated arity transform reaches 9 rows and does not ship."
+  },
+  {
+   "target": "V2 (T1) \u2014 Hilbert-Polya",
+   "requirement": "`similar` on the RH statement surfaces spectrum-is-real; match in top-5",
+   "evidence": [
+    "   [root] best spectral rank: None",
+    "   [conclusion] zeros_on_critical_line             spectral at rank 3: ['symmetric_eigenvalue_real', 'selfAdjoint_spectrum_real']",
+    "   [conclusion] no_zero_off_line                   spectral at rank 4: ['trace_sum_eigenvalues']",
+    "   [conclusion] best spectral rank: 3"
+   ],
+   "verdict": "PASS",
+   "why": "root=None, conclusion=3; bar is top-5"
+  },
+  {
+   "target": "V3 (T1) \u2014 Weil positivity / intersection positivity",
+   "requirement": "the quadratic-form-nonnegativity skeleton links the Weil-criterion reformulation of RH with the FF-side positivity; row found, tags correct",
+   "evidence": [
+    "   [root] weil->FF rank None; intersection->FF rank 1; castelnuovo->Positivity rank 2",
+    "   [conclusion] weil->FF rank None; intersection->FF rank 10; castelnuovo->Positivity rank 7"
+   ],
+   "verdict": "PARTIAL",
+   "why": "FF-side positivity pairing found; Weil->FF link absent"
+  },
+  {
+   "target": "V5 (T1) \u2014 zeros control errors (explicit-formula skeleton)",
+   "requirement": "`similar` links the PNT-error-as-sum-over-zeros with the FF point-count eigenvalue sum; cross-link in top-5",
+   "evidence": [
+    "   [root] explicit_formula -> FF rank 5: ['castelnuovo_severi']",
+    "   [conclusion] explicit_formula -> FF rank 4: ['zeta_rational']"
+   ],
+   "verdict": "PASS",
+   "why": "root=5, conclusion=4"
+  },
+  {
+   "target": "V6 (T1) \u2014 reformulation cluster assembly",
+   "requirement": "the equivalence graph places RH, 'Lambda <= 0' and the Weil-criterion positivity in one cluster; 'Lambda >= 0' flagged as an adjacent non-member",
+   "evidence": [
+    "scanned 21 theorems + 113 axioms; 19 edges (iff 8, impl 11)",
+    "unrepresented: flex-head 1, same-head 1",
+    "   EDGE rh_iff_lambda_nonpos           AssertedIff      warrant=asserted  RiemannHypothesis/0 ~ LE.le/4",
+    "   EDGE rh_iff_all_zeros_real          AssertedIff      warrant=asserted  RiemannHypothesis/0 ~ \u22002.Eq/3",
+    "   EDGE lambda_eq_zero_iff             AssertedIff      warrant=asserted  Eq/3 ~ And/2",
+    "   EDGE weil_criterion                 AssertedIff      warrant=asserted  RiemannHypothesis/0 ~ \u22001.LE.le/4",
+    "busiest heads: Ne/3(11), Eq/3(6), Exists/2(6), RiemannHypothesis/0(3), Irreducible/3(2), Prime/3(2)",
+    "   vocabulary-adjacent to rh_iff_lambda_nonpos: rh_iff_all_zeros_real(Iff,RiemannHypothesis), weil_criterion(Iff,RiemannHypothesis), lambda_eq_zero_iff(Validation.Deformation.Lambda,Iff), lambda_nonneg(Validation.Deformation.Lambda), zeros_real_above_lambda(Validation.Deformation.Lambda)",
+    "   vocabulary-adjacent to lambda_eq_zero_iff: rh_iff_lambda_nonpos(Validation.Deformation.Lambda,Iff), lambda_nonneg(Validation.Deformation.Lambda), zeros_real_above_lambda(Validation.Deformation.Lambda), rh_iff_all_zeros_real(Iff), poly_irreducible_iff_prime(Iff)",
+    "   SHARPENING: lambda_nonneg is adjacent to rh_iff_lambda_nonpos via ['Validation.Deformation.Lambda'] (df 4)",
+    "   SHARPENING: lambda_nonneg is adjacent to lambda_eq_zero_iff via ['Validation.Deformation.Lambda'] (df 4)",
+    "   cluster: RH~Lambda=True, RH~Weil=True -> assembled",
+    "   sharpening: 'Lambda >= 0' surfaced as an adjacent non-member = True"
+   ],
+   "verdict": "PASS",
+   "edges": [
+    [
+     "rh_iff_lambda_nonpos",
+     "AssertedIff",
+     "asserted",
+     "RiemannHypothesis/0",
+     "LE.le/4"
+    ],
+    [
+     "rh_iff_all_zeros_real",
+     "AssertedIff",
+     "asserted",
+     "RiemannHypothesis/0",
+     "\u22002.Eq/3"
+    ],
+    [
+     "lambda_eq_zero_iff",
+     "AssertedIff",
+     "asserted",
+     "Eq/3",
+     "And/2"
+    ],
+    [
+     "weil_criterion",
+     "AssertedIff",
+     "asserted",
+     "RiemannHypothesis/0",
+     "\u22001.LE.le/4"
+    ]
+   ],
+   "why": "cluster assembled; sharpening surfaced; 1 sides still unrepresentable"
+  },
+  {
+   "target": "V7 (T2) \u2014 GRH as the least general generalization",
+   "requirement": "anti-unifying RH-for-zeta with the L-function statements yields the family-parameterized skeleton; the emitted skeleton is GRH up to renaming",
+   "evidence": [
+    "   [root] zeros_on_critical_line     x grh_zeros_on_line          common  19 vars 14 ret 0.129",
+    "   [root] no_zero_off_line           x grh_no_zero_off_line       common   0 vars  1 ret 0.000",
+    "   [conclusion] zeros_on_critical_line     x grh_zeros_on_line          common  75 vars  0 ret 1.000",
+    "   [conclusion] no_zero_off_line           x grh_no_zero_off_line       common 152 vars  1 ret 0.981",
+    "   scored on root: the conclusion anchor reaches vars=0 by discarding the hypothesis, where zeta vs LSeries lives \u2014 a degenerate match"
+   ],
+   "verdict": "PARTIAL",
+   "lgg": {
+    "root|Validation.RH.zeros_on_critical_line|Validation.LFamily.grh_zeros_on_line": {
+     "common": 19,
+     "vars": 14,
+     "retention": 0.12925170361995697,
+     "skeleton": "pd(?0,pd(?1,pd(a(a(a(?2,?3),a(a(?4,?5),?6)),a(?7,?8)),pd(a(a(a(a(c(5:LT.lt,1,0),c(4:Real,0)),c(11:Real.instLT,0)),a(?9,?10)),a(?11,?12)),?13))))"
+    },
+    "root|Validation.RH.no_zero_off_line|Validation.LFamily.grh_no_zero_off_line": {
+     "common": 0,
+     "vars": 1,
+     "retention": 0.0,
+     "skeleton": "?0"
+    },
+    "conclusion|Validation.RH.zeros_on_critical_line|Validation.LFamily.grh_zeros_on_line": {
+     "common": 75,
+     "vars": 0,
+     "retention": 1.0,
+     "skeleton": "a(a(a(c(2:Eq,1,+(0)),c(4:Real,0)),a(c(10:Complex.re,0),b3)),a(a(a(a(a(a(c(9:HDiv.hDiv,3,0,0,0),c(4:Real,0)),c(4:Real,0)),c(4:Real,0)),a(a(c(8:instHDiv,1,0),c(4:Real,0)),a(a(c(18:DivInvMonoid.toDiv,1,0),c(4:Real,0)),c(21:Real.instDivInvMonoid,0)))),a(a(a(c(11:OfNat.ofNat,1,0),c(4:Real,0)),n1),a(a(c(12:One.toOfNat1,1,0),c(4:Real,0)),c(12:Real.instOne,0)))),a(a(a(c(11:OfNat.ofNat,1,0),c(4:Real,0)),n2),a(a(a(a(c(19:instOfNatAtLeastTwo,1,0),c(4:Real,0)),n2),c(16:Real.instNatCast,0)),a(a(c(27:Nat.instAtLeastTwoHAddOfNat,0),a(a(a(c(11:OfNat.ofNat,1,0),c(3:Nat,0)),n1),a(c(12:instOfNatNat,0),n1))),a(c(18:Nat.instNeZeroSucc,0),a(a(a(c(11:OfNat.ofNat,1,0),c(3:Nat,0)),n0),a(c(12:instOfNatNat,0),n0))))))))"
+    },
+    "conclusion|Validation.RH.no_zero_off_line|Validation.LFamily.grh_no_zero_off_line": {
+     "common": 152,
+     "vars": 1,
+     "retention": 0.9806451797485352,
+     "skeleton": "a(c(3:Not,0),a(a(c(6:Exists,1,+(0)),c(7:Complex,0)),ld(c(7:Complex,0),a(a(c(3:And,0),a(a(a(c(2:Eq,1,+(0)),c(7:Complex,0)),a(?0,b0)),a(a(a(c(11:OfNat.ofNat,1,0),c(7:Complex,0)),n0),a(a(c(13:Zero.toOfNat0,1,0),c(7:Complex,0)),c(16:Complex.instZero,0))))),a(a(c(3:And,0),a(a(a(a(c(5:LT.lt,1,0),c(4:Real,0)),c(11:Real.instLT,0)),a(a(a(c(11:OfNat.ofNat,1,0),c(4:Real,0)),n0),a(a(c(13:Zero.toOfNat0,1,0),c(4:Real,0)),c(13:Real.instZero,0)))),a(c(10:Complex.re,0),b0))),a(a(c(3:And,0),a(a(a(a(c(5:LT.lt,1,0),c(4:Real,0)),c(11:Real.instLT,0)),a(c(10:Complex.re,0),b0)),a(a(a(c(11:OfNat.ofNat,1,0),c(4:Real,0)),n1),a(a(c(12:One.toOfNat1,1,0),c(4:Real,0)),c(12:Real.instOne,0))))),a(a(a(c(2:Ne,1,+(0)),c(4:Real,0)),a(c(10:Complex.re,0),b0)),a(a(a(a(a(a(c(9:HDiv.hDiv,3,0,0,0),c(4:Real,0)),c(4:Real,0)),c(4:Real,0)),a(a(c(8:instHDiv,1,0),c(4:Real,0)),a(a(c(18:DivInvMonoid.toDiv,1,0),c(4:Real,0)),c(21:Real.instDivInvMonoid,0)))),a(a(a(c(11:OfNat.ofNat,1,0),c(4:Real,0)),n1),a(a(c(12:One.toOfNat1,1,0),c(4:Real,0)),c(12:Real.instOne,0)))),a(a(a(c(11:OfNat.ofNat,1,0),c(4:Real,0)),n2),a(a(a(a(c(19:instOfNatAtLeastTwo,1,0),c(4:Real,0)),n2),c(16:Real.instNatCast,0)),a(a(c(27:Nat.instAtLeastTwoHAddOfNat,0),a(a(a(c(11:OfNat.ofNat,1,0),c(3:Nat,0)),n1),a(c(12:instOfNatNat,0),n1))),a(c(18:Nat.instNeZeroSucc,0),a(a(a(c(11:OfNat.ofNat,1,0),c(3:Nat,0)),n0),a(c(12:instOfNatNat,0),n0))))))))))))))"
+    }
+   },
+   "why": "root-anchored lgg abstracts 14 positions incl. the L-function slot; retention 0.129 is too low for the skeleton to rank"
+  },
+  {
+   "target": "V8 (T2) \u2014 pair correlation / GUE",
+   "requirement": "`similar` matches Montgomery's zero-pair-correlation density with the GUE eigenvalue density; match found",
+   "evidence": [
+    "   [root] montgomery -> PairCorrelation rank None: ['counting_from_zeros', 'grh_zeros_on_line', 'ff_point_count_error']",
+    "   [conclusion] montgomery -> PairCorrelation rank 2: ['ingham_bound', 'gue_eigenvalue_spacing', 'pnt']"
+   ],
+   "verdict": "PASS",
+   "why": "root=None, conclusion=2"
+  },
+  {
+   "target": "V9 (T2) \u2014 zero density as proof-shape retrieval",
+   "requirement": "querying 'approaches for statements of shape forall-elements-satisfy-P' returns the exceptional-set-bounding strategy",
+   "evidence": [
+    "The proof-shape index (atlas.md 1e) does not exist. No surface to query.",
+    "Reported rather than skipped so that a later pass means something."
+   ],
+   "verdict": "UNRUNNABLE",
+   "why": "no proof-shape index"
+  },
+  {
+   "target": "CONTROLS",
+   "requirement": "the twelve FH corpus groups are background noise; Group 12's termination patterns must match nothing in RH",
+   "evidence": [
+    "   [root] 0/24 neighbours came from the control corpus (0%)",
+    "   [conclusion] 0/48 neighbours came from the control corpus (0%)"
+   ],
+   "verdict": "PASS",
+   "control": {
+    "root": {
+     "fired": 0,
+     "total": 24
+    },
+    "conclusion": {
+     "fired": 0,
+     "total": 48
+    }
+   },
+   "why": "root-anchored controls silent"
+  }
+ ]
+}

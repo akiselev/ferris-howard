@@ -1,0 +1,150 @@
+{
+  "schema": "fh-kuna-e1-mc1-result-v1",
+  "executed_at": "2026-08-05",
+  "status": "completed-instance-metadata-and-narrow-theorem-claim-policy",
+  "manifest": {
+    "path": "research/data/kuna-e1-mc1-manifest.json",
+    "sha256": "571385549a448a8469e2d35a1fc8c0fb76c81160705c6f5149be201ba21d668f",
+    "post_hoc": true,
+    "not_blind": true
+  },
+  "historical_environment": {
+    "parent": "71f079f9d2860606575d65f12a9ad4e34d80a841",
+    "toolchain": "leanprover/lean4:v4.12.0-rc1",
+    "module": "Mathlib.RingTheory.Finiteness",
+    "parent_target_build_exit": 0,
+    "source_worktree_clean": true,
+    "extractor_build_exit": 0
+  },
+  "representation": {
+    "field": "is_instance",
+    "contract": "an explicit boolean on every row, computed by Lean.Meta.isInstanceCore in the imported environment",
+    "extractor": "atlas-extract/FhAtlas/Extract.lean",
+    "historical_extraction_source_sha256": "5888fc2eb9638ba7bf1e77b98a79e63b477e2817b86e3c730bfe6d705f59fb23",
+    "current_extractor_sha256": "ccb5dcdb3aa7185e15854919b385646fa886f7b2649e0ce0433516dc3763e9dd",
+    "post_extraction_source_change": "documentation only",
+    "statement_encoder_sha256": "e0d5a35d91dd6a7cc3333a978dcb8173041ba7144c1849f172d0fcc2db57203c",
+    "test": "lean/Tests/Atlas/Extract.lean",
+    "test_sha256": "1b43ecfe1cc007e8b2a7a6554cfb65047542161be2d98514c905560e7d1b8431",
+    "test_contract": "a non-instance theorem and a registered instance have the same class-valued conclusion but opposite explicit flags",
+    "historical_compatibility_edits": [],
+    "encoding_contract_unchanged": true
+  },
+  "extraction": {
+    "local_rows": 90,
+    "local_bytes": 439203,
+    "local_sha256": "181dd2b80622b9683b55f86ed56953bd223fc4916bb083b16d75bc423a7d565e",
+    "local_import_ms": 1243,
+    "local_encode_write_ms": 702,
+    "closure_rows": 106733,
+    "closure_bytes": 222105150,
+    "closure_sha256": "b69793da8984779c7b8d312f4a372734d65ccac0a456156b8868b35177e4efd6",
+    "closure_import_ms": 1268,
+    "closure_select_ms": 1171,
+    "closure_encode_write_ms": 76051,
+    "closure_wall_seconds": 79.31,
+    "rows_with_boolean": 106733,
+    "rows_with_unknown_instance_status": 0,
+    "registered_instances_all_rows": 8804,
+    "semantic_diff_after_deleting_is_instance": "byte-identical JSON stream to the frozen MC0 closure",
+    "raw_paths_are_ephemeral": true
+  },
+  "class_producing_population": {
+    "rows": 10607,
+    "registered_instances": 8791,
+    "non_instances": 1816,
+    "by_kind_and_status": [
+      {"kind": "constructor", "status": "registered-instance", "rows": 1},
+      {"kind": "constructor", "status": "non-instance", "rows": 599},
+      {"kind": "def", "status": "registered-instance", "rows": 8666},
+      {"kind": "def", "status": "non-instance", "rows": 776},
+      {"kind": "opaque", "status": "non-instance", "rows": 2},
+      {"kind": "theorem", "status": "registered-instance", "rows": 124},
+      {"kind": "theorem", "status": "non-instance", "rows": 439}
+    ],
+    "finding": "constant kind alone is insufficient: 124 theorem constants are registered instances while 439 theorem constants with class-valued conclusions are not"
+  },
+  "preregistered_broad_ablation": {
+    "rule": "admit every explicit is_instance=false class-producing declaration in the carrier lane",
+    "detector_sha256": "55e592a95e1edd7fda94b36c2c7dcaf274110d6ef2a181e217f502a029ca0b1b",
+    "registered_instances_entering_judgment": 0,
+    "judged_declarations": 1112,
+    "candidate_declarations": 611,
+    "candidate_declarations_by_kind": {
+      "constructor": 139,
+      "def": 339,
+      "theorem": 133
+    },
+    "candidate_binders": 693,
+    "raw_proposals": 3806,
+    "projection_like_candidate_declarations": 127,
+    "audit_artifact_sha256": "cd82fd48f403b9902861dd266f8106c266cf0d54f0c65fda4fffef27802fd51a",
+    "decision": "rejected as broader than the theorem-claim loss; 478 of 611 candidate declarations are constructors or definitions"
+  },
+  "accepted_option_gated_policy": {
+    "method": "HomeIndex.carrier_statement_candidates",
+    "rule": "admit a class-producing declaration only when kind=theorem and is_instance=false; refuse registered instances, constructors, definitions, opaque constants, and legacy rows",
+    "detector": "scripts/fh_home.py",
+    "detector_sha256": "dd74d0bbacf6085d948b3157a270e5c818ea09cc6eb9ef8b22daf13e7b3e156a",
+    "selftest": "scripts/fh-home-search-selftest.py",
+    "selftest_sha256": "3ebffe51ef45141e2086c78e8fc673cabd1bcb1ceab1253bb37f27dc4f52fb60",
+    "audit_runner": "scripts/kuna-produces-class-audit.py",
+    "audit_runner_sha256": "f7d5330e4897f88d65219c2eb7256f303db38e9207f84eaca1b689990101a684",
+    "registered_instances_entering_judgment": 0,
+    "method_outcomes": {
+      "produces-a-class": 10168,
+      "no-carrier-evidence": 151,
+      "not-judgeable": 1,
+      "judged": 287
+    },
+    "candidate_declarations": 133,
+    "candidate_binders": 180,
+    "raw_proposals": 834,
+    "projection_like_candidate_declarations": 55,
+    "binder_verdicts": {
+      "at-home": 430,
+      "candidates": 180,
+      "no-attached-requirement": 259,
+      "unknown-carrier": 6
+    },
+    "audit_seconds": {
+      "load": 5.574,
+      "index": 53.918,
+      "audit": 0.109,
+      "total_before_hash": 59.601
+    },
+    "peak_rss_kib": 730112,
+    "audit_artifact_sha256": "33f39f61becad90836daebe0de2f0b0739f1f57c4d303463bc8353b6bbd4a0bb"
+  },
+  "positive_event": {
+    "declaration": "Module.Finite.finite_basis",
+    "conclusion_class": "Finite",
+    "kind": "theorem",
+    "is_instance": false,
+    "event": {"source": "Ring", "target": "Semiring", "args": "R", "carrier": 0},
+    "HomeIndex.home": {"skipped": "multi-carrier", "carriers": 3},
+    "HomeIndex.statement_candidates": {"skipped": "multi-carrier", "carriers": 2},
+    "carrier_event_binder": {
+      "class": "Ring",
+      "carrier": 0,
+      "verdict": "candidates",
+      "reached": ["Semiring"],
+      "candidates": ["Semiring"]
+    },
+    "exact_event_proposed": true,
+    "exact_child_statement_and_unchanged_proof_in_parent_exit": 0,
+    "proof_evidence_source": "research/data/kuna-e1-mc0-result.json"
+  },
+  "decision": {
+    "representation": "accepted",
+    "preregistered_broad_policy": "rejected",
+    "narrow_theorem_claim_policy": "accepted only in the existing default-off carrier lane",
+    "HomeIndex.home_change": "none",
+    "HomeIndex.statement_candidates_change": "none",
+    "legacy_row_change": "none",
+    "default_activation": "rejected",
+    "reason": "the explicit environment fact removes the finite_basis false refusal without admitting any registered instance, but 834 raw proposals from 133 theorem claims still lack statement and proof precision controls",
+    "next_refinement": "freeze a deterministic theorem-claim proposal sample stratified by candidate family and projection-like status, then re-elaborate statements and run kernel proof attempts before considering broader activation",
+    "claim_boundary": "a post-hoc structural safety audit on one historical closure, not recall and not proposal precision"
+  }
+}

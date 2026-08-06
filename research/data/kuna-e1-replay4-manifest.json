@@ -1,0 +1,61 @@
+{
+  "schema": "fh-kuna-e1-manifest-v1",
+  "frozen_at": "2026-08-05",
+  "source": {
+    "e0_artifact": "research/data/kuna-e0-events.json",
+    "e0_sha256": "5f5ab50e22fbaeea9728d16e3b45018e9a045c7a5fb9cae4f403b64c07b064a5",
+    "detector": "scripts/fh_home.py",
+    "detector_sha256": "92c8c6904c49485a11dfe1a810f9f10ced89e018f00a5d98b926286f01791ede",
+    "baseline_method": "HomeIndex.home",
+    "baseline_behavior_changed_since_replay3": false,
+    "search_method": "HomeIndex.statement_candidates"
+  },
+  "selection": {
+    "unit": "single dependency-isolated theorem-or-lemma binder event",
+    "rule": "next event by Git commit date after replay 3 among E0 own theorem-or-lemma events with one retained event in the commit, one carrier, exactly one whole-telescope binder change, a non-metaprogramming Mathlib file, and an unchanged child proof that elaborates in the parent",
+    "ordering": "Git committer timestamp, descending",
+    "screened_newer": [
+      {
+        "child": "fc892cf1d14d5f923b34ab9b79e62bd903e9eb36",
+        "declaration": "Finsupp.isPWO",
+        "rejected": "also replaces WellFoundedLT with WellQuasiOrderedLE"
+      },
+      {
+        "child": "ee4aed768f1011aebf10c4d5f65dd4cc365f776a",
+        "declaration": "HahnSeries.orderTop_one",
+        "rejected": "also replaces Nontrivial with One and NeZero"
+      }
+    ],
+    "purpose": "second development replay, frozen after the replay-3 repair and before either detector method is run on this parent",
+    "not_blind": true,
+    "baseline_output_seen_before_freeze": false,
+    "search_output_seen_before_freeze": false
+  },
+  "development": [
+    {
+      "child": "4cea329f5d28ff4afb3c77deefa3d615b69a7172",
+      "parent": "ff11cd51652709cdc648592c03b5933bfcb1fb7e",
+      "date": "2025-10-15",
+      "parent_toolchain": "leanprover/lean4:v4.24.0",
+      "module": "Mathlib.Algebra.Algebra.Operations",
+      "parent_file": "Mathlib/Algebra/Algebra/Operations.lean",
+      "declaration": "Submodule.mul_mem_smul_iff",
+      "events": [
+        {
+          "source": "CommRing",
+          "target": "Ring",
+          "args": "S",
+          "stratum": "own"
+        }
+      ],
+      "source_diff": "one binder-head replacement; proof text unchanged"
+    }
+  ],
+  "verdicts": {
+    "exact_proposal": "the method includes Ring for the CommRing binder on S",
+    "wrong_target": "the method judges the declaration but excludes Ring",
+    "refused": "the method refuses the declaration before candidate generation",
+    "dependency_contaminated": "the exact child proof does not elaborate in the unchanged parent",
+    "missed": "the exact child proof elaborates in the parent but the method excludes Ring"
+  }
+}

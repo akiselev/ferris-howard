@@ -22,7 +22,7 @@ defaultTargets = ["AtlasExtract"]
 # clearer than a pattern.
 [[lean_lib]]
 name = "AtlasExtract"
-roots = ["FhAtlas.Statement", "FhAtlas.Extract"]
+roots = ["FhAtlas.Statement", "FhAtlas.Extract", "FhAtlas.Home"]
 
 [[lean_exe]]
 name = "atlas_extract"

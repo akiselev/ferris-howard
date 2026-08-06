@@ -31,6 +31,36 @@ use crate::skel::index::{IndexConfig, SkeletonIndex};
 use crate::skel::lgg::matches;
 use crate::skel::term::{Arena, Node, TermId};
 
+/// Does this declaration belong to the theory the caller named?
+///
+/// `theory_of` files everything under a fixed depth — 2 inside `Mathlib`, 1 elsewhere — so
+/// `theory_of("Physlib.Relativity") == "Physlib"` and an exact-equality test against the
+/// string `"Physlib.Relativity"` matches **nothing**. `dictionary` then returned **0 rows
+/// with no error**, which is indistinguishable from "these two theories share no structure"
+/// and was read as exactly that.
+///
+/// Membership is therefore a *prefix* test on module-path components, so a caller may name
+/// a theory at whatever depth their library organises it: `Physlib`, `Physlib.Relativity`
+/// and `Mathlib.Algebra` all work. Component-wise so that `Mathlib.Algebra` does not
+/// swallow `Mathlib.AlgebraicGeometry`.
+pub fn in_theory(module: &str, theory: &str) -> bool {
+    module == theory
+        || (module.starts_with(theory) && module.as_bytes().get(theory.len()) == Some(&b'.'))
+}
+
+/// Every theory name present in the index, at `theory_of`'s depth. For diagnostics: a
+/// caller who names a theory that matches nothing needs to be told what does exist.
+pub fn theories_present(idx: &SkeletonIndex) -> Vec<String> {
+    let mut out: BTreeSet<String> = BTreeSet::new();
+    for i in 0..idx.len() {
+        let n = idx.name_of(crate::skel::index::DeclId(i as u32));
+        if let Some(m) = idx.module_of(n) {
+            out.insert(theory_of(m).to_string());
+        }
+    }
+    out.into_iter().collect()
+}
+
 /// A declaration's theory: the module prefix at the depth that distinguishes subjects.
 pub fn theory_of(module: &str) -> &str {
     let depth = if module.starts_with("Mathlib.") { 2 } else { 1 };
@@ -113,6 +143,19 @@ pub struct DictOptions {
     /// matched against itself. Excluded here rather than by changing `theory_of`, which
     /// `frontier` shares and which C1 replaces with versioned cluster manifests anyway.
     pub exclude_subprefix: Vec<String>,
+    /// How many lefts may claim one right. `None` keeps the historical behaviour.
+    ///
+    /// Unbounded, a dictionary is not a map: measured on physlib,
+    /// `ClassicalMechanics ~ QuantumMechanics` produces 169 rows over 44 distinct rights
+    /// with **95.9% of rows in collision**, and the worst targets are `noConfusion`
+    /// (claimed by 14 lefts, three times over) and `ξ_pos` (9 lefts) — auto-generated or
+    /// content-free statements that match anything of their shape.
+    ///
+    /// Capping requires assembling globally rather than greedily per left, so that the
+    /// best-scoring claim on a contested right wins rather than the alphabetically first.
+    /// `dictionary_policies` already computes this frontier; this connects it to the
+    /// assembly, which previously used none of it.
+    pub max_per_right: Option<usize>,
     /// Final name components treated as administrative rather than mathematical.
     ///
     /// The worst collision target on the first run was `instReflDvd_mathlib`, claimed by
@@ -129,6 +172,7 @@ impl Default for DictOptions {
             per_decl: 1,
             theorems_only: true,
             pool_width: 64,
+            max_per_right: None,
             exclude_subprefix: Vec::new(),
             exclude_roles: Vec::new(),
         }
@@ -176,10 +220,16 @@ pub fn dictionary(
         .collect();
     let lefts: Vec<String> = names
         .iter()
-        .filter(|n| idx.module_of(n).is_some_and(|m| theory_of(m) == left))
+        .filter(|n| idx.module_of(n).is_some_and(|m| in_theory(m, left)))
         .filter(|n| !theorems_only || idx.is_theorem(n))
         .cloned()
         .collect();
+
+    // When a right may be claimed only so many times, the contest has to be settled
+    // globally: greedy per-left assembly hands a contested right to whichever left the
+    // iteration reached first, which is alphabetical order and not a judgement. Candidates
+    // are therefore collected, sorted by score, and allocated best-first.
+    let mut pending: Vec<(f32, Row)> = Vec::new();
 
     for name in &lefts {
         let Ok(neighbours) = idx.similar(name, opts.pool_width, cfg) else {
@@ -187,7 +237,7 @@ pub fn dictionary(
         };
         let mut kept = 0;
         for n in neighbours {
-            if theory_of(&n.module) != right || (theorems_only && !idx.is_theorem(&n.name)) {
+            if !in_theory(&n.module, right) || (theorems_only && !idx.is_theorem(&n.name)) {
                 continue;
             }
             if opts
@@ -205,17 +255,23 @@ pub fn dictionary(
                 (true, false) | (false, true) => Status::OneProven,
                 (false, false) => Status::NeitherProven,
             };
-            matched_left.insert(name.clone());
-            matched_right.insert(n.name.clone());
-            rows.push(Row {
+            let score = n.score;
+            let row = Row {
                 left: name.clone(),
                 right: n.name.clone(),
                 skeleton: n.skeleton,
                 retention: n.retention,
-                score: n.score,
+                score,
                 status,
                 transportable: n.transportable,
-            });
+            };
+            if opts.max_per_right.is_none() {
+                matched_left.insert(name.clone());
+                matched_right.insert(row.right.clone());
+                rows.push(row);
+            } else {
+                pending.push((score, row));
+            }
             kept += 1;
             if kept >= per_decl {
                 break;
@@ -223,9 +279,30 @@ pub fn dictionary(
         }
     }
 
+    if let Some(cap) = opts.max_per_right {
+        pending.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.left.cmp(&b.1.left)));
+        let mut claims: HashMap<String, usize> = HashMap::new();
+        let mut per_left: HashMap<String, usize> = HashMap::new();
+        for (_s, row) in pending {
+            let c = claims.entry(row.right.clone()).or_insert(0);
+            if *c >= cap {
+                continue;
+            }
+            let l = per_left.entry(row.left.clone()).or_insert(0);
+            if *l >= per_decl {
+                continue;
+            }
+            *c += 1;
+            *l += 1;
+            matched_left.insert(row.left.clone());
+            matched_right.insert(row.right.clone());
+            rows.push(row);
+        }
+    }
+
     let rights: Vec<String> = names
         .iter()
-        .filter(|n| idx.module_of(n).is_some_and(|m| theory_of(m) == right))
+        .filter(|n| idx.module_of(n).is_some_and(|m| in_theory(m, right)))
         .filter(|n| !theorems_only || idx.is_theorem(n))
         .cloned()
         .collect();
@@ -322,15 +399,39 @@ pub fn transport(
         .term_of(row_right, level)
         .ok_or(TransportError::NotInSlice(row_right.into()))?;
 
+    let left = idx
+        .term_of(row_left, level)
+        .ok_or(TransportError::NotInSlice(row_left.into()))?;
+
     let arena = idx.arena_mut();
     let sub_subject = matches(arena, skeleton, subj).ok_or(TransportError::NoMatch)?;
     let sub_right = matches(arena, skeleton, right).ok_or(TransportError::NoMatch)?;
+    let sub_left = matches(arena, skeleton, left).ok_or(TransportError::NoMatch)?;
 
-    // The image: the subject's structure, with each hole filled the way the row's *right*
-    // side fills it. Where the subject and the row's left agree, nothing moves.
+    // The image: the subject, with the row's correspondence applied.
+    //
+    // A row `left ~ right` over skeleton `S` asserts, at each hole `k`, that the left's
+    // filling corresponds to the right's. Transporting a *subject* means rewriting the
+    // subject's own fillings through that correspondence: where the subject fills a hole
+    // the way the left does, the row says it should be filled the way the right does;
+    // where it fills it with something else, the row says nothing and it stays.
+    //
+    // The previous construction took `sub_right` for every hole and fell back to the
+    // subject only when `sub_right` lacked a binding — which it never can, since it was
+    // obtained by matching the same skeleton against the right. So the fallback was dead
+    // code, `image_subst` equalled `sub_right` identically, and the image was **always
+    // `row_right` regardless of the subject**. Measured before the fix: 1,074 of 1,074
+    // successful transports returned `.name == row.right`, 32 of 32 rows produced exactly
+    // one image across hundreds of distinct subjects, and `.exists` was `true` every
+    // time — so the operation atlas.md calls "the active operation" could not, even in
+    // principle, emit the open target that is its entire purpose.
     let mut image_subst = HashMap::new();
     for (k, v) in &sub_subject {
-        image_subst.insert(*k, sub_right.get(k).copied().unwrap_or(*v));
+        let moved = match (sub_left.get(k), sub_right.get(k)) {
+            (Some(l), Some(r)) if l == v => *r,
+            _ => *v,
+        };
+        image_subst.insert(*k, moved);
     }
     let image = substitute(arena, skeleton, &image_subst);
     let rendered = arena.render(image);
@@ -368,6 +469,13 @@ pub struct Frontier {
     pub right: String,
     /// Shape buckets both theories occupy, as a fraction of the smaller theory's buckets.
     pub similarity: f32,
+    /// What two theories of these sizes would share by chance. See `frontier`.
+    pub expected_similarity: f32,
+    /// `similarity - expected_similarity`. The quantity the query is actually about:
+    /// shared shape *beyond* what size alone explains. Can be negative, and often is —
+    /// most theory pairs are less alike than chance, which is the finding that motivated
+    /// adding this (`research/corpus-atlas-findings.md` §17–§18).
+    pub excess: f32,
     /// Declarations in one theory whose statement or proof cites the other.
     pub cross_citations: usize,
     pub left_size: usize,
@@ -450,6 +558,14 @@ pub fn frontier(
         }
     }
 
+    // How many distinct shapes the included theories occupy between them. The denominator
+    // of the null below, so it is computed over exactly the theories being compared.
+    let universe: BTreeSet<TermId> = theories
+        .iter()
+        .flat_map(|t| theory_shapes[t].iter().copied())
+        .collect();
+    let m = universe.len().max(1) as f32;
+
     let mut out = Vec::new();
     for (i, a) in theories.iter().enumerate() {
         for b in &theories[i + 1..] {
@@ -457,14 +573,28 @@ pub fn frontier(
             let shared = sa.intersection(sb).count();
             let denom = sa.len().min(sb.len()).max(1);
             let similarity = shared as f32 / denom as f32;
+            // What two theories of these sizes would share **by chance**, if shapes were
+            // assigned to theories at random: `E|A ∩ B| = |A||B|/M`, so dividing by
+            // `min(|A|,|B|)` leaves `max(|A|,|B|)/M`.
+            //
+            // Without this the ranking is a size ranking. Measured on physlib, a
+            // twenty-member family already spans 9.23 of 22 subfields by chance, and both
+            // recorded frontier failures are this: `Mathlib.Algebra ~ Mathlib.Order` at
+            // similarity 0.040 with 1,508 cross-citations (the largest pair, not the most
+            // similar one), and physlib's units-API duplication. Raw similarity cannot
+            // tell a real interface from a big theory.
+            let expected = sa.len().max(sb.len()) as f32 / m;
+            let excess = similarity - expected;
             let cross = cites.get(&(a.clone(), b.clone())).copied().unwrap_or(0);
-            // Similarity buys, traffic discounts. A theory pair that already cites each
-            // other heavily is explored, whatever it looks like.
-            let score = similarity / (1.0 + (cross as f32).sqrt());
+            // Excess buys, traffic discounts. A theory pair that already cites each other
+            // heavily is explored, whatever it looks like.
+            let score = excess / (1.0 + (cross as f32).sqrt());
             out.push(Frontier {
                 left: a.clone(),
                 right: b.clone(),
                 similarity,
+                expected_similarity: expected,
+                excess,
                 cross_citations: cross,
                 left_size: sizes[a],
                 right_size: sizes[b],
@@ -878,6 +1008,31 @@ pub fn select(d: &Dictionary, policy: Policy) -> (Dictionary, BTreeMap<String, L
 #[cfg(test)]
 mod select_tests {
     use super::*;
+
+    /// A theory named at a depth `theory_of` does not use must still match.
+    ///
+    /// `theory_of` files everything outside Mathlib at depth 1, so
+    /// `theory_of("Physlib.Relativity")` is `"Physlib"` and an equality test against
+    /// `"Physlib.Relativity"` matched nothing — `dictionary` returned zero rows and no
+    /// error, which reads as "these theories share no structure" and was read as exactly
+    /// that. Prefix membership fixes it; the component boundary is what keeps
+    /// `Mathlib.Algebra` from swallowing `Mathlib.AlgebraicGeometry`, and that is the half
+    /// a naive `starts_with` gets wrong.
+    #[test]
+    fn theory_membership_is_by_component_at_any_depth() {
+        assert!(in_theory("Physlib.Relativity.Lorentz", "Physlib"));
+        assert!(in_theory(
+            "Physlib.Relativity.Lorentz",
+            "Physlib.Relativity"
+        ));
+        assert!(in_theory("Physlib", "Physlib"));
+        assert!(!in_theory("PhyslibExtra.Thing", "Physlib"));
+        assert!(in_theory("Mathlib.Algebra.Order.Field", "Mathlib.Algebra"));
+        assert!(
+            !in_theory("Mathlib.AlgebraicGeometry.Scheme", "Mathlib.Algebra"),
+            "a prefix test without a component boundary merges two unrelated subjects"
+        );
+    }
 
     fn row(left: &str, right: &str, score: f32) -> Row {
         Row {

@@ -33,6 +33,7 @@ use std::process::Command;
 
 use fh_atlas::graph::{Graph, Lens};
 use fh_atlas::json::{self, Value};
+use fh_atlas::skel::index::{Anchor, IndexConfig, SkeletonIndex};
 use fh_atlas::statement;
 
 const PROTOCOL_VERSION: &str = "2024-11-05";
@@ -184,6 +185,54 @@ fn tool_list() -> Value {
             ),
         ),
         tool(
+            "atlas_closure",
+            "Is a slice closed under the constants its statements mention? Returns the \
+             coverage fraction and the most-cited missing constants. RUN THIS FIRST on any \
+             slice you did not extract yourself: an unclosed slice does not fail, it \
+             answers — the erasure holes arguments in InstImplicit positions of the head \
+             constant's signature, so a head the slice lacks holes nothing and the \
+             normalisation silently does not happen. A slice built with `atlas_extract \
+             --local` is the usual cause, since that filters the output rather than the \
+             import. Measured cost of ignoring this: 34.5% of results lost and 11.0% \
+             fabricated. Below ~95% coverage, treat every other Atlas answer as unsound.",
+            string_schema(
+                &[("slice", "path to a JSONL extraction from `atlas_extract`")],
+                &["slice"],
+            ),
+        ),
+        tool(
+            "atlas_similar",
+            "Declarations whose statements anti-unify with this one, ranked — the \
+             retrieval query behind dictionaries and cross-theory analogy. \
+             `posting_work_budget` switches the prefilter to work-budget admission: every \
+             posting key is kept and the query walks at most that many postings, rarest \
+             key first, instead of dropping keys held by too many declarations. The flat \
+             cutoff deletes the common keys cross-domain analogy rides on — measured 0/4 \
+             pre-registered classical<->quantum correspondences at the shipped cutoff, \
+             4/4 with the keys admitted — so set it (2000 is the measured reference \
+             point) together with `anchor=conclusion` when hunting across theories. \
+             Loads the slice and builds an index per call; loops belong on the Python \
+             binding.",
+            string_schema(
+                &[
+                    ("slice", "path to a JSONL extraction from `atlas_extract`"),
+                    ("name", "the declaration to find neighbours of"),
+                    ("top", "how many neighbours to return (default 10)"),
+                    (
+                        "anchor",
+                        "`root` (default) compares whole statements; `conclusion` \
+                         compares what they conclude, which cross-theory analogy needs",
+                    ),
+                    (
+                        "posting_work_budget",
+                        "postings walked per query under keep-all admission; omit for \
+                         the shipped frequency cutoff",
+                    ),
+                ],
+                &["slice", "name"],
+            ),
+        ),
+        tool(
             "atlas_why",
             "A shortest citation chain from one declaration down to another. The \
              'decompile the relationship' primitive: the first thing to run when asked \
@@ -285,6 +334,95 @@ fn call_tool(params: &Value) -> Result<String, String> {
 
     match name {
         "elaborate" => elaborate(&arg("file")?),
+        "atlas_closure" => {
+            // Builds the skeleton index rather than the graph: the coverage figure is a
+            // by-product of erasing every statement, which is what the index does anyway.
+            let path = arg("slice")?;
+            let text = std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
+            let idx =
+                SkeletonIndex::build(&text, &IndexConfig::default()).map_err(|e| e.to_string())?;
+            let (known, unknown, worst) = idx.closure(10);
+            let total = known + unknown;
+            let cov = if total == 0 {
+                1.0
+            } else {
+                known as f64 / total as f64
+            };
+            let mut out = format!(
+                "declarations: {}\napplication heads: {total}\nwith a signature: {known}\n\
+                 missing: {unknown}\nCOVERAGE: {:.2}%\n",
+                idx.len(),
+                cov * 100.0
+            );
+            if cov < 0.95 {
+                out.push_str(
+                    "\nVERDICT: NOT CLOSED. Every result at erasure level `instances` or \
+                     above is unsound on this slice — the normalisation silently did not \
+                     happen. Re-extract without `--local`.\n",
+                );
+            } else {
+                out.push_str("\nVERDICT: closed enough to query.\n");
+            }
+            if !worst.is_empty() {
+                out.push_str("\nmost-cited missing constants (statements mentioning them):\n");
+                for (n, df) in worst {
+                    out.push_str(&format!("  {n}  {df}\n"));
+                }
+            }
+            Ok(out)
+        }
+        "atlas_similar" => {
+            let path = arg("slice")?;
+            let text = std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
+            let query = arg("name")?;
+            // Optional numbers arrive as strings under `string_schema`; a malformed one
+            // is the caller's error to hear about, not a default to fall back on.
+            let opt_num = |k: &str| -> Result<Option<usize>, String> {
+                args.get(k)
+                    .and_then(|v| v.as_str())
+                    .map(|s| {
+                        s.parse::<usize>()
+                            .map_err(|_| format!("`{k}` must be a number, got `{s}`"))
+                    })
+                    .transpose()
+            };
+            let top = opt_num("top")?.unwrap_or(10);
+            let posting_work_budget = opt_num("posting_work_budget")?;
+            let anchor = match args
+                .get("anchor")
+                .and_then(|v| v.as_str())
+                .unwrap_or("root")
+            {
+                "root" => Anchor::Root,
+                "conclusion" => Anchor::Conclusion,
+                other => return Err(format!("unknown anchor `{other}`")),
+            };
+            let cfg = IndexConfig {
+                anchor,
+                posting_work_budget,
+                ..IndexConfig::default()
+            };
+            let mut idx = SkeletonIndex::build(&text, &cfg).map_err(|e| e.to_string())?;
+            let ns = idx.similar(&query, top, &cfg)?;
+            if ns.is_empty() {
+                return Ok("(no neighbours above the floors)".to_string());
+            }
+            Ok(ns
+                .iter()
+                .map(|n| {
+                    format!(
+                        "{:.4}  ret {:.3}  common {:>3}  [{}]  {}  ({})",
+                        n.score,
+                        n.retention,
+                        n.common,
+                        n.sources.describe(),
+                        n.name,
+                        n.module
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n"))
+        }
         "atlas_why" => {
             let g = load(&arg("slice")?)?;
             let (from, to) = (arg("from")?, arg("to")?);
@@ -449,6 +587,8 @@ mod tests {
             .collect();
         assert!(names.contains(&"elaborate"));
         assert!(names.contains(&"atlas_why"));
+        assert!(names.contains(&"atlas_closure"));
+        assert!(names.contains(&"atlas_similar"));
         assert!(names.contains(&"statement_verify"));
         // Delegated to `lean-lsp-mcp` per agent-interface §1's amendment: composition
         // over reimplementation. A `search` here would be the second-best one.
@@ -477,6 +617,142 @@ mod tests {
             .get("text")
             .unwrap();
         assert!(text.as_str().unwrap().contains("nonexistent"), "{text:?}");
+    }
+
+    /// The closure check must **discriminate**, not merely run.
+    ///
+    /// A coverage number that reads high on every input is the failure mode it exists to
+    /// catch, so this pairs a slice whose statements name only constants it contains
+    /// against one missing its head constant, and asserts opposite verdicts. Without the
+    /// negative half a hard-coded `100%` would pass.
+    #[test]
+    fn atlas_closure_separates_a_closed_slice_from_an_unclosed_one() {
+        let dir = std::env::temp_dir().join("fh-mcp-closure-test");
+        std::fs::create_dir_all(&dir).unwrap();
+        // Real encodings lifted from the corpus, not hand-written ones: the first
+        // attempt at this fixture used `s(*)`, which is *erased-output* syntax and not
+        // input, so both slices parsed to zero declarations and the closed half passed
+        // only because 0/0 defaults to 100%. A fixture that tests nothing is the exact
+        // failure this test exists to catch, so it is worth the two literals.
+        //
+        // `proof_irrel`'s statement is headed by `Eq`. The closed slice carries `Eq`'s own
+        // row; the unclosed one does not, which is the whole difference.
+        let stmt = "fh-stmt-v1;pi(s(0),pd(b0,pd(b1,a(a(a(c(2:Eq,1,0),b2),b1),b0))))";
+        let eq_stmt = "fh-stmt-v1;pi(s(u0),pd(b0,pd(b1,s(0))))";
+        let thm = format!(
+            "{{\"name\":\"proof_irrel\",\"kind\":\"theorem\",\"module\":\"M\",\
+             \"stmt\":\"{stmt}\",\"uses_statement\":[],\"uses_proof\":[]}}"
+        );
+        let eq = format!(
+            "{{\"name\":\"Eq\",\"kind\":\"def\",\"module\":\"M\",\
+             \"stmt\":\"{eq_stmt}\",\"uses_statement\":[],\"uses_proof\":[]}}"
+        );
+        let closed = dir.join("closed.jsonl");
+        std::fs::write(&closed, format!("{thm}\n{eq}\n")).unwrap();
+        let unclosed = dir.join("unclosed.jsonl");
+        std::fs::write(&unclosed, format!("{thm}\n")).unwrap();
+
+        let text_of = |path: &std::path::Path| -> String {
+            let p = path.display().to_string();
+            let r = call(&format!(
+                r#"{{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{{"name":"atlas_closure","arguments":{{"slice":"{p}"}}}}}}"#
+            ));
+            let res = r.get("result").unwrap();
+            assert_eq!(res.get("isError"), Some(&Value::Bool(false)), "{res:?}");
+            res.get("content").unwrap().as_list().unwrap()[0]
+                .get("text")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string()
+        };
+
+        let a = text_of(&closed);
+        let b = text_of(&unclosed);
+        assert!(
+            a.contains("closed enough to query"),
+            "closed slice reported: {a}"
+        );
+        assert!(b.contains("NOT CLOSED"), "unclosed slice reported: {b}");
+        // …and it must name what is missing, or a caller cannot act on the verdict.
+        assert!(
+            b.contains("Eq"),
+            "unclosed slice did not name the missing constant: {b}"
+        );
+    }
+
+    /// `atlas_similar`'s budget knob, paired so it can fail in both directions.
+    ///
+    /// The fixture reproduces the §66 defect at MCP scale: the only key linking `p` to
+    /// `q` is a concrete subterm held by 62 of 62 declarations, over the shipped
+    /// `min_posting_len` of 50, so with the knob off `q` must be absent — if it appears,
+    /// the fixture's key was never crowded and the positive half proves nothing. With
+    /// the budget on, the key is admitted and `q` must arrive. The crowd rows share
+    /// `p`'s whole shape, so the ranking still returns *them* either way — which pins
+    /// that the knob widened source B rather than turning retrieval on at all.
+    #[test]
+    fn atlas_similar_pairs_the_work_budget_with_its_ablation() {
+        let dir = std::env::temp_dir().join("fh-mcp-similar-test");
+        std::fs::create_dir_all(&dir).unwrap();
+        // Size-7 shared subterm, so the pair clears the shipped `min_common` of 6 at the
+        // conclusion anchor. `q` carries a binder prefix: different shape from `p`, so
+        // the shape bucket cannot propose it and the crowded key is the only route.
+        let shared = "a(a(a(c(5:LE.le,0),c(4:Real,0)),c(3:iii,0)),c(2:zz,0))";
+        let row = |name: &str, stmt: &str| {
+            format!(
+                "{{\"name\":\"{name}\",\"kind\":\"theorem\",\"module\":\"M\",\
+                 \"stmt\":\"fh-stmt-v1;{stmt}\",\"uses_statement\":[],\"uses_proof\":[]}}"
+            )
+        };
+        let mut rows = vec![
+            row("p", &format!("a(a(c(2:Eq,0),{shared}),c(1:u,0))")),
+            row("q", &format!("pi(s(0),a(a(c(3:Nee,0),{shared}),b0))")),
+        ];
+        for i in 0..60 {
+            let k = format!("k{i}");
+            rows.push(row(
+                &format!("crowd{i}"),
+                &format!("a(a(c(2:Eq,0),{shared}),c({}:{k},0))", k.len()),
+            ));
+        }
+        let slice = dir.join("slice.jsonl");
+        std::fs::write(&slice, rows.join("\n")).unwrap();
+        let s = slice.display().to_string();
+
+        let similar = |budget: Option<&str>| -> String {
+            let budget_arg = match budget {
+                Some(b) => format!(",\"posting_work_budget\":\"{b}\""),
+                None => String::new(),
+            };
+            let req = format!(
+                r#"{{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{{"name":"atlas_similar","arguments":{{"slice":"{s}","name":"p","top":"100","anchor":"conclusion"{budget_arg}}}}}}}"#
+            );
+            let r = call(&req);
+            let res = r.get("result").unwrap();
+            assert_eq!(res.get("isError"), Some(&Value::Bool(false)), "{res:?}");
+            res.get("content").unwrap().as_list().unwrap()[0]
+                .get("text")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string()
+        };
+
+        let off = similar(None);
+        assert!(
+            !off.contains(" q "),
+            "with the shipped cutoff the crowded key is dropped and `q` has no route: {off}"
+        );
+        assert!(
+            off.contains("crowd0"),
+            "the shape bucket must still work with the knob off, or the ablation is \
+             measuring a dead server rather than the cutoff: {off}"
+        );
+        let on = similar(Some("100000"));
+        assert!(
+            on.contains(" q "),
+            "the work budget must admit the crowded key and surface `q`: {on}"
+        );
     }
 
     #[test]

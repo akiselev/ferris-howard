@@ -47,6 +47,11 @@ name = "fh_check"
 root = "FhCheck"
 supportInterpreter = true
 
+[[lean_exe]]
+name = "fh_batch"
+root = "FhBatch"
+supportInterpreter = true
+
 # B7's validation clusters. Plain Lean statement-level formalization, deliberately not FH:
 # `atlas-validation.md` §2 rules that the clusters carry no dependency on FH milestones, so
 # the Atlas can be scored before the language is finished.

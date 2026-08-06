@@ -1,0 +1,7897 @@
+{
+ "ladder": "rfl, simp, aesop, exact?, grind",
+ "total": 1554,
+ "families": 232,
+ "shards": [
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan01.lean",
+   "name": "Attempt3Plan01",
+   "probes": [
+    {
+     "decl": "AddOpposite.op_le_op",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.unop_le_unop",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddUnits.val_le_val",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddUnits.val_lt_val",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finsupp.coe_lt_coe",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Interval.bot_div",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Interval.div_bot",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Interval.dual_top",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.op_le_op",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.unop_le_unop",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.coe_div_interval",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.coe_one_interval",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.coe_top_interval",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.coe_zero_interval",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.dual_top",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.fst_div",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.fst_natCast",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.fst_nsmul",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.fst_one",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.fst_pow",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.fst_zero",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.snd_div",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.snd_natCast",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.snd_nsmul",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.snd_one",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.snd_pow",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.snd_zero",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_nsmul",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_one",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_pow",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_zero",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.coe_add",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.coe_nsmul",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.coe_zero",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.mk_eq_zero",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Positive.coe_add",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLawson.isClosed_preimage_ofLawson",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLawson.isOpen_def",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLawson.isOpen_preimage_ofLawson",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLower.isOpen_def",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLower.isOpen_preimage_ofLower",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLower.ofLower_le_ofLower",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLower.ofLower_lt_ofLower",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLower.toLower_le_toLower",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLower.toLower_lt_toLower",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLowerSet.ofLowerSet_le_iff",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithLowerSet.toLowerSet_le_iff",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithUpper.isOpen_def",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithUpper.isOpen_preimage_ofUpper",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithUpper.ofUpper_le_ofUpper",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithUpper.ofUpper_lt_ofUpper",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithUpper.toUpper_le_toUpper",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithUpper.toUpper_lt_toUpper",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithUpperSet.ofUpperSet_le_iff",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.WithUpperSet.toUpperSet_le_iff",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.lawson_le_lower",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.lawson_le_scott",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.scottHausdorff_le_scott",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Topology.upperSet_le_scott",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Units.val_le_val",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Units.val_lt_val",
+     "source": "Preorder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.op_le_op",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.unop_le_unop",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddUnits.val_le_val",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddUnits.val_lt_val",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finsupp.coe_lt_coe",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Interval.bot_div",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Interval.div_bot",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Interval.dual_top",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.op_le_op",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.unop_le_unop",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.coe_div_interval",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.coe_one_interval",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.coe_top_interval",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.coe_zero_interval",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.dual_top",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.fst_div",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.fst_natCast",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.fst_nsmul",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.fst_one",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan02.lean",
+   "name": "Attempt3Plan02",
+   "probes": [
+    {
+     "decl": "NonemptyInterval.fst_pow",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.fst_zero",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.snd_div",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.snd_natCast",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.snd_nsmul",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.snd_one",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.snd_pow",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.snd_zero",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_nsmul",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_one",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_pow",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_zero",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_add",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_nsmul",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_zero",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.mk_eq_zero",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Positive.coe_add",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLawson.isClosed_preimage_ofLawson",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLawson.isOpen_def",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLawson.isOpen_preimage_ofLawson",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLower.isOpen_def",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLower.isOpen_preimage_ofLower",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLower.ofLower_le_ofLower",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLower.ofLower_lt_ofLower",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLower.toLower_le_toLower",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLower.toLower_lt_toLower",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLowerSet.ofLowerSet_le_iff",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithLowerSet.toLowerSet_le_iff",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithUpper.isOpen_def",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithUpper.isOpen_preimage_ofUpper",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithUpper.ofUpper_le_ofUpper",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithUpper.ofUpper_lt_ofUpper",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithUpper.toUpper_le_toUpper",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithUpper.toUpper_lt_toUpper",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithUpperSet.ofUpperSet_le_iff",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.WithUpperSet.toUpperSet_le_iff",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.lawson_le_lower",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.lawson_le_scott",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.scottHausdorff_le_scott",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Topology.upperSet_le_scott",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Units.val_le_val",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Units.val_lt_val",
+     "source": "Preorder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.nonneg_op",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.nonneg_unop",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.one_le_op",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.one_le_unop",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.op_le_one",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.op_nonpos",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.unop_le_one",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.unop_nonpos",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.forall_le_mono",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.forall_lt_mono",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.le_def",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.le_iff_sdiff_subset_lowerClosure",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.singleton_le_singleton",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.singleton_le_toColex",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.singleton_lt_singleton",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.toColex_le_singleton",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.toColex_le_toColex",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.toColex_mono",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.toColex_sdiff_le_toColex_sdiff",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finsupp.bot_eq_zero",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Interval.inv_bot",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Interval.neg_bot",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.le_iff'",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.restrict_le_zero_of_not_measurable",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.zero_le_restrict_not_measurable",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.one_le_op",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.one_le_unop",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.op_le_one",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.op_nonneg",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.op_nonpos",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.unop_le_one",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.unop_nonneg",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.unop_nonpos",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.coe_inv_interval",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.coe_neg_interval",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.fst_inv",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.fst_neg",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.inv_pure",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan03.lean",
+   "name": "Attempt3Plan03",
+   "probes": [
+    {
+     "decl": "NonemptyInterval.neg_pure",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.snd_inv",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NonemptyInterval.snd_neg",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.coe_natCast",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.Icc_bot_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.Icc_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.Ico_bot_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.Ico_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.Ioc_bot_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.Ioc_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.Ioo_bot_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.Ioo_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.Icc_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.Icc_coe_top",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.Ico_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.Ico_coe_top",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.Ioc_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.Ioc_coe_top",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.Ioo_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.Ioo_coe_top",
+     "source": "PartialOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.nonneg_op",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.nonneg_unop",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.one_le_op",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.one_le_unop",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.op_le_one",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.op_nonpos",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.unop_le_one",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.unop_nonpos",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.forall_le_mono",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.forall_lt_mono",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.le_def",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.le_iff_sdiff_subset_lowerClosure",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.singleton_le_singleton",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.singleton_le_toColex",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.singleton_lt_singleton",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.toColex_le_singleton",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.toColex_le_toColex",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.toColex_mono",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.toColex_sdiff_le_toColex_sdiff",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finsupp.bot_eq_zero",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Interval.inv_bot",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Interval.neg_bot",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.le_iff'",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.restrict_le_zero_of_not_measurable",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.zero_le_restrict_not_measurable",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.one_le_op",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.one_le_unop",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.op_le_one",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.op_nonneg",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.op_nonpos",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.unop_le_one",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.unop_nonneg",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.unop_nonpos",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.coe_inv_interval",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.coe_neg_interval",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.fst_inv",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.fst_neg",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.inv_pure",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.neg_pure",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.snd_inv",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NonemptyInterval.snd_neg",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_natCast",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.Icc_bot_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.Icc_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.Ico_bot_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.Ico_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.Ioc_bot_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.Ioc_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.Ioo_bot_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.Ioo_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.Icc_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.Icc_coe_top",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.Ico_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.Ico_coe_top",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.Ioc_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.Ioc_coe_top",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.Ioo_coe_coe",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.Ioo_coe_top",
+     "source": "PartialOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.nonneg_op",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddOpposite.nonneg_unop",
+     "source": "PartialOrder",
+     "target": "Vector"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan04.lean",
+   "name": "Attempt3Plan04",
+   "probes": [
+    {
+     "decl": "AddOpposite.one_le_op",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddOpposite.one_le_unop",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddOpposite.op_le_one",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddOpposite.op_nonpos",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddOpposite.unop_le_one",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddOpposite.unop_nonpos",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.forall_le_mono",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.forall_lt_mono",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.le_def",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.le_iff_sdiff_subset_lowerClosure",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.singleton_le_singleton",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.singleton_le_toColex",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.singleton_lt_singleton",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.toColex_le_singleton",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.toColex_le_toColex",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.toColex_mono",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.toColex_sdiff_le_toColex_sdiff",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finsupp.bot_eq_zero",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Interval.inv_bot",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Interval.neg_bot",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.le_iff'",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.restrict_le_zero_of_not_measurable",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.zero_le_restrict_not_measurable",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.one_le_op",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.one_le_unop",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.op_le_one",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.op_nonneg",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.op_nonpos",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.unop_le_one",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.unop_nonneg",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.unop_nonpos",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.coe_inv_interval",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.coe_neg_interval",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.fst_inv",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.fst_neg",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.inv_pure",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.neg_pure",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.snd_inv",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.snd_neg",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_natCast",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.Icc_bot_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.Icc_coe_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.Ico_bot_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.Ico_coe_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.Ioc_bot_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.Ioc_coe_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.Ioo_bot_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.Ioo_coe_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.Icc_coe_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.Icc_coe_top",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.Ico_coe_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.Ico_coe_top",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.Ioc_coe_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.Ioc_coe_top",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.Ioo_coe_coe",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.Ioo_coe_top",
+     "source": "PartialOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddOpposite.op_le_op",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.unop_le_unop",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddUnits.val_le_val",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddUnits.val_lt_val",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Finsupp.coe_lt_coe",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Interval.bot_div",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Interval.div_bot",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Interval.dual_top",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.op_le_op",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.unop_le_unop",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.coe_div_interval",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.coe_one_interval",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.coe_top_interval",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.coe_zero_interval",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.dual_top",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.fst_div",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.fst_natCast",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.fst_nsmul",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.fst_one",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.fst_pow",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.fst_zero",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.snd_div",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.snd_natCast",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.snd_nsmul",
+     "source": "Preorder",
+     "target": "Ord"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan05.lean",
+   "name": "Attempt3Plan05",
+   "probes": [
+    {
+     "decl": "NonemptyInterval.snd_one",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.snd_pow",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.snd_zero",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_nsmul",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_one",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_pow",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_zero",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Nonneg.coe_add",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Nonneg.coe_nsmul",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Nonneg.coe_zero",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Nonneg.mk_eq_zero",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Positive.coe_add",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithLower.ofLower_le_ofLower",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithLower.ofLower_lt_ofLower",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithLower.toLower_le_toLower",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithLower.toLower_lt_toLower",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithLowerSet.ofLowerSet_le_iff",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithLowerSet.toLowerSet_le_iff",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithUpper.ofUpper_le_ofUpper",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithUpper.ofUpper_lt_ofUpper",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithUpper.toUpper_le_toUpper",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithUpper.toUpper_lt_toUpper",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithUpperSet.ofUpperSet_le_iff",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.WithUpperSet.toUpperSet_le_iff",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.lawson_le_lower",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.lawson_le_scott",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.scottHausdorff_le_scott",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Topology.upperSet_le_scott",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Units.val_le_val",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Units.val_lt_val",
+     "source": "Preorder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.op_le_op",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddOpposite.unop_le_unop",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddUnits.val_le_val",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddUnits.val_lt_val",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finsupp.coe_lt_coe",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Interval.bot_div",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Interval.div_bot",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Interval.dual_top",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.op_le_op",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.unop_le_unop",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.coe_div_interval",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.coe_one_interval",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.coe_top_interval",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.coe_zero_interval",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.dual_top",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.fst_div",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.fst_natCast",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.fst_nsmul",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.fst_one",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.fst_pow",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.fst_zero",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.snd_div",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.snd_natCast",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.snd_nsmul",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.snd_one",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.snd_pow",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.snd_zero",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_nsmul",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_one",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_pow",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NonemptyInterval.toProd_zero",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_add",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_nsmul",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_zero",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.mk_eq_zero",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Positive.coe_add",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithLower.ofLower_le_ofLower",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithLower.ofLower_lt_ofLower",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithLower.toLower_le_toLower",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithLower.toLower_lt_toLower",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithLowerSet.ofLowerSet_le_iff",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithLowerSet.toLowerSet_le_iff",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithUpper.ofUpper_le_ofUpper",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithUpper.ofUpper_lt_ofUpper",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithUpper.toUpper_le_toUpper",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithUpper.toUpper_lt_toUpper",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithUpperSet.ofUpperSet_le_iff",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.WithUpperSet.toUpperSet_le_iff",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.lawson_le_lower",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.lawson_le_scott",
+     "source": "Preorder",
+     "target": "Vector"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan06.lean",
+   "name": "Attempt3Plan06",
+   "probes": [
+    {
+     "decl": "Topology.scottHausdorff_le_scott",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Topology.upperSet_le_scott",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Units.val_le_val",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Units.val_lt_val",
+     "source": "Preorder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.ofColex_top",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.toColex_univ",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.sortedGT_sort",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.sortedLT_sort",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finsupp.DegLex.single_strictAnti",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finsupp.Lex.single_strictAnti",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "List.sortedGE_insertionSort",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "List.sortedGE_mergeSort",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "List.sortedLE_insertionSort",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "List.sortedLE_mergeSort",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "NNRat.Nonneg.coe_ofScientific",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.coe_div",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.coe_inv",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.coe_nnqsmul",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.coe_nnratCast",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.coe_zpow",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.inv_mk",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.mk_div_mk",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.mk_nnqsmul",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Nonneg.mk_zpow",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Pi.apply_le_of_toColex",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Pi.apply_le_of_toLex",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Pi.toLex_monotone",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Pi.toLex_strictMono",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Positive.coe_inv",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Positive.coe_zpow",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Quaternion.coe_div",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Quaternion.coe_zpow",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Quaternion.normSq_div",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Quaternion.normSq_zpow",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Tropical.trop_max_def",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Tropical.trop_sup_def",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Tropical.untrop_max",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Tropical.untrop_sup",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.coe_max",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.coe_min",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.coe_max",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.coe_min",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "leOnePart_eq_ite",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "leOnePart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "negPart_eq_ite",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "negPart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "oneLePart_eq_ite",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "oneLePart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "posPart_eq_ite",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "posPart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.Colex.ofColex_top",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.Colex.toColex_univ",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.sortedGT_sort",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.sortedLT_sort",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finsupp.DegLex.single_strictAnti",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finsupp.Lex.single_strictAnti",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "List.sortedGE_insertionSort",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "List.sortedGE_mergeSort",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "List.sortedLE_insertionSort",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "List.sortedLE_mergeSort",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "NNRat.Nonneg.coe_ofScientific",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_div",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_inv",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_nnqsmul",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_nnratCast",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_zpow",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.inv_mk",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.mk_div_mk",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.mk_nnqsmul",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.mk_zpow",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Pi.apply_le_of_toColex",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Pi.apply_le_of_toLex",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Pi.toLex_monotone",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Pi.toLex_strictMono",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Positive.coe_inv",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Positive.coe_zpow",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Quaternion.coe_div",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Quaternion.coe_zpow",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Quaternion.normSq_div",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Quaternion.normSq_zpow",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan07.lean",
+   "name": "Attempt3Plan07",
+   "probes": [
+    {
+     "decl": "Tropical.trop_max_def",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Tropical.trop_sup_def",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Tropical.untrop_max",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Tropical.untrop_sup",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.coe_max",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.coe_min",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.coe_max",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.coe_min",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "leOnePart_eq_ite",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "leOnePart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "negPart_eq_ite",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "negPart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "oneLePart_eq_ite",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "oneLePart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "posPart_eq_ite",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "posPart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.sortedGT_sort",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.sortedLT_sort",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Finsupp.DegLex.single_strictAnti",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Finsupp.Lex.single_strictAnti",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "List.sortedGE_insertionSort",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "List.sortedGE_mergeSort",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "List.sortedLE_insertionSort",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "List.sortedLE_mergeSort",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "NNRat.Nonneg.coe_ofScientific",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.coe_div",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.coe_inv",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.coe_nnqsmul",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.coe_nnratCast",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.coe_zpow",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.inv_mk",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.mk_div_mk",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.mk_nnqsmul",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.mk_zpow",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Pi.apply_le_of_toColex",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Pi.apply_le_of_toLex",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Pi.toLex_monotone",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Pi.toLex_strictMono",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Positive.coe_inv",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Positive.coe_zpow",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Quaternion.coe_div",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Quaternion.coe_zpow",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Quaternion.normSq_div",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Quaternion.normSq_zpow",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Tropical.trop_max_def",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Tropical.trop_sup_def",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Tropical.untrop_max",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Tropical.untrop_sup",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.coe_max",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.coe_min",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.coe_max",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.coe_min",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "leOnePart_eq_ite",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "leOnePart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "negPart_eq_ite",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "negPart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "oneLePart_eq_ite",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "oneLePart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "posPart_eq_ite",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "posPart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.sortedGT_sort",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.sortedLT_sort",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finsupp.DegLex.single_strictAnti",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finsupp.Lex.single_strictAnti",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "List.sortedGE_insertionSort",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "List.sortedGE_mergeSort",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "List.sortedLE_insertionSort",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "List.sortedLE_mergeSort",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "NNRat.Nonneg.coe_ofScientific",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_div",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_inv",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_nnqsmul",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_nnratCast",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_zpow",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.inv_mk",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.mk_div_mk",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.mk_nnqsmul",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.mk_zpow",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Pi.apply_le_of_toColex",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Pi.apply_le_of_toLex",
+     "source": "LinearOrder",
+     "target": "Vector"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan08.lean",
+   "name": "Attempt3Plan08",
+   "probes": [
+    {
+     "decl": "Pi.toLex_monotone",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Pi.toLex_strictMono",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Positive.coe_inv",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Positive.coe_zpow",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Quaternion.coe_div",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Quaternion.coe_zpow",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Quaternion.normSq_div",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Quaternion.normSq_zpow",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Tropical.trop_max_def",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Tropical.trop_sup_def",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Tropical.untrop_max",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Tropical.untrop_sup",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.coe_max",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.coe_min",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.coe_max",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.coe_min",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "leOnePart_eq_ite",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "leOnePart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "negPart_eq_ite",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "negPart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "oneLePart_eq_ite",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "oneLePart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "posPart_eq_ite",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "posPart_eq_ite_lt",
+     "source": "LinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.Colex.forall_le_mono",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.Colex.forall_lt_mono",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.Colex.le_iff_sdiff_subset_lowerClosure",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.Colex.singleton_le_toColex",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.Colex.toColex_mono",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Interval.inv_bot",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Interval.neg_bot",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.le_iff'",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.restrict_le_zero_of_not_measurable",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "MeasureTheory.VectorMeasure.zero_le_restrict_not_measurable",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "NonemptyInterval.coe_inv_interval",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "NonemptyInterval.coe_neg_interval",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "NonemptyInterval.fst_inv",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "NonemptyInterval.fst_neg",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "NonemptyInterval.inv_pure",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "NonemptyInterval.neg_pure",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "NonemptyInterval.snd_inv",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "NonemptyInterval.snd_neg",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.Icc_bot_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.Icc_coe_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.Ico_bot_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.Ico_coe_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.Ioc_bot_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.Ioc_coe_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.Ioo_bot_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.Ioo_coe_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.Icc_coe_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.Icc_coe_top",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.Ico_coe_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.Ico_coe_top",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.Ioc_coe_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.Ioc_coe_top",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.Ioo_coe_coe",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.Ioo_coe_top",
+     "source": "PartialOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Codisjoint.bihimp_left",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Codisjoint.bihimp_right",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.inf_sdiff_left",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.inf_sdiff_right",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_assoc",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_eq_inf",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_eq_left",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_eq_right",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_himp_left",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_himp_right",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_le_iff_left",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_le_iff_right",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_left_injective",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_left_surjective",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_right_injective",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_right_surjective",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "codisjoint_bihimp_sup",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "codisjoint_himp_self_left",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "codisjoint_himp_self_right",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "codisjoint_iff_compl_le_left",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "codisjoint_iff_compl_le_right",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "compl_inf",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan09.lean",
+   "name": "Attempt3Plan09",
+   "probes": [
+    {
+     "decl": "compl_symmDiff_self",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "himp_bihimp_left",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "himp_bihimp_right",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "inf_himp_bihimp",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "ofBoolRing_neg",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "symmDiff_compl_self",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "symmDiff_top",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "top_sdiff",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "top_symmDiff",
+     "source": "BooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "AddOpposite.nonneg_op",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.nonneg_unop",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.one_le_op",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.one_le_unop",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.op_le_one",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.op_nonpos",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.unop_le_one",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.unop_nonpos",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Finset.Colex.le_def",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Finset.Colex.singleton_le_singleton",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Finset.Colex.singleton_lt_singleton",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Finset.Colex.toColex_le_singleton",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Finset.Colex.toColex_le_toColex",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Finset.Colex.toColex_sdiff_le_toColex_sdiff",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Finsupp.bot_eq_zero",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.one_le_op",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.one_le_unop",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.op_le_one",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.op_nonneg",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.op_nonpos",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.unop_le_one",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.unop_nonneg",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "MulOpposite.unop_nonpos",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "Nonneg.coe_natCast",
+     "source": "PartialOrder",
+     "target": "Ord"
+    },
+    {
+     "decl": "AddOpposite.dist_op",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "AddOpposite.dist_unop",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "AddOpposite.nndist_op",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "AddOpposite.nndist_unop",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "MulOpposite.dist_op",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "MulOpposite.dist_unop",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "MulOpposite.nndist_op",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "MulOpposite.nndist_unop",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "Subtype.dist_eq",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "Subtype.nndist_eq",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "ULift.dist_eq",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "ULift.dist_up_up",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "ULift.nndist_eq",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "ULift.nndist_up_up",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "nndist_ofAdd",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "nndist_ofDual",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "nndist_ofMul",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "nndist_toAdd",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "nndist_toDual",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "nndist_toMul",
+     "source": "PseudoMetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "Finset.bihimp_def",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_inter",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_ssubset_compl",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_subset_compl",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_union",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.himp_def",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.inter_compl",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.isCoatom_compl_singleton",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.mem_himp_iff",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.piecewise_compl",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.sdiff_eq_inter_compl",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.subset_compl_comm",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.subset_compl_iff_disjoint_left",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.subset_compl_iff_disjoint_right",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Fintype.toOrderBot.congr_simp",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Set.Finite.toFinset_compl",
+     "source": "Fintype",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.bihimp_def",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_inter",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_ssubset_compl",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_subset_compl",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_union",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.himp_def",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.inter_compl",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.isCoatom_compl_singleton",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.mem_himp_iff",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.piecewise_compl",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.sdiff_eq_inter_compl",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan10.lean",
+   "name": "Attempt3Plan10",
+   "probes": [
+    {
+     "decl": "Finset.subset_compl_comm",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.subset_compl_iff_disjoint_left",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.subset_compl_iff_disjoint_right",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Fintype.toOrderBot.congr_simp",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "Set.Finite.toFinset_compl",
+     "source": "Fintype",
+     "target": "CompleteBooleanAlgebra"
+    },
+    {
+     "decl": "ExceptT.run_pure",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "ReaderT.run_map",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "ReaderT.run_mapConst",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "ReaderT.run_pure",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "ReaderT.run_seq",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "ReaderT.run_seqLeft",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "ReaderT.run_seqRight",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "SatisfiesM_ReaderT_eq",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "StateRefT'.lift_pure",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "StateT.map_const",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "StateT.run_pure",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "Std.Iterators.PostconditionT.property_pure",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "Std.Iterators.PostconditionT.pure_eq_pure",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "Std.Iterators.ULiftT.run_pure",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "WriterT.run_map",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "WriterT.run_pure",
+     "source": "Monad",
+     "target": "Applicative"
+    },
+    {
+     "decl": "AddCircle.coe_add",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddCircle.coe_eq_zero_iff",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddCircle.coe_neg",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddCircle.coe_period",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Complex.coe_smul",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "DistribSMul.toAddMonoidHom_eq_zsmulAddGroupHom",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Module.isTorsionFree_int_iff_isAddTorsionFree",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithLp.ofLp_add",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithLp.ofLp_neg",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithLp.ofLp_sub",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithLp.toLp_add",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithLp.toLp_neg",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithLp.toLp_sub",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.LinearOrderedAddCommGroup.coe_neg",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.LinearOrderedAddCommGroup.coe_sub",
+     "source": "AddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddCircle.coe_add",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddCircle.coe_eq_zero_iff",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddCircle.coe_neg",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddCircle.coe_period",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Complex.coe_smul",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "DistribSMul.toAddMonoidHom_eq_zsmulAddGroupHom",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Module.isTorsionFree_int_iff_isAddTorsionFree",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithLp.ofLp_add",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithLp.ofLp_neg",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithLp.ofLp_sub",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithLp.toLp_add",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithLp.toLp_neg",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithLp.toLp_sub",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.LinearOrderedAddCommGroup.coe_neg",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.LinearOrderedAddCommGroup.coe_sub",
+     "source": "AddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "LaurentPolynomial.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "LaurentPolynomial.algebraMap_X_pow",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "LaurentPolynomial.algebraMap_eq_toLaurent",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "LaurentSeries.coe_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "MvPowerSeries.c_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "Polynomial.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "Polynomial.algebraMap_eq",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "Polynomial.algebraMap_pi_self_eq_eval",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "Polynomial.coe_algebraMap_eq_CC",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "PowerSeries.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "PowerSeries.algebraMap_eq",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "QuadraticAlgebra.C_pow",
+     "source": "CommSemiring",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "LaurentPolynomial.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "LaurentPolynomial.algebraMap_X_pow",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "LaurentPolynomial.algebraMap_eq_toLaurent",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "LaurentSeries.coe_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "MvPowerSeries.c_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "Polynomial.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "Polynomial.algebraMap_eq",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "Polynomial.algebraMap_pi_self_eq_eval",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "Polynomial.coe_algebraMap_eq_CC",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "PowerSeries.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "PowerSeries.algebraMap_eq",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "QuadraticAlgebra.C_pow",
+     "source": "CommSemiring",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "LaurentPolynomial.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "LaurentPolynomial.algebraMap_X_pow",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "LaurentPolynomial.algebraMap_eq_toLaurent",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "LaurentSeries.coe_algebraMap",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "MvPowerSeries.c_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "Units"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan11.lean",
+   "name": "Attempt3Plan11",
+   "probes": [
+    {
+     "decl": "Polynomial.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "Polynomial.algebraMap_eq",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "Polynomial.algebraMap_pi_self_eq_eval",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "Polynomial.coe_algebraMap_eq_CC",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "PowerSeries.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "PowerSeries.algebraMap_eq",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "QuadraticAlgebra.C_pow",
+     "source": "CommSemiring",
+     "target": "Units"
+    },
+    {
+     "decl": "LaurentPolynomial.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "LaurentPolynomial.algebraMap_X_pow",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "LaurentPolynomial.algebraMap_eq_toLaurent",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "LaurentSeries.coe_algebraMap",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "MvPowerSeries.c_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "Polynomial.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "Polynomial.algebraMap_eq",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "Polynomial.algebraMap_pi_self_eq_eval",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "Polynomial.coe_algebraMap_eq_CC",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "PowerSeries.C_eq_algebraMap",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "PowerSeries.algebraMap_eq",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "QuadraticAlgebra.C_pow",
+     "source": "CommSemiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "Matrix.conjTranspose_zsmul",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuaternionAlgebra.imI_sub",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuaternionAlgebra.imJ_sub",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuaternionAlgebra.imK_sub",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuaternionAlgebra.im_sub",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuaternionAlgebra.mk_sub_mk",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_sub",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithConv.ofConv_neg",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithConv.ofConv_sub",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithConv.toConv_neg",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithConv.toConv_sub",
+     "source": "AddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Matrix.conjTranspose_zsmul",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuaternionAlgebra.imI_sub",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuaternionAlgebra.imJ_sub",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuaternionAlgebra.imK_sub",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuaternionAlgebra.im_sub",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuaternionAlgebra.mk_sub_mk",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_sub",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithConv.ofConv_neg",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithConv.ofConv_sub",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithConv.toConv_neg",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithConv.toConv_sub",
+     "source": "AddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Codisjoint.bihimp_left",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "Codisjoint.bihimp_right",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "codisjoint_iff_compl_le_left",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "codisjoint_iff_compl_le_right",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "compl_inf",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "compl_symmDiff_self",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "ofBoolRing_neg",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "symmDiff_compl_self",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "symmDiff_top",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "top_sdiff",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "top_symmDiff",
+     "source": "BooleanAlgebra",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "AddOpposite.edist_op",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "AddOpposite.edist_unop",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "MulOpposite.edist_op",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "MulOpposite.edist_unop",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "Subtype.edist_eq",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "Subtype.edist_mk_mk",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "Subtype.preimage_eball",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "ULift.edist_eq",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "ULift.edist_up_up",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "UniformFun.edist_def",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "UniformFun.edist_le",
+     "source": "PseudoEMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "AddOpposite.edist_op",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "AddOpposite.edist_unop",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "MulOpposite.edist_op",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "MulOpposite.edist_unop",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "Subtype.edist_eq",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "Subtype.edist_mk_mk",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "Subtype.preimage_eball",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "ULift.edist_eq",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "ULift.edist_up_up",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "UniformFun.edist_def",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "UniformFun.edist_le",
+     "source": "PseudoEMetricSpace",
+     "target": "WeakPseudoEMetricSpace"
+    },
+    {
+     "decl": "AddAut.vadd_def",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.op_nsmul",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.unop_nsmul",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "SkewMonoidAlgebra.coeff_zero",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "SkewMonoidAlgebra.ofCoeff_zero",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithConv.ofConv_add",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan12.lean",
+   "name": "Attempt3Plan12",
+   "probes": [
+    {
+     "decl": "WithConv.toConv_add",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.coe_nsmul",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "mul_nsmul",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "nsmul_iterate",
+     "source": "AddMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddAut.vadd_def",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.op_nsmul",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.unop_nsmul",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "SkewMonoidAlgebra.coeff_zero",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "SkewMonoidAlgebra.ofCoeff_zero",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithConv.ofConv_add",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithConv.toConv_add",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.coe_nsmul",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "mul_nsmul",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "nsmul_iterate",
+     "source": "AddMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Codisjoint.bihimp_left",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "Codisjoint.bihimp_right",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "codisjoint_iff_compl_le_left",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "codisjoint_iff_compl_le_right",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "compl_inf",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "compl_symmDiff_self",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "symmDiff_compl_self",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "symmDiff_top",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "top_sdiff",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "top_symmDiff",
+     "source": "BooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "Codisjoint.bihimp_left",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "Codisjoint.bihimp_right",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "codisjoint_iff_compl_le_left",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "codisjoint_iff_compl_le_right",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "compl_inf",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "compl_symmDiff_self",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "symmDiff_compl_self",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "symmDiff_top",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "top_sdiff",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "top_symmDiff",
+     "source": "BooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "Associates.associated_map_mk",
+     "source": "CommMonoid",
+     "target": "Monoid.IsTorsion"
+    },
+    {
+     "decl": "Associates.decompositionMonoid_iff",
+     "source": "CommMonoid",
+     "target": "Monoid.IsTorsion"
+    },
+    {
+     "decl": "Associates.isPrimal_mk",
+     "source": "CommMonoid",
+     "target": "Monoid.IsTorsion"
+    },
+    {
+     "decl": "Associates.mk_dvd_mk",
+     "source": "CommMonoid",
+     "target": "Monoid.IsTorsion"
+    },
+    {
+     "decl": "Associates.mk_isRelPrime_iff",
+     "source": "CommMonoid",
+     "target": "Monoid.IsTorsion"
+    },
+    {
+     "decl": "Associates.mk_mul_mk",
+     "source": "CommMonoid",
+     "target": "Monoid.IsTorsion"
+    },
+    {
+     "decl": "Finset.HasMulAntidiagonal.mulAntidiagonal.fst_le",
+     "source": "CommMonoid",
+     "target": "Monoid.IsTorsion"
+    },
+    {
+     "decl": "emultiplicity_mk_eq_emultiplicity",
+     "source": "CommMonoid",
+     "target": "Monoid.IsTorsion"
+    },
+    {
+     "decl": "Associates.associated_map_mk",
+     "source": "CommMonoid",
+     "target": "Submonoid"
+    },
+    {
+     "decl": "Associates.decompositionMonoid_iff",
+     "source": "CommMonoid",
+     "target": "Submonoid"
+    },
+    {
+     "decl": "Associates.isPrimal_mk",
+     "source": "CommMonoid",
+     "target": "Submonoid"
+    },
+    {
+     "decl": "Associates.mk_dvd_mk",
+     "source": "CommMonoid",
+     "target": "Submonoid"
+    },
+    {
+     "decl": "Associates.mk_isRelPrime_iff",
+     "source": "CommMonoid",
+     "target": "Submonoid"
+    },
+    {
+     "decl": "Associates.mk_mul_mk",
+     "source": "CommMonoid",
+     "target": "Submonoid"
+    },
+    {
+     "decl": "Finset.HasMulAntidiagonal.mulAntidiagonal.fst_le",
+     "source": "CommMonoid",
+     "target": "Submonoid"
+    },
+    {
+     "decl": "emultiplicity_mk_eq_emultiplicity",
+     "source": "CommMonoid",
+     "target": "Submonoid"
+    },
+    {
+     "decl": "Associates.associated_map_mk",
+     "source": "CommMonoid",
+     "target": "Units"
+    },
+    {
+     "decl": "Associates.decompositionMonoid_iff",
+     "source": "CommMonoid",
+     "target": "Units"
+    },
+    {
+     "decl": "Associates.isPrimal_mk",
+     "source": "CommMonoid",
+     "target": "Units"
+    },
+    {
+     "decl": "Associates.mk_dvd_mk",
+     "source": "CommMonoid",
+     "target": "Units"
+    },
+    {
+     "decl": "Associates.mk_isRelPrime_iff",
+     "source": "CommMonoid",
+     "target": "Units"
+    },
+    {
+     "decl": "Associates.mk_mul_mk",
+     "source": "CommMonoid",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.HasMulAntidiagonal.mulAntidiagonal.fst_le",
+     "source": "CommMonoid",
+     "target": "Units"
+    },
+    {
+     "decl": "emultiplicity_mk_eq_emultiplicity",
+     "source": "CommMonoid",
+     "target": "Units"
+    },
+    {
+     "decl": "Associates.associated_map_mk",
+     "source": "CommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "Associates.decompositionMonoid_iff",
+     "source": "CommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "Associates.isPrimal_mk",
+     "source": "CommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "Associates.mk_dvd_mk",
+     "source": "CommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "Associates.mk_isRelPrime_iff",
+     "source": "CommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "Associates.mk_mul_mk",
+     "source": "CommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.HasMulAntidiagonal.mulAntidiagonal.fst_le",
+     "source": "CommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "emultiplicity_mk_eq_emultiplicity",
+     "source": "CommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "TopologicalSpace.Closeds.edist_eq",
+     "source": "EMetricSpace",
+     "target": "MetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.Closeds.lipschitz_sup",
+     "source": "EMetricSpace",
+     "target": "MetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.Compacts.edist_eq",
+     "source": "EMetricSpace",
+     "target": "MetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.Compacts.isometry_singleton",
+     "source": "EMetricSpace",
+     "target": "MetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.Compacts.lipschitz_sup",
+     "source": "EMetricSpace",
+     "target": "MetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.NonemptyCompacts.isometry_singleton",
+     "source": "EMetricSpace",
+     "target": "MetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.NonemptyCompacts.isometry_toCompacts",
+     "source": "EMetricSpace",
+     "target": "MetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.NonemptyCompacts.lipschitz_sup",
+     "source": "EMetricSpace",
+     "target": "MetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.Closeds.edist_eq",
+     "source": "EMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.Closeds.lipschitz_sup",
+     "source": "EMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.Compacts.edist_eq",
+     "source": "EMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.Compacts.isometry_singleton",
+     "source": "EMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.Compacts.lipschitz_sup",
+     "source": "EMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.NonemptyCompacts.isometry_singleton",
+     "source": "EMetricSpace",
+     "target": "PseudoMetricSpace"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan13.lean",
+   "name": "Attempt3Plan13",
+   "probes": [
+    {
+     "decl": "TopologicalSpace.NonemptyCompacts.isometry_toCompacts",
+     "source": "EMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "TopologicalSpace.NonemptyCompacts.lipschitz_sup",
+     "source": "EMetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "OnePoint.equivProjectivization_smul",
+     "source": "Field",
+     "target": "IsField"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_nnratCast",
+     "source": "Field",
+     "target": "IsField"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_ratCast",
+     "source": "Field",
+     "target": "IsField"
+    },
+    {
+     "decl": "Subfield.algebraMap_ofSubfield",
+     "source": "Field",
+     "target": "IsField"
+    },
+    {
+     "decl": "WeierstrassCurve.Jacobian.Point.add_point",
+     "source": "Field",
+     "target": "IsField"
+    },
+    {
+     "decl": "WeierstrassCurve.Jacobian.Point.neg_point",
+     "source": "Field",
+     "target": "IsField"
+    },
+    {
+     "decl": "WeierstrassCurve.Projective.Point.add_point",
+     "source": "Field",
+     "target": "IsField"
+    },
+    {
+     "decl": "WeierstrassCurve.Projective.Point.neg_point",
+     "source": "Field",
+     "target": "IsField"
+    },
+    {
+     "decl": "OnePoint.equivProjectivization_smul",
+     "source": "Field",
+     "target": "Semifield"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_nnratCast",
+     "source": "Field",
+     "target": "Semifield"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_ratCast",
+     "source": "Field",
+     "target": "Semifield"
+    },
+    {
+     "decl": "Subfield.algebraMap_ofSubfield",
+     "source": "Field",
+     "target": "Semifield"
+    },
+    {
+     "decl": "WeierstrassCurve.Jacobian.Point.add_point",
+     "source": "Field",
+     "target": "Semifield"
+    },
+    {
+     "decl": "WeierstrassCurve.Jacobian.Point.neg_point",
+     "source": "Field",
+     "target": "Semifield"
+    },
+    {
+     "decl": "WeierstrassCurve.Projective.Point.add_point",
+     "source": "Field",
+     "target": "Semifield"
+    },
+    {
+     "decl": "WeierstrassCurve.Projective.Point.neg_point",
+     "source": "Field",
+     "target": "Semifield"
+    },
+    {
+     "decl": "Finset.bihimp_def",
+     "source": "Fintype",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.compl_inter",
+     "source": "Fintype",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.compl_ssubset_compl",
+     "source": "Fintype",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.compl_subset_compl",
+     "source": "Fintype",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.himp_def",
+     "source": "Fintype",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.isCoatom_compl_singleton",
+     "source": "Fintype",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.mem_himp_iff",
+     "source": "Fintype",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.sdiff_eq_inter_compl",
+     "source": "Fintype",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Finset.bihimp_def",
+     "source": "Fintype",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_inter",
+     "source": "Fintype",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_ssubset_compl",
+     "source": "Fintype",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_subset_compl",
+     "source": "Fintype",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.himp_def",
+     "source": "Fintype",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.isCoatom_compl_singleton",
+     "source": "Fintype",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.mem_himp_iff",
+     "source": "Fintype",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.sdiff_eq_inter_compl",
+     "source": "Fintype",
+     "target": "GeneralizedBooleanAlgebra"
+    },
+    {
+     "decl": "Finset.compl_union",
+     "source": "Fintype",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.inter_compl",
+     "source": "Fintype",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.piecewise_compl",
+     "source": "Fintype",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.subset_compl_comm",
+     "source": "Fintype",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.subset_compl_iff_disjoint_left",
+     "source": "Fintype",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.subset_compl_iff_disjoint_right",
+     "source": "Fintype",
+     "target": "Vector"
+    },
+    {
+     "decl": "Fintype.toOrderBot.congr_simp",
+     "source": "Fintype",
+     "target": "Vector"
+    },
+    {
+     "decl": "Set.Finite.toFinset_compl",
+     "source": "Fintype",
+     "target": "Vector"
+    },
+    {
+     "decl": "Booleanisation.comp_sdiff_comp",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanAlgebra"
+    },
+    {
+     "decl": "Booleanisation.lift_bot",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanAlgebra"
+    },
+    {
+     "decl": "Booleanisation.lift_inf_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanAlgebra"
+    },
+    {
+     "decl": "Booleanisation.lift_sdiff_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanAlgebra"
+    },
+    {
+     "decl": "Booleanisation.lift_sup_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanAlgebra"
+    },
+    {
+     "decl": "Booleanisation.not_comp_le_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanAlgebra"
+    },
+    {
+     "decl": "Booleanisation.not_comp_lt_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanAlgebra"
+    },
+    {
+     "decl": "Disjoint.symmDiff_left",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanAlgebra"
+    },
+    {
+     "decl": "Booleanisation.comp_sdiff_comp",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Booleanisation.lift_bot",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Booleanisation.lift_inf_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Booleanisation.lift_sdiff_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Booleanisation.lift_sup_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Booleanisation.not_comp_le_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Booleanisation.not_comp_lt_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "Disjoint.symmDiff_left",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "BooleanRing"
+    },
+    {
+     "decl": "bihimp_bihimp_sup",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "bihimp_eq_top",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "bihimp_himp_eq_inf",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "bihimp_inf_sup",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "bihimp_triangle",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "himp_bihimp_eq_inf",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "sup_bihimp_bihimp",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "sup_inf_bihimp",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "bihimp_bihimp_sup",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "bihimp_eq_top",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "bihimp_himp_eq_inf",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "bihimp_inf_sup",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "bihimp_triangle",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "himp_bihimp_eq_inf",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "sup_bihimp_bihimp",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "sup_inf_bihimp",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "bihimp_bihimp_sup",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "bihimp_eq_top",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "bihimp_himp_eq_inf",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "bihimp_inf_sup",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "bihimp_triangle",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "himp_bihimp_eq_inf",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Units"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan14.lean",
+   "name": "Attempt3Plan14",
+   "probes": [
+    {
+     "decl": "sup_bihimp_bihimp",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "sup_inf_bihimp",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "bihimp_bihimp_sup",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "bihimp_eq_top",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "bihimp_himp_eq_inf",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "bihimp_inf_sup",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "bihimp_triangle",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "himp_bihimp_eq_inf",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "sup_bihimp_bihimp",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "sup_inf_bihimp",
+     "source": "GeneralizedHeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddCircle.coe_add",
+     "source": "AddCommGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "AddCircle.coe_eq_zero_iff",
+     "source": "AddCommGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "AddCircle.coe_neg",
+     "source": "AddCommGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "AddCircle.coe_period",
+     "source": "AddCommGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "Complex.coe_smul",
+     "source": "AddCommGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "DistribSMul.toAddMonoidHom_eq_zsmulAddGroupHom",
+     "source": "AddCommGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "Module.isTorsionFree_int_iff_isAddTorsionFree",
+     "source": "AddCommGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "AddCircle.coe_add",
+     "source": "AddCommGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddCircle.coe_eq_zero_iff",
+     "source": "AddCommGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddCircle.coe_neg",
+     "source": "AddCommGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddCircle.coe_period",
+     "source": "AddCommGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "Complex.coe_smul",
+     "source": "AddCommGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "DistribSMul.toAddMonoidHom_eq_zsmulAddGroupHom",
+     "source": "AddCommGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "Module.isTorsionFree_int_iff_isAddTorsionFree",
+     "source": "AddCommGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "QuaternionAlgebra.imI_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "QuaternionAlgebra.imJ_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "QuaternionAlgebra.imK_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "QuaternionAlgebra.mk_sub_mk",
+     "source": "AddGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "WithConv.ofConv_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "WithConv.toConv_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "QuaternionAlgebra.imI_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "QuaternionAlgebra.imJ_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "QuaternionAlgebra.imK_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "QuaternionAlgebra.mk_sub_mk",
+     "source": "AddGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "WithConv.ofConv_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "WithConv.toConv_sub",
+     "source": "AddGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "Nucleus.sInf_apply",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "sInf_insert",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "sInf_pair",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "sInf_union",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "sSup_insert",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "sSup_pair",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "sSup_union",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "Nucleus.sInf_apply",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompletePartialOrder"
+    },
+    {
+     "decl": "sInf_insert",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompletePartialOrder"
+    },
+    {
+     "decl": "sInf_pair",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompletePartialOrder"
+    },
+    {
+     "decl": "sInf_union",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompletePartialOrder"
+    },
+    {
+     "decl": "sSup_insert",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompletePartialOrder"
+    },
+    {
+     "decl": "sSup_pair",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompletePartialOrder"
+    },
+    {
+     "decl": "sSup_union",
+     "source": "CompleteLattice",
+     "target": "ConditionallyCompletePartialOrder"
+    },
+    {
+     "decl": "Nucleus.sInf_apply",
+     "source": "CompleteLattice",
+     "target": "Units"
+    },
+    {
+     "decl": "sInf_insert",
+     "source": "CompleteLattice",
+     "target": "Units"
+    },
+    {
+     "decl": "sInf_pair",
+     "source": "CompleteLattice",
+     "target": "Units"
+    },
+    {
+     "decl": "sInf_union",
+     "source": "CompleteLattice",
+     "target": "Units"
+    },
+    {
+     "decl": "sSup_insert",
+     "source": "CompleteLattice",
+     "target": "Units"
+    },
+    {
+     "decl": "sSup_pair",
+     "source": "CompleteLattice",
+     "target": "Units"
+    },
+    {
+     "decl": "sSup_union",
+     "source": "CompleteLattice",
+     "target": "Units"
+    },
+    {
+     "decl": "Nucleus.sInf_apply",
+     "source": "CompleteLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "sInf_insert",
+     "source": "CompleteLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "sInf_pair",
+     "source": "CompleteLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "sInf_union",
+     "source": "CompleteLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "sSup_insert",
+     "source": "CompleteLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "sSup_pair",
+     "source": "CompleteLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "sSup_union",
+     "source": "CompleteLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.compl_union",
+     "source": "Fintype",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.inter_compl",
+     "source": "Fintype",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.piecewise_compl",
+     "source": "Fintype",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.subset_compl_comm",
+     "source": "Fintype",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.subset_compl_iff_disjoint_left",
+     "source": "Fintype",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.subset_compl_iff_disjoint_right",
+     "source": "Fintype",
+     "target": "Units"
+    },
+    {
+     "decl": "Set.Finite.toFinset_compl",
+     "source": "Fintype",
+     "target": "Units"
+    },
+    {
+     "decl": "Booleanisation.comp_sdiff_comp",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "Booleanisation.lift_inf_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "Booleanisation.lift_sdiff_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "Booleanisation.lift_sup_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "Booleanisation.not_comp_le_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "Booleanisation.not_comp_lt_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "Disjoint.symmDiff_left",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Vector"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan15.lean",
+   "name": "Attempt3Plan15",
+   "probes": [
+    {
+     "decl": "ArchimedeanClass.mk_mul",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedRing"
+    },
+    {
+     "decl": "ArchimedeanClass.mk_one",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedRing"
+    },
+    {
+     "decl": "ArchimedeanClass.mk_pow",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedRing"
+    },
+    {
+     "decl": "Int.cast_one_le_of_pos",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedRing"
+    },
+    {
+     "decl": "div_lt_one_iff",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedRing"
+    },
+    {
+     "decl": "max_div_div_right",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedRing"
+    },
+    {
+     "decl": "min_div_div_right",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedRing"
+    },
+    {
+     "decl": "Topology.WithLawson.isClosed_preimage_ofLawson",
+     "source": "Preorder",
+     "target": "UniformSpace"
+    },
+    {
+     "decl": "Topology.WithLawson.isOpen_def",
+     "source": "Preorder",
+     "target": "UniformSpace"
+    },
+    {
+     "decl": "Topology.WithLawson.isOpen_preimage_ofLawson",
+     "source": "Preorder",
+     "target": "UniformSpace"
+    },
+    {
+     "decl": "Topology.WithLower.isOpen_def",
+     "source": "Preorder",
+     "target": "UniformSpace"
+    },
+    {
+     "decl": "Topology.WithLower.isOpen_preimage_ofLower",
+     "source": "Preorder",
+     "target": "UniformSpace"
+    },
+    {
+     "decl": "Topology.WithUpper.isOpen_def",
+     "source": "Preorder",
+     "target": "UniformSpace"
+    },
+    {
+     "decl": "Topology.WithUpper.isOpen_preimage_ofUpper",
+     "source": "Preorder",
+     "target": "UniformSpace"
+    },
+    {
+     "decl": "Topology.WithLawson.isClosed_preimage_ofLawson",
+     "source": "Preorder",
+     "target": "UniformSpace.Core"
+    },
+    {
+     "decl": "Topology.WithLawson.isOpen_def",
+     "source": "Preorder",
+     "target": "UniformSpace.Core"
+    },
+    {
+     "decl": "Topology.WithLawson.isOpen_preimage_ofLawson",
+     "source": "Preorder",
+     "target": "UniformSpace.Core"
+    },
+    {
+     "decl": "Topology.WithLower.isOpen_def",
+     "source": "Preorder",
+     "target": "UniformSpace.Core"
+    },
+    {
+     "decl": "Topology.WithLower.isOpen_preimage_ofLower",
+     "source": "Preorder",
+     "target": "UniformSpace.Core"
+    },
+    {
+     "decl": "Topology.WithUpper.isOpen_def",
+     "source": "Preorder",
+     "target": "UniformSpace.Core"
+    },
+    {
+     "decl": "Topology.WithUpper.isOpen_preimage_ofUpper",
+     "source": "Preorder",
+     "target": "UniformSpace.Core"
+    },
+    {
+     "decl": "Finsupp.inf_apply",
+     "source": "SemilatticeInf",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Fintype.toOrderBot.congr_simp",
+     "source": "SemilatticeInf",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Subtype.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Subtype.mk_inf_mk",
+     "source": "SemilatticeInf",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithZero.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finsupp.inf_apply",
+     "source": "SemilatticeInf",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Fintype.toOrderBot.congr_simp",
+     "source": "SemilatticeInf",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Subtype.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Subtype.mk_inf_mk",
+     "source": "SemilatticeInf",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithZero.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finsupp.inf_apply",
+     "source": "SemilatticeInf",
+     "target": "Vector"
+    },
+    {
+     "decl": "Fintype.toOrderBot.congr_simp",
+     "source": "SemilatticeInf",
+     "target": "Vector"
+    },
+    {
+     "decl": "Subtype.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "Vector"
+    },
+    {
+     "decl": "Subtype.mk_inf_mk",
+     "source": "SemilatticeInf",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithZero.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "Vector"
+    },
+    {
+     "decl": "IsUnit.neg",
+     "source": "HasDistribNeg",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "SemiconjBy.neg_one_left",
+     "source": "HasDistribNeg",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "SemiconjBy.neg_one_right",
+     "source": "HasDistribNeg",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "Units.coe_neg_one",
+     "source": "HasDistribNeg",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "Units.val_neg",
+     "source": "HasDistribNeg",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "neg_one_pow_eq_or",
+     "source": "HasDistribNeg",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "Finsupp.inf_apply",
+     "source": "SemilatticeInf",
+     "target": "Units"
+    },
+    {
+     "decl": "Subtype.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "Units"
+    },
+    {
+     "decl": "Subtype.mk_inf_mk",
+     "source": "SemilatticeInf",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "Units"
+    },
+    {
+     "decl": "WithZero.coe_inf",
+     "source": "SemilatticeInf",
+     "target": "Units"
+    },
+    {
+     "decl": "Finsupp.sup_apply",
+     "source": "SemilatticeSup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Subtype.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Subtype.mk_sup_mk",
+     "source": "SemilatticeSup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithBot.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithTop.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "WithZero.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finsupp.sup_apply",
+     "source": "SemilatticeSup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Subtype.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Subtype.mk_sup_mk",
+     "source": "SemilatticeSup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithBot.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithTop.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "WithZero.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finsupp.sup_apply",
+     "source": "SemilatticeSup",
+     "target": "Units"
+    },
+    {
+     "decl": "Subtype.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "Units"
+    },
+    {
+     "decl": "Subtype.mk_sup_mk",
+     "source": "SemilatticeSup",
+     "target": "Units"
+    },
+    {
+     "decl": "WithBot.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "Units"
+    },
+    {
+     "decl": "WithTop.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "Units"
+    },
+    {
+     "decl": "WithZero.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "Units"
+    },
+    {
+     "decl": "Finsupp.sup_apply",
+     "source": "SemilatticeSup",
+     "target": "Vector"
+    },
+    {
+     "decl": "Subtype.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "Vector"
+    },
+    {
+     "decl": "Subtype.mk_sup_mk",
+     "source": "SemilatticeSup",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithBot.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithTop.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithZero.coe_sup",
+     "source": "SemilatticeSup",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddMonoid.End.zero_apply",
+     "source": "AddCommMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finset.HasAntidiagonal.antidiagonal.fst_le",
+     "source": "AddCommMonoid",
+     "target": "AddAction"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan16.lean",
+   "name": "Attempt3Plan16",
+   "probes": [
+    {
+     "decl": "Finsupp.bot_eq_zero",
+     "source": "AddCommMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "ofDegLex_add",
+     "source": "AddCommMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "toDegLex_add",
+     "source": "AddCommMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddMonoid.End.zero_apply",
+     "source": "AddCommMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finset.HasAntidiagonal.antidiagonal.fst_le",
+     "source": "AddCommMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finsupp.bot_eq_zero",
+     "source": "AddCommMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "ofDegLex_add",
+     "source": "AddCommMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "toDegLex_add",
+     "source": "AddCommMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.op_nsmul",
+     "source": "AddMonoid",
+     "target": "SemigroupAction"
+    },
+    {
+     "decl": "AddOpposite.unop_nsmul",
+     "source": "AddMonoid",
+     "target": "SemigroupAction"
+    },
+    {
+     "decl": "WithTop.coe_nsmul",
+     "source": "AddMonoid",
+     "target": "SemigroupAction"
+    },
+    {
+     "decl": "mul_nsmul",
+     "source": "AddMonoid",
+     "target": "SemigroupAction"
+    },
+    {
+     "decl": "nsmul_iterate",
+     "source": "AddMonoid",
+     "target": "SemigroupAction"
+    },
+    {
+     "decl": "AddOpposite.op_nsmul",
+     "source": "AddMonoid",
+     "target": "ZSMul"
+    },
+    {
+     "decl": "AddOpposite.unop_nsmul",
+     "source": "AddMonoid",
+     "target": "ZSMul"
+    },
+    {
+     "decl": "WithTop.coe_nsmul",
+     "source": "AddMonoid",
+     "target": "ZSMul"
+    },
+    {
+     "decl": "mul_nsmul",
+     "source": "AddMonoid",
+     "target": "ZSMul"
+    },
+    {
+     "decl": "nsmul_iterate",
+     "source": "AddMonoid",
+     "target": "ZSMul"
+    },
+    {
+     "decl": "Booleanisation.comp_sdiff_comp",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "Booleanisation.lift_inf_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "Booleanisation.lift_sdiff_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "Booleanisation.lift_sup_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "Disjoint.symmDiff_left",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "bihimp_hnot_self",
+     "source": "HeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "bot_himp",
+     "source": "HeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "compl_bihimp_self",
+     "source": "HeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "compl_sup_distrib",
+     "source": "HeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "himp_compl_comm",
+     "source": "HeytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "bihimp_hnot_self",
+     "source": "HeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "bot_himp",
+     "source": "HeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "compl_bihimp_self",
+     "source": "HeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "compl_sup_distrib",
+     "source": "HeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "himp_compl_comm",
+     "source": "HeytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "bihimp_hnot_self",
+     "source": "HeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "bot_himp",
+     "source": "HeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "compl_bihimp_self",
+     "source": "HeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "compl_sup_distrib",
+     "source": "HeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "himp_compl_comm",
+     "source": "HeytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "bihimp_hnot_self",
+     "source": "HeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "bot_himp",
+     "source": "HeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "compl_bihimp_self",
+     "source": "HeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "compl_sup_distrib",
+     "source": "HeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "himp_compl_comm",
+     "source": "HeytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "ArithmeticFunction.intCoe_mul",
+     "source": "Ring",
+     "target": "AddAction"
+    },
+    {
+     "decl": "CategoryTheory.Mat.add_apply",
+     "source": "Ring",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Polynomial.ofFinsupp_zsmul",
+     "source": "Ring",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Polynomial.toFinsupp_zsmul",
+     "source": "Ring",
+     "target": "AddAction"
+    },
+    {
+     "decl": "UniformSpace.Completion.coe_mul",
+     "source": "Ring",
+     "target": "AddAction"
+    },
+    {
+     "decl": "ArithmeticFunction.intCoe_mul",
+     "source": "Ring",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "CategoryTheory.Mat.add_apply",
+     "source": "Ring",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Polynomial.ofFinsupp_zsmul",
+     "source": "Ring",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Polynomial.toFinsupp_zsmul",
+     "source": "Ring",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "UniformSpace.Completion.coe_mul",
+     "source": "Ring",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "ArithmeticFunction.intCoe_mul",
+     "source": "Ring",
+     "target": "Units"
+    },
+    {
+     "decl": "CategoryTheory.Mat.add_apply",
+     "source": "Ring",
+     "target": "Units"
+    },
+    {
+     "decl": "Polynomial.ofFinsupp_zsmul",
+     "source": "Ring",
+     "target": "Units"
+    },
+    {
+     "decl": "Polynomial.toFinsupp_zsmul",
+     "source": "Ring",
+     "target": "Units"
+    },
+    {
+     "decl": "UniformSpace.Completion.coe_mul",
+     "source": "Ring",
+     "target": "Units"
+    },
+    {
+     "decl": "ArithmeticFunction.intCoe_mul",
+     "source": "Ring",
+     "target": "Vector"
+    },
+    {
+     "decl": "CategoryTheory.Mat.add_apply",
+     "source": "Ring",
+     "target": "Vector"
+    },
+    {
+     "decl": "Polynomial.ofFinsupp_zsmul",
+     "source": "Ring",
+     "target": "Vector"
+    },
+    {
+     "decl": "Polynomial.toFinsupp_zsmul",
+     "source": "Ring",
+     "target": "Vector"
+    },
+    {
+     "decl": "UniformSpace.Completion.coe_mul",
+     "source": "Ring",
+     "target": "Vector"
+    },
+    {
+     "decl": "ArchimedeanClass.exists_nat_ge_of_mk_nonneg",
+     "source": "CommRing",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "Polynomial.coe_normUnit",
+     "source": "CommRing",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "Quaternion.re_mul",
+     "source": "CommRing",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "QuaternionAlgebra.coe_pow",
+     "source": "CommRing",
+     "target": "CommMonoidWithZero"
+    },
+    {
+     "decl": "ArchimedeanClass.exists_nat_ge_of_mk_nonneg",
+     "source": "CommRing",
+     "target": "CommSemiring"
+    },
+    {
+     "decl": "Polynomial.coe_normUnit",
+     "source": "CommRing",
+     "target": "CommSemiring"
+    },
+    {
+     "decl": "Quaternion.re_mul",
+     "source": "CommRing",
+     "target": "CommSemiring"
+    },
+    {
+     "decl": "QuaternionAlgebra.coe_pow",
+     "source": "CommRing",
+     "target": "CommSemiring"
+    },
+    {
+     "decl": "ArchimedeanClass.exists_nat_ge_of_mk_nonneg",
+     "source": "CommRing",
+     "target": "Units"
+    },
+    {
+     "decl": "Polynomial.coe_normUnit",
+     "source": "CommRing",
+     "target": "Units"
+    },
+    {
+     "decl": "Quaternion.re_mul",
+     "source": "CommRing",
+     "target": "Units"
+    },
+    {
+     "decl": "QuaternionAlgebra.coe_pow",
+     "source": "CommRing",
+     "target": "Units"
+    },
+    {
+     "decl": "ArchimedeanClass.exists_nat_ge_of_mk_nonneg",
+     "source": "CommRing",
+     "target": "Vector"
+    },
+    {
+     "decl": "Polynomial.coe_normUnit",
+     "source": "CommRing",
+     "target": "Vector"
+    },
+    {
+     "decl": "Quaternion.re_mul",
+     "source": "CommRing",
+     "target": "Vector"
+    },
+    {
+     "decl": "QuaternionAlgebra.coe_pow",
+     "source": "CommRing",
+     "target": "Vector"
+    },
+    {
+     "decl": "WeierstrassCurve.Jacobian.Point.add_point",
+     "source": "Field",
+     "target": "EuclideanDomain"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan17.lean",
+   "name": "Attempt3Plan17",
+   "probes": [
+    {
+     "decl": "WeierstrassCurve.Jacobian.Point.neg_point",
+     "source": "Field",
+     "target": "EuclideanDomain"
+    },
+    {
+     "decl": "WeierstrassCurve.Projective.Point.add_point",
+     "source": "Field",
+     "target": "EuclideanDomain"
+    },
+    {
+     "decl": "WeierstrassCurve.Projective.Point.neg_point",
+     "source": "Field",
+     "target": "EuclideanDomain"
+    },
+    {
+     "decl": "ENat.card_lt_top_of_finite",
+     "source": "Finite",
+     "target": "OrderTop"
+    },
+    {
+     "decl": "SimpleGraph.Finsubgraph.coe_top",
+     "source": "Finite",
+     "target": "OrderTop"
+    },
+    {
+     "decl": "closure_of_isSwap_of_isPretransitive",
+     "source": "Finite",
+     "target": "OrderTop"
+    },
+    {
+     "decl": "isCyclic_iff_exists_orderOf_eq_natCard",
+     "source": "Finite",
+     "target": "OrderTop"
+    },
+    {
+     "decl": "ENat.card_lt_top_of_finite",
+     "source": "Finite",
+     "target": "WellFoundedGT"
+    },
+    {
+     "decl": "SimpleGraph.Finsubgraph.coe_top",
+     "source": "Finite",
+     "target": "WellFoundedGT"
+    },
+    {
+     "decl": "closure_of_isSwap_of_isPretransitive",
+     "source": "Finite",
+     "target": "WellFoundedGT"
+    },
+    {
+     "decl": "isCyclic_iff_exists_orderOf_eq_natCard",
+     "source": "Finite",
+     "target": "WellFoundedGT"
+    },
+    {
+     "decl": "MulOpposite.nnnorm_op",
+     "source": "SeminormedAddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.nnnorm_unop",
+     "source": "SeminormedAddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.norm_op",
+     "source": "SeminormedAddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.norm_unop",
+     "source": "SeminormedAddGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.nnnorm_op",
+     "source": "SeminormedAddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.nnnorm_unop",
+     "source": "SeminormedAddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.norm_op",
+     "source": "SeminormedAddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.norm_unop",
+     "source": "SeminormedAddGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.nnnorm_op",
+     "source": "SeminormedAddGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "MulOpposite.nnnorm_unop",
+     "source": "SeminormedAddGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "MulOpposite.norm_op",
+     "source": "SeminormedAddGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "MulOpposite.norm_unop",
+     "source": "SeminormedAddGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "MulOpposite.nnnorm_op",
+     "source": "SeminormedAddGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.nnnorm_unop",
+     "source": "SeminormedAddGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.norm_op",
+     "source": "SeminormedAddGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.norm_unop",
+     "source": "SeminormedAddGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithLp.ofLp_neg",
+     "source": "AddCommGroup",
+     "target": "HasDistribNeg"
+    },
+    {
+     "decl": "WithLp.toLp_neg",
+     "source": "AddCommGroup",
+     "target": "HasDistribNeg"
+    },
+    {
+     "decl": "WithTop.LinearOrderedAddCommGroup.coe_neg",
+     "source": "AddCommGroup",
+     "target": "HasDistribNeg"
+    },
+    {
+     "decl": "WithLp.ofLp_neg",
+     "source": "AddCommGroup",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "WithLp.toLp_neg",
+     "source": "AddCommGroup",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "WithTop.LinearOrderedAddCommGroup.coe_neg",
+     "source": "AddCommGroup",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "WithLp.ofLp_sub",
+     "source": "AddCommGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "WithLp.toLp_sub",
+     "source": "AddCommGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "WithTop.LinearOrderedAddCommGroup.coe_sub",
+     "source": "AddCommGroup",
+     "target": "Lean.Grind.AddCommGroup"
+    },
+    {
+     "decl": "WithLp.ofLp_sub",
+     "source": "AddCommGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "WithLp.toLp_sub",
+     "source": "AddCommGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "WithTop.LinearOrderedAddCommGroup.coe_sub",
+     "source": "AddCommGroup",
+     "target": "Lean.Grind.IntModule"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_intCast",
+     "source": "AddCommGroupWithOne",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_intCast",
+     "source": "AddCommGroupWithOne",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_natCast",
+     "source": "AddCommGroupWithOne",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_intCast",
+     "source": "AddCommGroupWithOne",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_intCast",
+     "source": "AddCommGroupWithOne",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_natCast",
+     "source": "AddCommGroupWithOne",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_intCast",
+     "source": "AddCommGroupWithOne",
+     "target": "Units"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_intCast",
+     "source": "AddCommGroupWithOne",
+     "target": "Units"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_natCast",
+     "source": "AddCommGroupWithOne",
+     "target": "Units"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_intCast",
+     "source": "AddCommGroupWithOne",
+     "target": "Vector"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_intCast",
+     "source": "AddCommGroupWithOne",
+     "target": "Vector"
+    },
+    {
+     "decl": "QuaternionAlgebra.re_natCast",
+     "source": "AddCommGroupWithOne",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddAut.vadd_def",
+     "source": "AddMonoid",
+     "target": "AddCommMagma"
+    },
+    {
+     "decl": "WithConv.ofConv_add",
+     "source": "AddMonoid",
+     "target": "AddCommMagma"
+    },
+    {
+     "decl": "WithConv.toConv_add",
+     "source": "AddMonoid",
+     "target": "AddCommMagma"
+    },
+    {
+     "decl": "AddAut.vadd_def",
+     "source": "AddMonoid",
+     "target": "Distrib"
+    },
+    {
+     "decl": "WithConv.ofConv_add",
+     "source": "AddMonoid",
+     "target": "Distrib"
+    },
+    {
+     "decl": "WithConv.toConv_add",
+     "source": "AddMonoid",
+     "target": "Distrib"
+    },
+    {
+     "decl": "CategoryTheory.GradedObject.hom_ext",
+     "source": "CategoryTheory.Category",
+     "target": "CategoryTheory.CategoryStruct"
+    },
+    {
+     "decl": "CategoryTheory.WithInitial.false_of_to_star",
+     "source": "CategoryTheory.Category",
+     "target": "CategoryTheory.CategoryStruct"
+    },
+    {
+     "decl": "CategoryTheory.WithTerminal.false_of_from_star",
+     "source": "CategoryTheory.Category",
+     "target": "CategoryTheory.CategoryStruct"
+    },
+    {
+     "decl": "hnot_inf_distrib",
+     "source": "CoheytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "hnot_sdiff_comm",
+     "source": "CoheytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "sdiff_top",
+     "source": "CoheytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "hnot_inf_distrib",
+     "source": "CoheytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "hnot_sdiff_comm",
+     "source": "CoheytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "sdiff_top",
+     "source": "CoheytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "hnot_inf_distrib",
+     "source": "CoheytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "hnot_sdiff_comm",
+     "source": "CoheytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "sdiff_top",
+     "source": "CoheytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "hnot_inf_distrib",
+     "source": "CoheytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "hnot_sdiff_comm",
+     "source": "CoheytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "sdiff_top",
+     "source": "CoheytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "Complementeds.coe_inf",
+     "source": "DistribLattice",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Complementeds.coe_sup",
+     "source": "DistribLattice",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Finpartition.parts_inf",
+     "source": "DistribLattice",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Complementeds.coe_inf",
+     "source": "DistribLattice",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Complementeds.coe_sup",
+     "source": "DistribLattice",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Finpartition.parts_inf",
+     "source": "DistribLattice",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Complementeds.coe_inf",
+     "source": "DistribLattice",
+     "target": "Units"
+    },
+    {
+     "decl": "Complementeds.coe_sup",
+     "source": "DistribLattice",
+     "target": "Units"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan18.lean",
+   "name": "Attempt3Plan18",
+   "probes": [
+    {
+     "decl": "Finpartition.parts_inf",
+     "source": "DistribLattice",
+     "target": "Units"
+    },
+    {
+     "decl": "Complementeds.coe_inf",
+     "source": "DistribLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "Complementeds.coe_sup",
+     "source": "DistribLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finpartition.parts_inf",
+     "source": "DistribLattice",
+     "target": "Vector"
+    },
+    {
+     "decl": "ConjAct.ofConjAct_zero",
+     "source": "GroupWithZero",
+     "target": "DivInvOneMonoid"
+    },
+    {
+     "decl": "ConjAct.toConjAct_zero",
+     "source": "GroupWithZero",
+     "target": "DivInvOneMonoid"
+    },
+    {
+     "decl": "orderOf_eq_zero_iff_eq_zero",
+     "source": "GroupWithZero",
+     "target": "DivInvOneMonoid"
+    },
+    {
+     "decl": "ConjAct.ofConjAct_zero",
+     "source": "GroupWithZero",
+     "target": "DivisionMonoid"
+    },
+    {
+     "decl": "ConjAct.toConjAct_zero",
+     "source": "GroupWithZero",
+     "target": "DivisionMonoid"
+    },
+    {
+     "decl": "orderOf_eq_zero_iff_eq_zero",
+     "source": "GroupWithZero",
+     "target": "DivisionMonoid"
+    },
+    {
+     "decl": "ArchimedeanClass.mk_mul",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedCancelAddMonoid"
+    },
+    {
+     "decl": "ArchimedeanClass.mk_one",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedCancelAddMonoid"
+    },
+    {
+     "decl": "ArchimedeanClass.mk_pow",
+     "source": "IsStrictOrderedRing",
+     "target": "IsOrderedCancelAddMonoid"
+    },
+    {
+     "decl": "MulAut.smul_def",
+     "source": "Monoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.op_pow",
+     "source": "Monoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.unop_pow",
+     "source": "Monoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulAut.smul_def",
+     "source": "Monoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.op_pow",
+     "source": "Monoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.unop_pow",
+     "source": "Monoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Nonneg.coe_nnqsmul",
+     "source": "Semifield",
+     "target": "Field"
+    },
+    {
+     "decl": "Nonneg.coe_zpow",
+     "source": "Semifield",
+     "target": "Field"
+    },
+    {
+     "decl": "Nonneg.mk_nnqsmul",
+     "source": "Semifield",
+     "target": "Field"
+    },
+    {
+     "decl": "Nonneg.coe_nnqsmul",
+     "source": "Semifield",
+     "target": "IsField"
+    },
+    {
+     "decl": "Nonneg.coe_zpow",
+     "source": "Semifield",
+     "target": "IsField"
+    },
+    {
+     "decl": "Nonneg.mk_nnqsmul",
+     "source": "Semifield",
+     "target": "IsField"
+    },
+    {
+     "decl": "Nonneg.coe_nnqsmul",
+     "source": "Semifield",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.coe_zpow",
+     "source": "Semifield",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.mk_nnqsmul",
+     "source": "Semifield",
+     "target": "Units"
+    },
+    {
+     "decl": "Nonneg.coe_nnqsmul",
+     "source": "Semifield",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.coe_zpow",
+     "source": "Semifield",
+     "target": "Vector"
+    },
+    {
+     "decl": "Nonneg.mk_nnqsmul",
+     "source": "Semifield",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddOpposite.op_zsmul",
+     "source": "SubNegMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.unop_zsmul",
+     "source": "SubNegMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "natCast_zsmul",
+     "source": "SubNegMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "AddOpposite.op_zsmul",
+     "source": "SubNegMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.unop_zsmul",
+     "source": "SubNegMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "natCast_zsmul",
+     "source": "SubNegMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "AddOpposite.op_zsmul",
+     "source": "SubNegMonoid",
+     "target": "SemigroupAction"
+    },
+    {
+     "decl": "AddOpposite.unop_zsmul",
+     "source": "SubNegMonoid",
+     "target": "SemigroupAction"
+    },
+    {
+     "decl": "natCast_zsmul",
+     "source": "SubNegMonoid",
+     "target": "SemigroupAction"
+    },
+    {
+     "decl": "AddOpposite.op_zsmul",
+     "source": "SubNegMonoid",
+     "target": "ZSMul"
+    },
+    {
+     "decl": "AddOpposite.unop_zsmul",
+     "source": "SubNegMonoid",
+     "target": "ZSMul"
+    },
+    {
+     "decl": "natCast_zsmul",
+     "source": "SubNegMonoid",
+     "target": "ZSMul"
+    },
+    {
+     "decl": "WithLp.ofLp_add",
+     "source": "AddCommGroup",
+     "target": "AddCommMagma"
+    },
+    {
+     "decl": "WithLp.toLp_add",
+     "source": "AddCommGroup",
+     "target": "AddCommMagma"
+    },
+    {
+     "decl": "WithLp.ofLp_add",
+     "source": "AddCommGroup",
+     "target": "Distrib"
+    },
+    {
+     "decl": "WithLp.toLp_add",
+     "source": "AddCommGroup",
+     "target": "Distrib"
+    },
+    {
+     "decl": "ofDegLex_add",
+     "source": "AddCommMonoid",
+     "target": "AddCommMagma"
+    },
+    {
+     "decl": "toDegLex_add",
+     "source": "AddCommMonoid",
+     "target": "AddCommMagma"
+    },
+    {
+     "decl": "ofDegLex_add",
+     "source": "AddCommMonoid",
+     "target": "Distrib"
+    },
+    {
+     "decl": "toDegLex_add",
+     "source": "AddCommMonoid",
+     "target": "Distrib"
+    },
+    {
+     "decl": "AddMonoid.End.zero_apply",
+     "source": "AddCommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "Finset.HasAntidiagonal.antidiagonal.fst_le",
+     "source": "AddCommMonoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "WithConv.ofConv_neg",
+     "source": "AddGroup",
+     "target": "HasDistribNeg"
+    },
+    {
+     "decl": "WithConv.toConv_neg",
+     "source": "AddGroup",
+     "target": "HasDistribNeg"
+    },
+    {
+     "decl": "WithConv.ofConv_neg",
+     "source": "AddGroup",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "WithConv.toConv_neg",
+     "source": "AddGroup",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "Matrix.conjTranspose_zsmul",
+     "source": "AddGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "QuaternionAlgebra.im_sub",
+     "source": "AddGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "Matrix.conjTranspose_zsmul",
+     "source": "AddGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "QuaternionAlgebra.im_sub",
+     "source": "AddGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "SkewMonoidAlgebra.coeff_zero",
+     "source": "AddMonoid",
+     "target": "Lean.Grind.AddCommMonoid"
+    },
+    {
+     "decl": "SkewMonoidAlgebra.ofCoeff_zero",
+     "source": "AddMonoid",
+     "target": "Lean.Grind.AddCommMonoid"
+    },
+    {
+     "decl": "SkewMonoidAlgebra.coeff_zero",
+     "source": "AddMonoid",
+     "target": "NegZeroClass"
+    },
+    {
+     "decl": "SkewMonoidAlgebra.ofCoeff_zero",
+     "source": "AddMonoid",
+     "target": "NegZeroClass"
+    },
+    {
+     "decl": "lt_sSup_iff",
+     "source": "CompleteLinearOrder",
+     "target": "CompleteDistribLattice"
+    },
+    {
+     "decl": "sInf_lt_iff",
+     "source": "CompleteLinearOrder",
+     "target": "CompleteDistribLattice"
+    },
+    {
+     "decl": "lt_sSup_iff",
+     "source": "CompleteLinearOrder",
+     "target": "CompletelyDistribLattice"
+    },
+    {
+     "decl": "sInf_lt_iff",
+     "source": "CompleteLinearOrder",
+     "target": "CompletelyDistribLattice"
+    },
+    {
+     "decl": "lt_sSup_iff",
+     "source": "CompleteLinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "sInf_lt_iff",
+     "source": "CompleteLinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "lt_sSup_iff",
+     "source": "CompleteLinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "sInf_lt_iff",
+     "source": "CompleteLinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.op_zpow",
+     "source": "DivInvMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.unop_zpow",
+     "source": "DivInvMonoid",
+     "target": "AddAction"
+    },
+    {
+     "decl": "MulOpposite.op_zpow",
+     "source": "DivInvMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.unop_zpow",
+     "source": "DivInvMonoid",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "MulOpposite.op_zpow",
+     "source": "DivInvMonoid",
+     "target": "NPow"
+    },
+    {
+     "decl": "MulOpposite.unop_zpow",
+     "source": "DivInvMonoid",
+     "target": "NPow"
+    },
+    {
+     "decl": "MulOpposite.op_zpow",
+     "source": "DivInvMonoid",
+     "target": "ZPow"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan19.lean",
+   "name": "Attempt3Plan19",
+   "probes": [
+    {
+     "decl": "MulOpposite.unop_zpow",
+     "source": "DivInvMonoid",
+     "target": "ZPow"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_nnratCast",
+     "source": "Field",
+     "target": "DivisionRing"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_ratCast",
+     "source": "Field",
+     "target": "DivisionRing"
+    },
+    {
+     "decl": "Booleanisation.not_comp_le_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Ord"
+    },
+    {
+     "decl": "Booleanisation.not_comp_lt_lift",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "Ord"
+    },
+    {
+     "decl": "ArchimedeanClass.mk_inv",
+     "source": "IsOrderedRing",
+     "target": "IsOrderedCancelAddMonoid"
+    },
+    {
+     "decl": "ArchimedeanClass.mk_zpow",
+     "source": "IsOrderedRing",
+     "target": "IsOrderedCancelAddMonoid"
+    },
+    {
+     "decl": "ArchimedeanClass.mk_inv",
+     "source": "IsOrderedRing",
+     "target": "IsStrictOrderedRing"
+    },
+    {
+     "decl": "ArchimedeanClass.mk_zpow",
+     "source": "IsOrderedRing",
+     "target": "IsStrictOrderedRing"
+    },
+    {
+     "decl": "max_div_div_right",
+     "source": "IsStrictOrderedRing",
+     "target": "PosMulMono"
+    },
+    {
+     "decl": "min_div_div_right",
+     "source": "IsStrictOrderedRing",
+     "target": "PosMulMono"
+    },
+    {
+     "decl": "max_div_div_right",
+     "source": "IsStrictOrderedRing",
+     "target": "PosMulReflectLE"
+    },
+    {
+     "decl": "min_div_div_right",
+     "source": "IsStrictOrderedRing",
+     "target": "PosMulReflectLE"
+    },
+    {
+     "decl": "max_div_div_right",
+     "source": "IsStrictOrderedRing",
+     "target": "PosMulStrictMono"
+    },
+    {
+     "decl": "min_div_div_right",
+     "source": "IsStrictOrderedRing",
+     "target": "PosMulStrictMono"
+    },
+    {
+     "decl": "Finset.Colex.ofColex_top",
+     "source": "LinearOrder",
+     "target": "OrderTop"
+    },
+    {
+     "decl": "Finset.Colex.toColex_univ",
+     "source": "LinearOrder",
+     "target": "OrderTop"
+    },
+    {
+     "decl": "Finset.Colex.ofColex_top",
+     "source": "LinearOrder",
+     "target": "WellFoundedGT"
+    },
+    {
+     "decl": "Finset.Colex.toColex_univ",
+     "source": "LinearOrder",
+     "target": "WellFoundedGT"
+    },
+    {
+     "decl": "Metric.NonemptyCompacts.dist_eq",
+     "source": "MetricSpace",
+     "target": "EMetricSpace"
+    },
+    {
+     "decl": "Metric.lipschitz_infDist_set",
+     "source": "MetricSpace",
+     "target": "EMetricSpace"
+    },
+    {
+     "decl": "MulOpposite.op_pow",
+     "source": "Monoid",
+     "target": "NPow"
+    },
+    {
+     "decl": "MulOpposite.unop_pow",
+     "source": "Monoid",
+     "target": "NPow"
+    },
+    {
+     "decl": "MulOpposite.op_pow",
+     "source": "Monoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "MulOpposite.unop_pow",
+     "source": "Monoid",
+     "target": "Vector"
+    },
+    {
+     "decl": "Mem\u2113p.summable_of_one",
+     "source": "NormedAddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "lp.norm_tsum_le",
+     "source": "NormedAddCommGroup",
+     "target": "AddAction"
+    },
+    {
+     "decl": "Mem\u2113p.summable_of_one",
+     "source": "NormedAddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "lp.norm_tsum_le",
+     "source": "NormedAddCommGroup",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "Mem\u2113p.summable_of_one",
+     "source": "NormedAddCommGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "lp.norm_tsum_le",
+     "source": "NormedAddCommGroup",
+     "target": "Units"
+    },
+    {
+     "decl": "Mem\u2113p.summable_of_one",
+     "source": "NormedAddCommGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "lp.norm_tsum_le",
+     "source": "NormedAddCommGroup",
+     "target": "Vector"
+    },
+    {
+     "decl": "hnot_eq_sInf_codisjoint",
+     "source": "Order.Coframe",
+     "target": "CompleteLattice"
+    },
+    {
+     "decl": "sdiff_eq_sInf",
+     "source": "Order.Coframe",
+     "target": "CompleteLattice"
+    },
+    {
+     "decl": "hnot_eq_sInf_codisjoint",
+     "source": "Order.Coframe",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "sdiff_eq_sInf",
+     "source": "Order.Coframe",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "hnot_eq_sInf_codisjoint",
+     "source": "Order.Coframe",
+     "target": "Units"
+    },
+    {
+     "decl": "sdiff_eq_sInf",
+     "source": "Order.Coframe",
+     "target": "Units"
+    },
+    {
+     "decl": "hnot_eq_sInf_codisjoint",
+     "source": "Order.Coframe",
+     "target": "Vector"
+    },
+    {
+     "decl": "sdiff_eq_sInf",
+     "source": "Order.Coframe",
+     "target": "Vector"
+    },
+    {
+     "decl": "compl_eq_sSup_disjoint",
+     "source": "Order.Frame",
+     "target": "CompleteLattice"
+    },
+    {
+     "decl": "himp_eq_sSup",
+     "source": "Order.Frame",
+     "target": "CompleteLattice"
+    },
+    {
+     "decl": "compl_eq_sSup_disjoint",
+     "source": "Order.Frame",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "himp_eq_sSup",
+     "source": "Order.Frame",
+     "target": "ConditionallyCompleteLattice"
+    },
+    {
+     "decl": "compl_eq_sSup_disjoint",
+     "source": "Order.Frame",
+     "target": "Units"
+    },
+    {
+     "decl": "himp_eq_sSup",
+     "source": "Order.Frame",
+     "target": "Units"
+    },
+    {
+     "decl": "compl_eq_sSup_disjoint",
+     "source": "Order.Frame",
+     "target": "Vector"
+    },
+    {
+     "decl": "himp_eq_sSup",
+     "source": "Order.Frame",
+     "target": "Vector"
+    },
+    {
+     "decl": "ArithmeticFunction.coe_zeta_mul_comm",
+     "source": "Semiring",
+     "target": "AddAction"
+    },
+    {
+     "decl": "ArithmeticFunction.natCoe_mul",
+     "source": "Semiring",
+     "target": "AddAction"
+    },
+    {
+     "decl": "ArithmeticFunction.coe_zeta_mul_comm",
+     "source": "Semiring",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "ArithmeticFunction.natCoe_mul",
+     "source": "Semiring",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "ArithmeticFunction.coe_zeta_mul_comm",
+     "source": "Semiring",
+     "target": "Units"
+    },
+    {
+     "decl": "ArithmeticFunction.natCoe_mul",
+     "source": "Semiring",
+     "target": "Units"
+    },
+    {
+     "decl": "ArithmeticFunction.coe_zeta_mul_comm",
+     "source": "Semiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "ArithmeticFunction.natCoe_mul",
+     "source": "Semiring",
+     "target": "Vector"
+    },
+    {
+     "decl": "AddMonoid.End.zero_apply",
+     "source": "AddCommMonoid",
+     "target": "AddZeroClass"
+    },
+    {
+     "decl": "Finsupp.bot_eq_zero",
+     "source": "AddCommMonoid",
+     "target": "Lean.Grind.AddCommMonoid"
+    },
+    {
+     "decl": "Finsupp.bot_eq_zero",
+     "source": "AddCommMonoid",
+     "target": "NegZeroClass"
+    },
+    {
+     "decl": "Finset.HasAntidiagonal.antidiagonal.fst_le",
+     "source": "AddCommMonoid",
+     "target": "Units"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_natCast",
+     "source": "AddCommMonoidWithOne",
+     "target": "AddAction"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_natCast",
+     "source": "AddCommMonoidWithOne",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_natCast",
+     "source": "AddCommMonoidWithOne",
+     "target": "Units"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_natCast",
+     "source": "AddCommMonoidWithOne",
+     "target": "Vector"
+    },
+    {
+     "decl": "compl_le_hnot",
+     "source": "BiheytingAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "compl_le_hnot",
+     "source": "BiheytingAlgebra",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "compl_le_hnot",
+     "source": "BiheytingAlgebra",
+     "target": "Units"
+    },
+    {
+     "decl": "compl_le_hnot",
+     "source": "BiheytingAlgebra",
+     "target": "Vector"
+    },
+    {
+     "decl": "ofBoolRing_neg",
+     "source": "BooleanAlgebra",
+     "target": "HasDistribNeg"
+    },
+    {
+     "decl": "ofBoolRing_neg",
+     "source": "BooleanAlgebra",
+     "target": "InvolutiveNeg"
+    },
+    {
+     "decl": "Associates.FactorSet.coe_add",
+     "source": "CommMonoidWithZero",
+     "target": "CommMonoid"
+    },
+    {
+     "decl": "Associates.FactorSet.coe_add",
+     "source": "CommMonoidWithZero",
+     "target": "Submonoid"
+    },
+    {
+     "decl": "Associates.FactorSet.coe_add",
+     "source": "CommMonoidWithZero",
+     "target": "Units"
+    },
+    {
+     "decl": "Associates.FactorSet.coe_add",
+     "source": "CommMonoidWithZero",
+     "target": "Vector"
+    },
+    {
+     "decl": "iSup_symmDiff_iSup_le",
+     "source": "CompleteBooleanAlgebra",
+     "target": "CompleteAtomicBooleanAlgebra"
+    },
+    {
+     "decl": "iSup_symmDiff_iSup_le",
+     "source": "CompleteBooleanAlgebra",
+     "target": "CompletelyDistribLattice"
+    },
+    {
+     "decl": "iSup_symmDiff_iSup_le",
+     "source": "CompleteBooleanAlgebra",
+     "target": "Order.Coframe"
+    },
+    {
+     "decl": "iSup_symmDiff_iSup_le",
+     "source": "CompleteBooleanAlgebra",
+     "target": "Order.Frame"
+    },
+    {
+     "decl": "Finset.untrop_sum",
+     "source": "ConditionallyCompleteLinearOrder",
+     "target": "ConditionallyCompleteLattice"
+    }
+   ]
+  },
+  {
+   "file": "/home/dev/projects/ferris-howard/lean/Scratch/Attempt3Plan20.lean",
+   "name": "Attempt3Plan20",
+   "probes": [
+    {
+     "decl": "Finset.untrop_sum",
+     "source": "ConditionallyCompleteLinearOrder",
+     "target": "ConditionallyCompletePartialOrder"
+    },
+    {
+     "decl": "Finset.untrop_sum",
+     "source": "ConditionallyCompleteLinearOrder",
+     "target": "Units"
+    },
+    {
+     "decl": "Finset.untrop_sum",
+     "source": "ConditionallyCompleteLinearOrder",
+     "target": "Vector"
+    },
+    {
+     "decl": "QuadraticAlgebra.re_nnratCast",
+     "source": "Field",
+     "target": "DivisionSemiring"
+    },
+    {
+     "decl": "Filter.cofinite_eq_bot",
+     "source": "Finite",
+     "target": "OrderBot"
+    },
+    {
+     "decl": "Filter.cofinite_eq_bot",
+     "source": "Finite",
+     "target": "WellFoundedLT"
+    },
+    {
+     "decl": "Filter.cofinite_eq_bot",
+     "source": "Finite",
+     "target": "WellQuasiOrderedLE"
+    },
+    {
+     "decl": "Fintype.toOrderBot.congr_simp",
+     "source": "Fintype",
+     "target": "Ord"
+    },
+    {
+     "decl": "Booleanisation.lift_bot",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "OrderBot"
+    },
+    {
+     "decl": "Booleanisation.lift_bot",
+     "source": "GeneralizedBooleanAlgebra",
+     "target": "WellFoundedLT"
+    },
+    {
+     "decl": "orderOf_eq_zero_iff_eq_zero",
+     "source": "GroupWithZero",
+     "target": "Units"
+    },
+    {
+     "decl": "orderOf_eq_zero_iff_eq_zero",
+     "source": "GroupWithZero",
+     "target": "Vector"
+    },
+    {
+     "decl": "Metric.NonemptyCompacts.dist_eq",
+     "source": "MetricSpace",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "Metric.lipschitz_infDist_set",
+     "source": "MetricSpace",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "uzpow_zero",
+     "source": "Module",
+     "target": "AddAction"
+    },
+    {
+     "decl": "uzpow_zero",
+     "source": "Module",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "uzpow_zero",
+     "source": "Module",
+     "target": "MulZeroClass"
+    },
+    {
+     "decl": "uzpow_zero",
+     "source": "Module",
+     "target": "MulZeroOneClass"
+    },
+    {
+     "decl": "MulAut.smul_def",
+     "source": "Monoid",
+     "target": "Distrib"
+    },
+    {
+     "decl": "MulAut.smul_def",
+     "source": "Monoid",
+     "target": "MulOne"
+    },
+    {
+     "decl": "FiniteMultiplicity.ne_zero",
+     "source": "MonoidWithZero",
+     "target": "AddAction"
+    },
+    {
+     "decl": "FiniteMultiplicity.ne_zero",
+     "source": "MonoidWithZero",
+     "target": "AddCancelCommMonoid"
+    },
+    {
+     "decl": "FiniteMultiplicity.ne_zero",
+     "source": "MonoidWithZero",
+     "target": "Units"
+    },
+    {
+     "decl": "FiniteMultiplicity.ne_zero",
+     "source": "MonoidWithZero",
+     "target": "Vector"
+    },
+    {
+     "decl": "CStarMatrix.uniformEmbedding_ofMatrix",
+     "source": "NonUnitalCStarAlgebra",
+     "target": "AddAction"
+    },
+    {
+     "decl": "CStarMatrix.uniformEmbedding_ofMatrix",
+     "source": "NonUnitalCStarAlgebra",
+     "target": "IsScalarTower"
+    },
+    {
+     "decl": "CStarMatrix.uniformEmbedding_ofMatrix",
+     "source": "NonUnitalCStarAlgebra",
+     "target": "PseudoEMetricSpace"
+    },
+    {
+     "decl": "CStarMatrix.uniformEmbedding_ofMatrix",
+     "source": "NonUnitalCStarAlgebra",
+     "target": "PseudoMetricSpace"
+    },
+    {
+     "decl": "Polynomial.tendsto_atBot_iff_leadingCoeff_nonpos",
+     "source": "NormedField",
+     "target": "AbsoluteValue"
+    },
+    {
+     "decl": "Polynomial.tendsto_atBot_iff_leadingCoeff_nonpos",
+     "source": "NormedField",
+     "target": "NontriviallyNormedField"
+    },
+    {
+     "decl": "Polynomial.tendsto_atBot_iff_leadingCoeff_nonpos",
+     "source": "NormedField",
+     "target": "Units"
+    },
+    {
+     "decl": "Polynomial.tendsto_atBot_iff_leadingCoeff_nonpos",
+     "source": "NormedField",
+     "target": "Vector"
+    },
+    {
+     "decl": "Fintype.toOrderBot.congr_simp",
+     "source": "SemilatticeInf",
+     "target": "Ord"
+    },
+    {
+     "decl": "TopologicalSpace.Closeds.noncompactSpace_iff",
+     "source": "UniformSpace",
+     "target": "UniformSpace.Core"
+    }
+   ]
+  }
+ ]
+}

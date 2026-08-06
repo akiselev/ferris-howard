@@ -163,6 +163,27 @@ info: FH home: `twocarrier` has 2 over-hypothesis candidate(s) — a candidate i
 #guard_msgs (whitespace := lax) in
 #fh_home twocarrier
 
+/-! ## A carrier followed by an instance parameter
+
+The carrier is not necessarily the final argument in an elaborated class application.
+`CarrierAfterInstance R` also contains the synthesized `[Add R]` argument, so a last-arg
+rule keys its evidence to that instance fvar and incorrectly calls the declared binder
+unused. Telescope-aligned carrier selection keeps both requirements attached to `R`. -/
+
+class CarrierAfterInstance (R : Type) [Add R] : Prop where
+  marker : True
+
+theorem trailingInstanceCarrier {R : Type} [Add R] [CarrierAfterInstance R] : True :=
+  CarrierAfterInstance.marker R
+
+/--
+info: FH home: `trailingInstanceCarrier` is at home
+  [Add R] — at home
+  [CarrierAfterInstance R] — at home
+-/
+#guard_msgs (whitespace := lax) in
+#fh_home trailingInstanceCarrier
+
 /-! ## Confirmation, by re-elaboration (C4 D1b)
 
 `#fh_home` proposes; the kernel disposes. `#fh_home_confirm` rebuilds the declaration with
@@ -236,3 +257,105 @@ info: FH home confirm: `noskew`
 -/
 #guard_msgs (whitespace := lax, ordering := exact) in
 #fh_home_refute noskew Nonempty
+
+/-! ## A weakening that cannot be *stated* is not a weakening that is false
+
+`weakenBinder` rebuilds the binder by applying the target class to the **source** class's
+arguments. That is right when the two take the same number — `CommRing R` becomes
+`AddCommMagma R` — and produces an ill-typed binder when they do not: `Zero R` becomes
+`OfNat R`, but `OfNat` is indexed by the literal being denoted and needs `OfNat R 0`.
+
+The kernel duly rejected it and the command reported REFUTED, which is a verdict about a
+term nobody proposed. Measured over 578 real probes: **all 134 arity-changing ones were
+"refuted", none could have been anything else**, and the 444 arity-preserving ones confirmed
+at 32.4% — so the headline 24.9% was that dilution and nothing more.
+
+This pins the refusal. `Zero`/`OfNat` is the pair that produced the largest false family
+(336 candidates on whole Mathlib); the target's arity is read off its own type, so nothing
+here is specific to it.
+-/
+
+theorem zeroish {R : Type} [Zero R] (a : R) : a = a := rfl
+
+/--
+info: FH home confirm: `zeroish`
+  [Zero] -> OfNat: could not rebuild the binder — OfNat takes 2 argument(s) and the binder supplies a different number, or the domain is not a constant application. NO VERDICT: this weakening cannot be stated, which is not evidence that it is false.
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_refute zeroish OfNat
+
+/-- The same command on an arity-*preserving* target still reaches the kernel and answers,
+so the refusal above is the arity check firing and not the command having gone quiet. -/
+theorem zeroish2 {R : Type} [CommRing R] (a : R) : a = a := rfl
+
+/--
+info: FH home confirm: `zeroish2`
+  [CommRing] -> AddCommMagma: CONFIRMED — the term typechecks without CommRing
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_refute zeroish2 AddCommMagma
+
+/-! ## A proof search must state which binder it weakens
+
+Naming only the target class is ambiguous: several instance binders can have the same arity,
+and the first implementation silently rewrote the first such binder. The command now names
+the source class and refuses when that still identifies more than one binder. Failed tactics
+are ordinary search outcomes, so their internal unsolved-goal messages must not escape and
+turn the containing file red.
+-/
+
+theorem attemptEasy {R : Type} [CommRing R] (a b : R) : a + b = b + a := add_comm a b
+theorem attemptUniverse {R : Type*} [CommRing R] (a b : R) : a + b = b + a := add_comm a b
+theorem attemptHard {R : Type} [CommRing R] (a b c : R) (h : a + b = a + c) : b = c :=
+  add_left_cancel h
+theorem attemptNotStatement {R : Type} [CommRing R] (a b : R) : a * b = b * a := mul_comm a b
+set_option linter.overlappingInstances false in
+theorem attemptAmbiguous {R : Type} [CommRing R] [CommRing R] (a : R) : a = a := rfl
+
+set_option linter.unusedTactic false
+set_option linter.unreachableTactic false
+
+/--
+info: FH attempt `attemptEasy`: CommRing -> AddCommMagma: PROVED by exact?
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_attempt attemptEasy CommRing => AddCommMagma by rfl, simp, aesop, exact?
+
+/--
+info: FH attempt `attemptUniverse`: CommRing -> AddCommMagma: PROVED by exact?
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_attempt attemptUniverse CommRing => AddCommMagma by rfl, simp, aesop, exact?
+
+/--
+info: FH attempt `attemptHard`: CommRing -> AddCommMagma: not proved by the ladder
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_attempt attemptHard CommRing => AddCommMagma by rfl
+
+-- A ladder tactic that exceeds its heartbeat budget is a bounded miss, not a file error.
+-- A runtime exception passes through ordinary `catch`, so without `tryCatchRuntimeEx` in
+-- `tryTactic` this command died with `(deterministic) timeout at whnf` and the verdict
+-- line vanished — found by the census shards' `fh_plant_hard` control on their first run,
+-- and reproduced at exactly this budget before the fix.
+/--
+info: FH attempt `attemptHard`: CommRing -> AddCommMagma: not proved by the ladder
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+set_option maxHeartbeats 2000 in
+#fh_home_attempt attemptHard CommRing => AddCommMagma by exact?
+
+/--
+info: FH attempt `attemptNotStatement`: CommRing -> AddCommMagma: the rewritten statement is not type-correct after instance re-synthesis — NO STATEMENT
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_attempt attemptNotStatement CommRing => AddCommMagma by rfl
+
+/--
+info: FH attempt `attemptAmbiguous`: CommRing -> AddCommMagma: 2 source binders match; name a binder index before asking for a verdict — NO STATEMENT
+-/
+#guard_msgs (whitespace := lax, ordering := exact) in
+#fh_home_attempt attemptAmbiguous CommRing => AddCommMagma by rfl
+
+set_option linter.unusedTactic true
+set_option linter.unreachableTactic true

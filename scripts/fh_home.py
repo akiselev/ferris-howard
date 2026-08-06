@@ -43,14 +43,30 @@ because with a flat set "a class reached at `S`" is indistinguishable from "a cl
 at `R`", and a binder can be told it is over-strong on its neighbour's evidence. Recovering
 that from rows would mean matching each use site's arguments, which the row does not carry.
 
-So this module does not try: it **judges only declarations all of whose instance binders
-constrain the same carrier**, where the flat set and the carrier-aware set are equal by
-construction. Multi-carrier declarations are counted and reported as skipped rather than
-judged wrongly. That is a real coverage limit, and naming it is cheaper than a verdict
-nobody can trust.
+So the default `home` method does not try: it **judges only declarations all of whose
+instance binders constrain the same carrier**, where the flat set and the carrier-aware set
+are equal by construction. Multi-carrier declarations are counted and reported as skipped
+rather than judged wrongly. That is a real coverage limit, and naming it is cheaper than a
+verdict nobody can trust.
 
 Every verdict is a *candidate*. `#fh_home_confirm` puts the weakened binder in front of the
 kernel, and only the kernel settles it.
+
+`statement_candidates` is a deliberately separate search surface. Historical replay found
+one theorem whose own class (`ContinuousDiv G`) carries synthesized class arguments after
+its structural parameter; the conservative carrier rule mistakes one of those instances for
+the theorem's carrier and refuses the declaration. The search surface reads parameter roles
+from the cited class declaration, uses statement evidence only, and returns *all* weaker
+classes that cover those requirements. It does not choose a winner: class-head evidence
+erases indices such as the `0` in `OfNat G 0`, so only statement re-elaboration may discard
+the resulting false candidates. The default `home` rule remains unchanged.
+
+`carrier_statement_candidates` is the next, explicitly opt-in lane. New extractor rows may
+carry `requirements_statement` entries naming the cited source, required class, and outer
+carrier-binder index. This method keeps source provenance long enough to apply the same
+forgetful-instance exclusion, then enumerates candidates independently per carrier. Missing
+or composite carrier identities are not treated as negative evidence; a row without the new
+field is refused, and every proposal still requires statement re-elaboration and proof.
 """
 
 from __future__ import annotations
@@ -371,6 +387,35 @@ class HomeIndex:
             out.append((head, carrier))
         return out
 
+    def parameter_aware_instance_binders(self, name: str) -> list[tuple[str, int | None]]:
+        """Instance binders keyed by their class's last structural parameter.
+
+        Fully elaborated applications include a class declaration's own instance
+        parameters. For `ContinuousDiv G`, for example, the application spine contains
+        `G`, a `TopologicalSpace G` instance, and a `Div G` instance. The ordinary rule's
+        last-bvar heuristic therefore keys it to an instance binder rather than to `G`.
+
+        This variant aligns application arguments with the class declaration's telescope,
+        drops arguments whose corresponding parameters are themselves instance implicit,
+        and then applies the existing last-bvar convention. Multi-parameter structural
+        classes such as `SMul R M` consequently remain keyed to `M`.
+        """
+        out = []
+        for bi, head, args, depth in self.binders.get(name, []):
+            if bi != "t" or not head:
+                continue
+            class_params = self.binders.get(head, ())
+            structural_args = [
+                arg for arg, param in zip(args, class_params) if param[0] != "t"
+            ]
+            carrier = None
+            for kind, idx in reversed(structural_args or args):
+                if kind == "b":
+                    carrier = depth - 1 - idx
+                    break
+            out.append((head, carrier))
+        return out
+
     def evidence(self, row: dict) -> set[str]:
         """Classes the declaration's cited constants require.
 
@@ -431,3 +476,159 @@ class HomeIndex:
         return {"name": name, "module": row.get("module"), "kind": row.get("kind"),
                 "projection_like": name in self.projection_like,
                 "binders": verdicts}
+
+    def statement_candidates(self, name: str) -> dict | None:
+        """Enumerate weaker classes compatible with statement-level class heads.
+
+        This is search, not the `home` verdict. It uses parameter-aware carriers so a
+        declaration conservatively refused by `home` can enter the lane, ignores the old
+        proof because a generalization may need a new proof, and returns every strict
+        ancestor strong enough to provide all reached statement classes. Candidates are not
+        guaranteed to form a well-typed rewritten statement: applied class arguments are
+        absent from row evidence, so the caller must re-elaborate each statement and then
+        prove it in Lean.
+        """
+        row = self.rows.get(name)
+        if row is None or name not in self.binders:
+            return None
+        ibs = self.parameter_aware_instance_binders(name)
+        if not ibs:
+            return None
+        carriers = {carrier for _cls, carrier in ibs}
+        if len(carriers) > 1:
+            return {"skipped": "multi-carrier", "carriers": len(carriers)}
+        if name in self.produces_class:
+            return {"skipped": "produces-a-class"}
+
+        reached: set[str] = set()
+        for used in row.get("uses_statement", ()):
+            if used in self.forgetful:
+                continue
+            for cls, _carrier in self.instance_binders(used):
+                reached.add(cls)
+
+        verdicts = []
+        for cls, _carrier in ibs:
+            if cls in reached:
+                verdicts.append({"class": cls, "verdict": "at-home", "candidates": []})
+                continue
+            ancestors = self.ancestors(cls)
+            requirements = sorted(ancestors & reached)
+            if not requirements:
+                verdicts.append({"class": cls, "verdict": "unused", "reached": [],
+                                 "candidates": []})
+                continue
+            candidates = sorted(
+                candidate for candidate in ancestors
+                if all(req == candidate or req in self.ancestors(candidate)
+                       for req in requirements)
+            )
+            verdicts.append({
+                "class": cls,
+                "verdict": "candidates" if candidates else "no-single-home",
+                "reached": requirements,
+                "candidates": candidates,
+            })
+        return {"name": name, "module": row.get("module"), "kind": row.get("kind"),
+                "projection_like": name in self.projection_like,
+                "binders": verdicts}
+
+    def carrier_statement_candidates(self, name: str) -> dict | None:
+        """Enumerate statement-compatible ancestors from carrier-attached row evidence.
+
+        This is a search surface, not a minimal-home verdict. It is allowed to propose a
+        candidate that statement re-elaboration later rejects, but it must not move evidence
+        between carriers. Rows produced before `requirements_statement` existed are refused
+        rather than interpreted as saying that nothing was required.
+        """
+        row = self.rows.get(name)
+        if row is None or name not in self.binders:
+            return None
+        # This option-gated lane may distinguish an ordinary theorem whose conclusion is
+        # class-valued from a declaration registered for typeclass synthesis. The
+        # extractor records that environment fact explicitly. Constructors, definitions,
+        # registered theorems, and legacy rows remain on the conservative refusal path.
+        # The two older methods deliberately keep their frozen blanket guards.
+        class_claim = row.get("kind") == "theorem" and row.get("is_instance") is False
+        if name in self.produces_class and not class_claim:
+            return {"skipped": "produces-a-class"}
+        if "requirements_statement" not in row:
+            return {"skipped": "no-carrier-evidence"}
+        ibs = self.parameter_aware_instance_binders(name)
+        if not ibs:
+            return None
+
+        reached_by_carrier: dict[int, set[str]] = collections.defaultdict(set)
+        retained = 0
+        for requirement in row.get("requirements_statement") or ():
+            source = requirement.get("source")
+            cls = requirement.get("class")
+            carrier = requirement.get("carrier")
+            if source in self.forgetful or not cls or not isinstance(carrier, int):
+                continue
+            reached_by_carrier[carrier].add(cls)
+            retained += 1
+
+        verdicts = []
+        for cls, carrier in ibs:
+            if carrier is None:
+                verdicts.append({"class": cls, "carrier": None,
+                                 "verdict": "unknown-carrier", "candidates": []})
+                continue
+            reached = reached_by_carrier.get(carrier, set())
+            if cls in reached:
+                verdicts.append({"class": cls, "carrier": carrier,
+                                 "verdict": "at-home", "candidates": []})
+                continue
+            ancestors = self.ancestors(cls)
+            requirements = sorted(ancestors & reached)
+            candidates = sorted(
+                candidate for candidate in ancestors
+                if all(req == candidate or req in self.ancestors(candidate)
+                       for req in requirements)
+            ) if requirements else []
+            verdicts.append({
+                "class": cls,
+                "carrier": carrier,
+                "verdict": "candidates" if candidates else "no-attached-requirement",
+                "reached": requirements,
+                "candidates": candidates,
+            })
+        return {"name": name, "module": row.get("module"), "kind": row.get("kind"),
+                "projection_like": name in self.projection_like,
+                "retained_statement_requirements": retained,
+                "binders": verdicts}
+
+
+def node_count(encoding: str) -> int:
+    """How many expression nodes the encoding holds.
+
+    Needed to score alternatives to `retention`, which divides shared structure by the
+    *larger* side and so penalises a pair for being verbose rather than for being
+    dissimilar. Comparing that against Dice, Jaccard and a min-normalised variant needs
+    both sides' sizes, and the encoding is the only place they live.
+    """
+    r = Reader(encoding)
+    n = 0
+    while r.i < len(r.b):
+        before = r.i
+        c = r.b[r.i]
+        if c in (0x61, 0x65):            # 'a(' / 'e(' — descend
+            r.i += 2
+            n += 1
+            continue
+        if c in (0x6C, 0x70):            # 'l' / 'p' + binder info
+            r.i += 3
+            n += 1
+            continue
+        if c in (0x2C, 0x29):            # ',' ')'
+            r.i += 1
+            continue
+        try:
+            r.skip()
+            n += 1
+        except Exception:
+            break
+        if r.i == before:
+            break
+    return n

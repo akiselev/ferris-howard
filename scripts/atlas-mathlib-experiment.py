@@ -204,7 +204,21 @@ def experiment_similar_level_selects_the_family(corpus: fa.Corpus) -> Experiment
     pres = [n.name for n in corpus.similar("Nat.add_comm", top=8, level="presentation")]
     carr = [n.name for n in corpus.similar("Nat.add_comm", top=8, level="carriers")]
     e.check("Nat.mul_comm" in pres and "Nat.or_comm" in pres, f"presentation: {pres}")
-    e.check("Int.add_comm" in carr, f"carriers: {carr}")
+    # The original witness pin — `Int.add_comm` in the top 8 — went stale when the score
+    # vectors landed: the cross-carrier family now out-crowds its own canonical member.
+    # Measured 2026-08-06: the top 8 are all `*.add_comm` at common=24, retention=1.0,
+    # and `Int.add_comm` sits at rank 12 on the same factors, separated only by the
+    # newer within-family signal. The claim under test is that the level selects the
+    # cross-carrier same-operator family, so assert the family; the old witness stays as
+    # a wider regression guard rather than being deleted.
+    fam8 = sum(1 for n in carr
+               if n.rsplit(".", 1)[-1] == "add_comm" and not n.startswith("Nat."))
+    e.check(fam8 >= 6, f"carriers top-8 is the cross-carrier add_comm family "
+                       f"({fam8}/8): {carr}")
+    carr15 = [n.name for n in corpus.similar("Nat.add_comm", top=15, level="carriers")]
+    e.check("Int.add_comm" in carr15,
+            f"Int.add_comm within the top 15 (rank "
+            f"{carr15.index('Int.add_comm') if 'Int.add_comm' in carr15 else '>14'})")
 
     # "Selected by the level, not interleaved" is the sharp claim, and it is the one that
     # distinguishes a working knob from a ranking that happens to contain both families:

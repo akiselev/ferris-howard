@@ -7,16 +7,21 @@ import FhAtlas.Statement
 /-!
 # The extractor (B1)
 
-One pass over an elaborated environment, emitting a JSONL row per declaration:
-name, kind, module, the canonical statement encoding (I3), and the constants it uses.
-That is `atlas.md` §6's Channel 2 in its first form — enough for the dependency graph
-(B2) and for the keying scheme (B8), and deliberately short of a whole-`Expr` dump, which
-only the skeleton index (B4) needs.
+One pass over an elaborated environment, emitting a JSONL row per declaration: name, kind,
+module, explicit instance-registry status, the canonical statement encoding (I3), the
+constants it uses, and any statement-level class requirements that can be attached directly
+to an outer carrier binder. That is `atlas.md` §6's Channel 2, and deliberately short of a
+whole-`Expr` dump, which only the skeleton index (B4) needs.
 
 Two used-constant lists, not one. `uses_statement` is what the *claim* rests on and
 `uses_proof` is what the *argument* rests on; conflating them would blur exactly the
 distinction `atlas why` and the foundations/impact queries are about. Both are sorted, and
 rows are emitted in name order, so a diff between two extractions is readable.
+
+Carrier requirements are statement-only. A proof-side prototype made a 135-row historical
+module take 18.6 seconds instead of under one second; the Replay-4 candidate needs statement
+evidence, so imposing that closure-wide cost would solve a problem this schema does not
+have. Proof carrier evidence needs its own indexed pass if a later verdict requires it.
 
 Declarations whose statement cannot be encoded (a metavariable, `sorryAx` in the type)
 carry `stmt_error` instead of `stmt` rather than being dropped: an extractor that silently
@@ -26,6 +31,21 @@ omits rows is indistinguishable from one that missed them.
 namespace FerrisHoward.Atlas
 open Lean
 
+/-- One class requirement observed at a concrete use site.
+
+`carrier` is the zero-based position of the declaration's outer binder that the required
+class constrains. `source` is retained because downstream policy must distinguish a real
+operation or lemma from a forgetful instance; flattening to `(class, carrier)` would lose
+the provenance needed to make that decision. -/
+structure ClassRequirement where
+  /-- The constant whose application carries the instance argument. -/
+  source : Name
+  /-- The class at that instance-implicit parameter. -/
+  className : Name
+  /-- The constrained declaration binder, counting every outer forall. -/
+  carrier : Nat
+  deriving BEq, Inhabited
+
 /-- One extracted declaration. -/
 structure Row where
   /-- The declaration's name. -/
@@ -34,6 +54,8 @@ structure Row where
   kind : String
   /-- The module it was declared in. -/
   module : Name
+  /-- Whether Lean's imported instance registry contains this declaration. -/
+  isInstance : Bool
   /-- The canonical statement encoding (I3), if it could be produced. -/
   stmt : Option String
   /-- Why the statement could not be encoded, if it could not. -/
@@ -42,6 +64,8 @@ structure Row where
   usesStatement : Array Name
   /-- Constants appearing in the proof or definition body. -/
   usesProof : Array Name
+  /-- Carrier-attached class requirements found in statement use sites. -/
+  requirementsStatement : Array ClassRequirement
   deriving Inhabited
 
 /-- The declaration kind, as a stable string. -/
@@ -57,11 +81,19 @@ def kindOf : ConstantInfo → String
 
 /-- JSON for one row. Field order is fixed so that two extractions diff cleanly. -/
 def Row.toJson (r : Row) : Json :=
+  let requirementsJson (rs : Array ClassRequirement) : Json :=
+    Json.arr <| rs.map fun req => Json.mkObj
+      [("source", Json.str req.source.toString),
+       ("class", Json.str req.className.toString),
+       ("carrier", Json.num req.carrier)]
   Json.mkObj <|
     [("name", toString r.name), ("kind", r.kind), ("module", toString r.module)].map
       (fun (k, v) => (k, Json.str v))
+    ++ [("is_instance", Json.bool r.isInstance)]
     ++ (match r.stmt with | some s => [("stmt", Json.str s)] | none => [])
     ++ (match r.stmtError with | some e => [("stmt_error", Json.str e)] | none => [])
+    ++ (if r.requirementsStatement.isEmpty then [] else
+          [("requirements_statement", requirementsJson r.requirementsStatement)])
     ++ [("uses_statement", Json.arr (r.usesStatement.map (Json.str <| toString ·))),
         ("uses_proof", Json.arr (r.usesProof.map (Json.str <| toString ·)))]
 
@@ -75,6 +107,152 @@ prefix depth, which reads as unsorted in a JSONL row; consumers and humans both 
 lexicographic order of the strings they actually see. -/
 private def sortedConstants (e : Expr) : Array Name :=
   e.getUsedConstants.qsort (fun a b => a.toString < b.toString)
+
+/-! ## Carrier-attached requirements
+
+The statement encoding preserves every application argument, but `uses_statement` and
+`uses_proof` deliberately flatten each lens to names. That loses the fact needed to judge a
+multi-carrier theorem: whether a cited requirement was instantiated at `R` or at `S`.
+
+This extraction is syntactic and stays in the Lean-only shared package. For an application
+of a constant, its elaborated argument spine aligns with the constant's forall telescope.
+At each instance-implicit parameter, previous arguments are substituted into the domain;
+the result is the actual class application at that use site. Its class declaration tells us
+which arguments are structural rather than synthesized instances. The last structural
+argument that is directly an outer declaration bvar supplies the carrier index. Concrete,
+composite, or locally-bound carriers are omitted, never guessed.
+-/
+
+/-- Binder infos in a constant or class declaration's leading telescope. -/
+private partial def leadingBinderInfos : Expr → List BinderInfo
+  | .forallE _ _ body bi => bi :: leadingBinderInfos body
+  | _ => []
+
+/-- Number of outer binders whose indices define this row's carrier namespace. -/
+private partial def leadingForallCount : Expr → Nat
+  | .forallE _ _ body _ => leadingForallCount body + 1
+  | _ => 0
+
+/-- Map a bvar in the current traversal scope to an outer declaration binder. -/
+private def outerBinderIndex? (depth outerCount idx : Nat) : Option Nat :=
+  if idx < depth then
+    let absolute := depth - 1 - idx
+    if absolute < outerCount then some absolute else none
+  else none
+
+/-- An expression that is directly an outer declaration binder, modulo metadata.
+
+Do not search inside applications. If a requirement is about `Submodule R S`, the carrier
+is that composite type—not whichever instance projection happens to be its last bvar.
+Attributing it to `R`, `S`, or an instance binder would create cross-carrier evidence. -/
+private partial def directOuterBinder? (e : Expr) (depth outerCount : Nat) : Option Nat :=
+  match e with
+  | .bvar idx => outerBinderIndex? depth outerCount idx
+  | .mdata _ body => directOuterBinder? body depth outerCount
+  | _ => none
+
+/-- Carrier binder for an instantiated class application.
+
+Class applications may end in their own synthesized instance parameters (`Algebra R S`
+is the motivating case), so the final raw argument is not a carrier. Align with the class
+declaration, discard instance-implicit parameters, and search structural arguments from
+right to left. `OfNat R 0` consequently skips the literal and retains `R`. -/
+private def classCarrierIndex? (env : Environment) (type : Expr)
+    (depth outerCount : Nat) : Option Nat := do
+  let .const cls _ := type.getAppFn | none
+  let some ci := env.find? cls | none
+  let args := type.getAppArgs
+  let infos := (leadingBinderInfos ci.type).toArray
+  let mut carrier := none
+  for i in [0 : min args.size infos.size] do
+    if infos[i]! != .instImplicit then
+      if let some idx := directOuterBinder? args[i]! depth outerCount then
+        carrier := some idx
+  carrier
+
+/-- One instance parameter in a cited constant, keyed to the constant argument that carries
+its class. This depends only on the constant declaration, so a row scan caches it by source
+name instead of rebuilding dependent telescopes at every use site. -/
+private structure RequirementSpec where
+  className : Name
+  carrierParam : Nat
+
+/-- Requirement roles in one cited constant's own telescope. -/
+private partial def requirementSpecsCore (env : Environment) (type : Expr) (depth : Nat)
+    (out : Array RequirementSpec) : Array RequirementSpec :=
+  match type with
+  | .forallE _ domain body bi =>
+    let out :=
+      if bi == .instImplicit then
+        match domain.getAppFn, classCarrierIndex? env domain depth depth with
+        | .const cls _, some carrierParam => out.push { className := cls, carrierParam }
+        | _, _ => out
+      else out
+    requirementSpecsCore env body (depth + 1) out
+  | _ => out
+
+private def requirementSpecs (env : Environment) (source : Name) : Array RequirementSpec :=
+  match env.find? source with
+  | some ci => requirementSpecsCore env ci.type 0 #[]
+  | none => #[]
+
+/-- Accumulator and per-row source cache for the expression walk. -/
+private structure RequirementScan where
+  requirements : Array ClassRequirement := #[]
+  specs : Std.HashMap Name (Array RequirementSpec) := {}
+
+/-- Requirements contributed by one fully elaborated constant application. -/
+private def scanApplication (env : Environment) (source : Name) (args : Array Expr)
+    (depth outerCount : Nat) (scan : RequirementScan) : RequirementScan := Id.run do
+  let (specs, cache) :=
+    match scan.specs[source]? with
+    | some specs => (specs, scan.specs)
+    | none =>
+      let specs := requirementSpecs env source
+      (specs, scan.specs.insert source specs)
+  let mut requirements := scan.requirements
+  for spec in specs do
+    if let some arg := args[spec.carrierParam]? then
+      if let some carrier := directOuterBinder? arg depth outerCount then
+        requirements := requirements.push { source, className := spec.className, carrier }
+  return { requirements, specs := cache }
+
+/-- Carrier-attached requirements in an expression, before sorting and deduplication. -/
+private partial def requirementsInCore (env : Environment) (outerCount : Nat)
+    (e : Expr) (depth : Nat) (scan : RequirementScan) : RequirementScan :=
+  match e with
+  | .app _ _ =>
+    let fn := e.getAppFn
+    let args := e.getAppArgs
+    let scan := match fn with
+      | .const source _ => scanApplication env source args depth outerCount scan
+      | _ => scan
+    let scan := requirementsInCore env outerCount fn depth scan
+    args.foldl (fun scan arg => requirementsInCore env outerCount arg depth scan) scan
+  | .lam _ domain body _ | .forallE _ domain body _ =>
+    requirementsInCore env outerCount body (depth + 1)
+      (requirementsInCore env outerCount domain depth scan)
+  | .letE _ type value body _ =>
+    requirementsInCore env outerCount body (depth + 1) <|
+      requirementsInCore env outerCount value depth <|
+        requirementsInCore env outerCount type depth scan
+  | .mdata _ body | .proj _ _ body => requirementsInCore env outerCount body depth scan
+  | _ => scan
+
+/-- Stable order and exact deduplication for a row's requirement evidence. -/
+private def sortedRequirements (requirements : Array ClassRequirement) :
+    Array ClassRequirement :=
+  let sorted := requirements.qsort fun a b =>
+    if a.source != b.source then a.source.toString < b.source.toString
+    else if a.className != b.className then a.className.toString < b.className.toString
+    else a.carrier < b.carrier
+  sorted.foldl (init := #[]) fun out req =>
+    if out.back? == some req then out else out.push req
+
+/-- Carrier-attached requirements in one statement or proof body. -/
+private def requirementsIn (env : Environment) (outerCount : Nat) (e : Expr) :
+    Array ClassRequirement :=
+  sortedRequirements (requirementsInCore env outerCount e 0 {}).requirements
 
 /-- The value a declaration was defined by, if it has one.
 
@@ -103,12 +281,15 @@ def rowOf (env : Environment) (n : Name) (info : ConstantInfo) : Row :=
     match encodeType info.type with
     | .ok s => (some s, none)
     | .error e => (none, some e)
+  let outerCount := leadingForallCount info.type
   { name := n
     kind := kindOf info
     module := moduleOf env n
+    isInstance := Lean.Meta.isInstanceCore env n
     stmt, stmtError
     usesStatement := sortedConstants info.type
-    usesProof := ((valueOf? info).map sortedConstants).getD #[] }
+    usesProof := ((valueOf? info).map sortedConstants).getD #[]
+    requirementsStatement := requirementsIn env outerCount info.type }
 
 /-- Sort names by their printed form, computing each string **once**.
 
@@ -129,13 +310,29 @@ def localRows (env : Environment) : Array Row := Id.run do
     if isExtractable n then names := names.push n
   return (sortedByString names).filterMap fun n => (env.find? n).map (rowOf env n)
 
-/-- Extract every extractable declaration in the environment, in name order. This is the
-whole-Mathlib pass; `localRows` is the per-file one the fixtures use. -/
-def allRows (env : Environment) : Array Row := Id.run do
+/-- Every extractable name in the environment, in name order — **names only**.
+
+The whole-closure pass must not build an `Array Row`. A `Row` holds its statement encoding,
+so 818,835 of them is tens of gigabytes: measured on the physlib closure, the process sat at
+8 GB for fifty minutes and wrote *nothing*, because every row was encoded before the first
+byte reached stdout. Names are small, and the caller can encode-and-write one at a time,
+which makes memory flat and output incremental.
+
+That also makes a long extraction observable. A consumer can start reading, a crash leaves
+usable partial output, and progress is visible instead of being indistinguishable from a
+hang — which it was, and which cost a full run. -/
+def allNames (env : Environment) : Array Name := Id.run do
   let mut names := #[]
   for (n, _) in env.constants.toList do
     if isExtractable n then names := names.push n
-  return (sortedByString names).filterMap fun n => (env.find? n).map (rowOf env n)
+  return sortedByString names
+
+/-- Extract every extractable declaration in the environment, in name order.
+
+Retained for callers that genuinely want the whole array; the extractor executable does
+**not** use it, and should not — see `allNames`. -/
+def allRows (env : Environment) : Array Row :=
+  (allNames env).filterMap fun n => (env.find? n).map (rowOf env n)
 
 /-- Extract the declarations belonging to any of the named modules of the import closure,
 in name order.

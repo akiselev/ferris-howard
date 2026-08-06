@@ -121,6 +121,111 @@ pub struct Generalization {
     /// are equal — including when they contain holes, which is the case this promise used
     /// to quietly exclude.
     pub retention: f32,
+    /// Concrete node count of the left input.
+    ///
+    /// Kept because `retention` divides by the *larger* side, which penalises a pair for
+    /// being verbose rather than for being dissimilar — and cross-theory pairs are wildly
+    /// asymmetric (`Z.euclid_lemma` is 65 nodes, `FF.poly_euclid_lemma` 1,059, for the
+    /// same mathematics). Any alternative score needs both sides, so both are reported.
+    pub left_size: u32,
+    /// Concrete node count of the right input.
+    pub right_size: u32,
+}
+
+/// How shared structure becomes a number.
+///
+/// Configurable because **no single formula wins everywhere**, measured by ROC AUC against
+/// labelled pairs on two corpora with independently-sourced labels:
+///
+/// | score | size-asymmetric pairs | size-symmetric pairs |
+/// |---|---|---|
+/// | `MinNormalised` | 0.933 | 1.000 |
+/// | `Retention` | **0.756** | 1.000 |
+/// | `Common` | 0.943 | **0.762** |
+///
+/// `Retention` is perfect when the two sides are the same size and collapses when they are
+/// not; `Common` is the reverse. Cross-theory analogy is the asymmetric regime, because the
+/// same claim carries different type and instance machinery in different theories — so the
+/// shipped default is weakest exactly where the differentiating query lives.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SimilarityScore {
+    /// `common / max(cx, cy)`. The shipped default, kept so results stay comparable.
+    Retention,
+    /// `common / min(cx, cy)`. Never below 0.933 in any regime measured — the only
+    /// candidate that does not fail anywhere, which is why it is recommended over the one
+    /// that scores highest on either corpus alone.
+    MinNormalised,
+    /// `2 * common / (cx + cy)`.
+    Dice,
+    /// `common / (cx + cy - common)`.
+    Jaccard,
+    /// `common / sqrt(cx * cy)`.
+    GeometricMean,
+    /// `common`, unnormalised. Best on asymmetric pairs and worst on symmetric ones; kept
+    /// so that finding stays reproducible rather than being folded away.
+    Common,
+    /// `W(lgg) / max(W(x), W(y))` where `W` sums the **inverse document frequency of the
+    /// constants** a term mentions, and structural nodes count zero.
+    ///
+    /// Every node-counting score above treats a shared `Eq` as worth the same as a shared
+    /// `riemannZeta`, which is why they all fail on asymmetric pairs: `poly_euclid_lemma`
+    /// is 1,059 nodes against `euclid_lemma`'s 65 not because it says more mathematics —
+    /// it says the same mathematics — but because `Polynomial (ZMod p)` machinery is
+    /// bulky. Those extra nodes occur throughout the corpus, so they carry almost no
+    /// information, and dividing by them is the defect.
+    ///
+    /// Weighting by surprisal makes generic scaffolding contribute ≈0 to *both* numerator
+    /// and denominator, so a verbose-but-boilerplate statement stops being punished for
+    /// its bulk. This is the same IDF the posting lists already compute; the ranking
+    /// previously spent it as a single multiplicative boost from the best shared key,
+    /// which throws away the per-node structure.
+    InfoWeighted,
+    /// The Dice form of [`SimilarityScore::InfoWeighted`]: `2W(lgg) / (W(x) + W(y))`.
+    InfoDice,
+}
+
+impl SimilarityScore {
+    /// The score in `[0,1]`, except `Common`, which is a raw count and is only comparable
+    /// between candidates of one query.
+    pub fn apply(self, g: &Generalization) -> f32 {
+        let (c, x, y) = (g.common as f32, g.left_size as f32, g.right_size as f32);
+        if x == 0.0 && y == 0.0 {
+            return g.retention;
+        }
+        match self {
+            SimilarityScore::Retention => g.retention,
+            SimilarityScore::MinNormalised => c / x.min(y).max(1.0),
+            SimilarityScore::Dice => 2.0 * c / (x + y).max(1.0),
+            SimilarityScore::Jaccard => c / (x + y - c).max(1.0),
+            SimilarityScore::GeometricMean => c / (x * y).sqrt().max(1.0),
+            SimilarityScore::Common => c,
+            // Need corpus-wide document frequencies, which a `Generalization` does not
+            // carry. Computed at the ranking site, where the arena and the symbol
+            // frequencies are both in scope; this arm is unreachable there.
+            SimilarityScore::InfoWeighted | SimilarityScore::InfoDice => g.retention,
+        }
+    }
+
+    /// Whether this score needs corpus statistics beyond the generalization itself.
+    pub const fn needs_corpus(self) -> bool {
+        matches!(
+            self,
+            SimilarityScore::InfoWeighted | SimilarityScore::InfoDice
+        )
+    }
+
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            SimilarityScore::Retention => "retention",
+            SimilarityScore::MinNormalised => "min_normalised",
+            SimilarityScore::Dice => "dice",
+            SimilarityScore::Jaccard => "jaccard",
+            SimilarityScore::GeometricMean => "geometric_mean",
+            SimilarityScore::Common => "common",
+            SimilarityScore::InfoWeighted => "info_weighted",
+            SimilarityScore::InfoDice => "info_dice",
+        }
+    }
 }
 
 pub fn generalize(a: &mut Arena, x: TermId, y: TermId) -> Generalization {
@@ -157,6 +262,8 @@ pub fn generalize(a: &mut Arena, x: TermId, y: TermId) -> Generalization {
         vars,
         scoped_vars,
         retention,
+        left_size: cx,
+        right_size: cy,
     }
 }
 

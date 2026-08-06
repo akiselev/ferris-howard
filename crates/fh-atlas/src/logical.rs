@@ -394,10 +394,42 @@ fn head_symbol(a: &Arena, t: TermId) -> Option<String> {
 
 /// The graph's node key for a pattern: head symbol and arity.
 fn key_of(a: &Arena, t: TermId) -> Option<Head> {
-    let (head, args) = a.spine(t);
+    // Descend through a quantifier prefix before keying.
+    //
+    // A side that is itself `∀`/`→` is not a higher-order pattern — it is a first-order
+    // statement wearing a binder prefix, and refusing it was the single largest source of
+    // unrepresentable edges. Measured over the merged slice: of 18,943 sides the graph
+    // could not key, **18,579 (98.1%) were `Pi`-headed** and only 359 (1.9%) had a bound
+    // variable at the head; on physlib it is 1,820 of 1,824 (99.8%). The most common shape
+    // is `Eq/3 ↔ ∀∀. Eq/3` at 25.9%, and the `funext`/`ext_iff` family is a third of the
+    // bucket.
+    //
+    // Recovery, measured: descending recovers **72%** of the missed `Iff` edges on
+    // Mathlib, **100%** on physlib and 4/4 on B7's clusters (including
+    // `rh_iff_all_zeros_real`), taking `iff_edges` from 4,330 to 5,306 — **+22.5%**.
+    // Higher-order matching, which this was long assumed to need, recovers 5.3% on Mathlib
+    // and *nothing* on either other corpus.
+    //
+    // The binder count is part of the key: `Eq/3` and `∀².Eq/3` are different claims, and
+    // merging them would let a pointwise equation and an extensionality lemma share a node.
+    let mut depth = 0u32;
+    let mut cur = t;
+    while let Node::Pi(_, _, body) = a.node(cur) {
+        depth += 1;
+        cur = body;
+    }
+    let (head, args) = a.spine(cur);
     match a.node(head) {
-        Node::Const(s, _) => Some((a.sym(s).to_string(), args.len())),
-        // A bound variable at the head. Counted as unsupported by the caller.
+        Node::Const(s, _) => {
+            let name = if depth == 0 {
+                a.sym(s).to_string()
+            } else {
+                format!("∀{depth}.{}", a.sym(s))
+            };
+            Some((name, args.len()))
+        }
+        // A bound variable at the head, under any number of binders. Genuinely
+        // higher-order, counted as unsupported by the caller, and rare.
         _ => None,
     }
 }

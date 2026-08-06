@@ -124,7 +124,18 @@ impl EquivIndex {
         let is_prop: Vec<bool> = stmts
             .iter()
             .zip(&kinds)
-            .map(|(&t, k)| k == "theorem" || concludes_in_prop(&arena, t))
+            // An `axiom` is a claim. `concludes_in_prop` is true of a *definition of* a
+            // proposition (`def RH : Prop := …`), never of a statement *asserting* one, so
+            // without the `axiom` arm this flag collapses to `kind == "theorem"` and every
+            // axiom is invisible to `equivalent` and `classes`.
+            //
+            // §23 fixed exactly this in `honesty` and the same blindness survived here.
+            // Measured cost: `Lean.trustCompiler` and `trivial` have byte-identical
+            // statements (`c(4:True,0)`), and `equivalent` refused one and returned `[]`
+            // for the other; 0 of 15 axiom rows appeared in any equivalence class. On B7's
+            // validation corpus — **113 axioms to 21 theorems** — that is nearly the whole
+            // corpus, which is the genre B7 exists to test.
+            .map(|(&t, k)| k == "theorem" || k == "axiom" || concludes_in_prop(&arena, t))
             .collect();
 
         let (mut iff_total, mut iff_ground) = (0, 0);
@@ -382,6 +393,42 @@ pub fn ladder(idx: &mut EquivIndex, name: &str) -> Result<Vec<(NormLevel, Vec<St
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// An `axiom` is a claim, and `equivalent` must see it.
+    ///
+    /// `concludes_in_prop` is true of a *definition of* a proposition and never of a
+    /// statement asserting one, so without an explicit `axiom` arm the proposition flag
+    /// collapses to `kind == "theorem"` and every axiom vanishes from every equivalence
+    /// class. That is the §23 defect — `honesty` blind to the genre B7 mandates — surviving
+    /// in a second query, and B7's corpus is 113 axioms to 21 theorems.
+    ///
+    /// The fixture pairs an axiom against a theorem with a byte-identical statement, so a
+    /// query that cannot see axioms returns an empty class where the answer is obvious.
+    #[test]
+    fn an_axiom_is_a_claim_and_belongs_to_its_equivalence_class() {
+        let row = |n: &str, k: &str| {
+            format!(
+                "{{\"name\":\"{n}\",\"kind\":\"{k}\",\"module\":\"M\",\
+                 \"stmt\":\"fh-stmt-v1;c(4:True,0)\",\"uses_statement\":[],\
+                 \"uses_proof\":[]}}"
+            )
+        };
+        let src = [row("ax", "axiom"), row("thm", "theorem")].join("\n");
+        let mut idx = EquivIndex::build(&src).expect("build");
+
+        assert_eq!(
+            idx.equivalent("ax", NormLevel::Instances)
+                .expect("an axiom is a claim"),
+            vec!["thm".to_string()],
+            "an axiom with a statement identical to a theorem's is equivalent to it"
+        );
+        assert_eq!(
+            idx.equivalent("thm", NormLevel::Instances)
+                .expect("a theorem is a claim"),
+            vec!["ax".to_string()],
+            "and symmetrically — the theorem must see the axiom"
+        );
+    }
 
     /// Two theorems with the same statement, one class definition, one plain definition.
     const SLICE: &str = concat!(

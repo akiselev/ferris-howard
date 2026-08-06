@@ -103,22 +103,42 @@ fn ties_are_broken_by_content_before_the_alphabet() {
     let src = std::fs::read_to_string(&path).expect("read slice");
     let cfg = IndexConfig::default();
     let mut idx = SkeletonIndex::build(&src, &cfg).expect("build index");
-    let ns = idx.similar("le_trans", 20, &cfg).expect("similar");
-    for w in ns.windows(2) {
-        let (a, b) = (&w[0], &w[1]);
-        if a.score != b.score {
-            continue;
+
+    // Two queries, and a count of what was actually compared.
+    //
+    // This tested `le_trans` alone, which was right when the score was a product of coarse
+    // factors and whole families landed on one value. The derivativeness penalty is
+    // near-continuous, so it splits almost every tie: `le_trans`'s top 20 now holds *one*
+    // equal-score pair, and one unlucky score change away this test asserts nothing while
+    // still reporting green. `Nat.mul_comm` keeps 13 — the machine-integer family, which
+    // is genuinely tied because its members are structurally identical — so it is the
+    // query that exercises the rule.
+    let mut examined = 0usize;
+    for q in ["le_trans", "Nat.mul_comm"] {
+        let ns = idx.similar(q, 20, &cfg).expect("similar");
+        for w in ns.windows(2) {
+            let (a, b) = (&w[0], &w[1]);
+            if a.score != b.score {
+                continue;
+            }
+            examined += 1;
+            assert!(
+                a.common > b.common || (a.common == b.common && a.vars <= b.vars),
+                "{q}: within a tie class, `{}` (common {}, vars {}) precedes `{}` \
+                 (common {}, vars {}) on nothing but its name",
+                a.name,
+                a.common,
+                a.vars,
+                b.name,
+                b.common,
+                b.vars
+            );
         }
-        assert!(
-            a.common > b.common || (a.common == b.common && a.vars <= b.vars),
-            "within a tie class, `{}` (common {}, vars {}) precedes `{}` (common {}, vars {}) \
-             on nothing but its name",
-            a.name,
-            a.common,
-            a.vars,
-            b.name,
-            b.common,
-            b.vars
-        );
     }
+    assert!(
+        examined >= 5,
+        "only {examined} tied pairs found across both queries — the tie-break rule is no \
+         longer being exercised, so this test passes without testing anything. Pick a query \
+         whose neighbours still tie rather than deleting the assertion."
+    );
 }
