@@ -23,3 +23,11 @@ Formalize the 1D Ising solution end-to-end (transfer matrix → free energy → 
 ## Tier-1 ledger
 
 Everything here is months-scale with existing machinery. The census (S1.2) is the tier's publishable headline; certified spectra (S1.3) is its infrastructure; the corpus and solvable models are the substrate. Exit criterion for the tier: the wallpaper census certified, the SSH model's spectrum certified across parameter space, and the corpus elaborating end-to-end — at which point Tier 2's invariants have everything they need.
+
+---
+**Amendment 2026-08-06** (G0 ground check, `ledger-solidstate-ground-check.md`): S1.3's
+"computed everywhere and certified nowhere" is withdrawn — Herbst–Levitt–Cancès (Faraday
+Disc. 2020) published guaranteed-error band structures. The S1.3 lane is reframed as
+*kernel-checked* certificates (no formalized Bloch/Chern/SSH exists in any prover). S1.2
+and S1.4 novelty claims verified standing as of this date; corpus census: condensed
+matter's entire formal record is TightBindingChain's 43 declarations.

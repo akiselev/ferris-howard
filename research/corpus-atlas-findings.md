@@ -4358,3 +4358,47 @@ multiply by apparatus mass, a crowding control on `per_decl` assignment, and a
 
 Deliverables: `research/cross-domain-hunt.md`, `research/data/cross-domain-hunt.json`,
 pipeline archived as `scripts/cross-domain-hunt-*.py`.
+
+---
+
+## 75. Solid state, ground-checked: a 43-declaration island, one falsified novelty claim, three that stand
+
+The solid-state program (`research/physics/fh-solidstate-tier{1..4}.md`) got the Phase-0
+treatment its own Couette ledger prescribes, before any statement work.
+
+**The corpus ground truth.** The formal record of condensed matter is
+`CondensedMatter.TightBindingChain`: 43 declarations (Tooby-Smith, physlib) — a finite-N
+chain with a proven-hermitian Hamiltonian, orthonormal localized and energy eigenstates,
+quantized wave numbers inside a Brillouin zone. That is the *entire* field: no Bloch
+theorem beyond this instance, no Ising, no SSH, no phonons, no Chern, no crystallographic
+groups (the corpus's 212 `Lattice` hits are order theory). At 43 declarations the island
+also sat under §74's 50-declaration theory floor, so the cross-domain sweep never saw it
+— a silent-cap example worth the reminder.
+
+**First instrument contact** (budget on): `localizedState_orthonormal` finds
+`QuantumMechanics.OneDimension.HarmonicOscillator.eigenfunction_orthonormal` — the tier-1
+"oscillator ubiquity" rhyme, live on the first probe — ranked fifth behind Higgs-field
+smoothness plumbing, which is §74's apparatus-mass inversion doing exactly what it was
+measured doing. The Brillouin-zone containment statement rhymes with
+`LorentzGroup.rotations_subset_restricted` at shape level. Nothing dictionary-grade: the
+island is too small for the analogy instruments, which is a coverage fact, not a physics
+fact (§67's boundary).
+
+**The G0 prior-art verdicts** (`research/physics/ledger-solidstate-ground-check.md`,
+query strings and negatives recorded): wallpaper/space-group census — **novelty stands**
+(zero crystallographic content in Mathlib, on the community wishlist, absent from AFP;
+CARAT/GAP's unverified enumeration is the natural differential oracle). Ising/transfer
+matrix — **stands**, with the Lean Boltzmann-machines paper (arXiv 2512.07766) as the
+nearest artifact to cite. Tenfold way/Bott — **stands**, and no Bott-periodicity
+formalization was confirmed in *any* prover, contrary to the tier's own assumption.
+Certified band structures — **falls as worded**: Herbst–Levitt–Cancès (2020) published
+band structures with fully guaranteed error bars, and the spectral-localizer literature
+already gives rigorous finite-data sufficiency bounds for topological indices; the
+kernel-checked lane stays clear, but S1.3/S2.1's prose claims are amended before any
+statement freezes. This is §65's lesson operating prospectively for once: the false
+novelty claim died in a ledger instead of a writeup.
+
+Gate: **PASS WITH AMENDMENTS.** The tier-1 entry menu, calibrated: the wallpaper census
+(headline novelty, bounded, differential oracle in hand), the 1D Ising transfer matrix
+(field cornerstone, clear), or the certified SSH spectrum (extends the only existing
+island, feeds Tier 2, reframed as kernel-checked rather than first-certified).

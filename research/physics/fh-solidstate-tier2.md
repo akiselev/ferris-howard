@@ -23,3 +23,10 @@ Topological quantum chemistry reorganized the field around a finite-representati
 ## Tier-2 ledger
 
 S2.1's mesh-sufficiency theorem and S2.2's 1D correspondence are the quick publishable wins; S2.3 is a season of algebra with a permanent artifact at the end; S2.4 is the year-scale census. Exit criterion: the periodic table certified, one bulk–boundary theorem checked, and the indicator census running per-space-group — at which point the tier has converted the topological revolution's *classification layer* into kernel-checked infrastructure, and Tier 3 can ask about the physics the classification protects: gaps, phases, and what happens between them.
+
+---
+**Amendment 2026-08-06** (G0 ground check): S2.1's "first genuinely new mathematical
+object" narrows to *FHS-specific and kernel-checked* — the spectral-localizer literature
+(Loring–Schulz-Baldes) already provides rigorous finite-data sufficiency bounds for
+topological indices. S2.3 stands, and stronger than drafted: no Bott-periodicity
+formalization was confirmed in any prover.
