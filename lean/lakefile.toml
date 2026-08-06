@@ -58,3 +58,9 @@ supportInterpreter = true
 [[lean_lib]]
 name = "Validation"
 globs = ["Validation", "Validation.+"]
+
+# The wallpaper-census formalization (research/physics/wallpaper-census.md) — its own
+# lib so the census can grow without entering the language's glob or the FH test tiers.
+[[lean_lib]]
+name = "Crystal"
+globs = ["Crystal.+"]
