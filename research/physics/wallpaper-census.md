@@ -41,9 +41,9 @@ files. Crystallographic anything — zero.
 
 | milestone | content | effort band |
 |---|---|---|
-| W0 (this commit) | statements module elaborates; oracle table frozen | done |
-| W1 | the 17 concrete groups as explicit presentations; each `IsWallpaperGroup` | weeks |
-| W2 | crystallographic restriction (finite-order elements of GL₂(ℤ) have order 1,2,3,4,6 — the trace argument) | days |
+| W0 | statements module elaborates; oracle table frozen | ✅ done 2026-08-06 |
+| W1 | the 17 concrete groups as explicit presentations; each `IsWallpaperGroup` | ◐ p1 proven 2026-08-06 (`Groups/P1.lean`), 16 to go; the frieze-shaped negative control landed early (`not_isWallpaperGroup_bot`) |
+| W2 | crystallographic restriction (finite-order elements of GL₂(ℤ) have order 1,2,3,4,6) | ✅ done 2026-08-06 (`Restriction.lean`) — cyclotomic skeleton with a surd endgame (no ℂ, no FTA); order-4 and order-6 witnesses pin the bound tight |
 | W3 | finite subgroups of GL₂(ℤ) up to conjugacy = the 13 point groups (needs lattice/form reduction — the hard bounded core) | ~a month |
 | W4 | extensions per point group: vector systems mod coboundaries + normalizer action (finite computations, H² vocabulary exists) | 2–3 weeks |
 | W5 | pairwise non-isomorphism via a computable invariant battery (point-group order, orientation index, abelianization — f.g. abelian iso is decidable) | 1–2 weeks |
