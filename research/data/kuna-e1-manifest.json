@@ -1,0 +1,49 @@
+{
+  "schema": "fh-kuna-e1-manifest-v1",
+  "frozen_at": "2026-08-04",
+  "source": {
+    "e0_artifact": "research/data/kuna-e0-events.json",
+    "e0_sha256": "5f5ab50e22fbaeea9728d16e3b45018e9a045c7a5fb9cae4f403b64c07b064a5",
+    "detector": "scripts/fh_home.py",
+    "detector_sha256": "612bbe49285994b4e0d7d01d5caa8b00a3856b1aeebe4865f95f3215a407ce11"
+  },
+  "selection": {
+    "unit": "commit-grouped expert event",
+    "rule": "most recent E0 hit commit whose parent lean-toolchain exactly matches an installed stable release",
+    "purpose": "development seam test only; no detector tuning has occurred",
+    "known_after_e0": "the selected declaration has seven retained carrier events and lies at the detector's documented multi-carrier refusal boundary",
+    "not_blind": true
+  },
+  "development": [
+    {
+      "child": "d292472f13fc10eb063e6efd93601f976a387055",
+      "parent": "f469a458bcdb9e2d5d58594871deb33644477e62",
+      "date": "2026-06-16",
+      "parent_toolchain": "leanprover/lean4:v4.31.0",
+      "module": "Mathlib.Algebra.Star.Subalgebra",
+      "parent_file": "Mathlib/Algebra/Star/Subalgebra.lean",
+      "declaration": "StarAlgEquiv.restrictScalars_injective",
+      "events": [
+        {"source": "Semiring", "target": "NonUnitalNonAssocSemiring", "args": "A", "stratum": "inherited"},
+        {"source": "Semiring", "target": "NonUnitalNonAssocSemiring", "args": "B", "stratum": "inherited"},
+        {"source": "Algebra", "target": "MulAction", "args": "R S", "stratum": "inherited"},
+        {"source": "Algebra", "target": "Module", "args": "S A", "stratum": "inherited"},
+        {"source": "Algebra", "target": "Module", "args": "S B", "stratum": "inherited"},
+        {"source": "Algebra", "target": "Module", "args": "R A", "stratum": "inherited"},
+        {"source": "Algebra", "target": "Module", "args": "R B", "stratum": "inherited"}
+      ]
+    }
+  ],
+  "evaluation": {
+    "kind": "prospective",
+    "rule": "qualifying Mathlib commits after E0 head 905b95818eb32af7874a58b427f50c1711a5e96c",
+    "events": []
+  },
+  "verdicts": {
+    "exact_proposal": "detector proposes the declaration/source/target/carrier event on the parent",
+    "wrong_target": "detector judges the declaration but proposes another target",
+    "refused": "detector refuses the declaration before candidate generation",
+    "not_expressible": "the historical parent cannot represent the E0 event in the detector's candidate language",
+    "environment_failure": "the pinned historical environment cannot be reconstructed"
+  }
+}

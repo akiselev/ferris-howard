@@ -1,0 +1,312 @@
+{
+  "schema": "fh-kuna-e1-mc0-result-v1",
+  "executed_at": "2026-08-05",
+  "status": "completed-frozen-multicarrier-population",
+  "manifest": {
+    "path": "research/data/kuna-e1-mc0-manifest.json",
+    "sha256": "eff667dc486259c87400d8322a739c5e166f653ca365be50d90bca643e9f3c05",
+    "population_size": 3,
+    "detector_outputs_seen_before_freeze": false,
+    "source_screening_seen_before_freeze": true,
+    "not_blind": true
+  },
+  "implementation": {
+    "selector": {
+      "path": "scripts/kuna-multicarrier-population.py",
+      "sha256": "e440ecc3847d13e6d7a9ac2e54f9a6fe6ffa8bf6c89deaf0682c0ae598382922"
+    },
+    "replay_runner": {
+      "path": "scripts/kuna-multicarrier-replay.py",
+      "sha256": "4c7d2f9bdac2d4c80e46e2c2f2620ecf4375273371d83c7b08814bc64bba35f3"
+    },
+    "extractor": {
+      "atlas-extract/lakefile.toml": "a194f71d7d0349c4954805363c5b6b8b3d06415445d982e957251aa77f04104c",
+      "atlas-extract/AtlasExtract.lean": "be49b34cb3ad684bcdcd19d81b756bbde6332ee60bc8d2eddc01a6215305bf5d",
+      "atlas-extract/FhAtlas/Statement.lean": "e0d5a35d91dd6a7cc3333a978dcb8173041ba7144c1849f172d0fcc2db57203c",
+      "atlas-extract/FhAtlas/Extract.lean": "2bdd7b9cb00982037f3169b91186ebed24b87c542a2f108967eecc89fa09a8ce"
+    },
+    "detector": {
+      "path": "scripts/fh_home.py",
+      "sha256": "112e6057df5025f7d4b8d12f48cbfbd89101678161c39c722eba2b38ed2bb435",
+      "carrier_method": "HomeIndex.carrier_statement_candidates",
+      "selftest": "scripts/fh-home-search-selftest.py",
+      "selftest_sha256": "b3a31c69742e950949062e1d0f5ed45178a2dcc809ed73ad14cebbd1e4f11161"
+    },
+    "historical_extractor_builds": [
+      {
+        "toolchain": "leanprover/lean4:v4.18.0-rc1",
+        "exit": 0,
+        "compatibility_edits": []
+      },
+      {
+        "toolchain": "leanprover/lean4:v4.12.0-rc1",
+        "exit": 0,
+        "compatibility_edits": []
+      },
+      {
+        "toolchain": "leanprover/lean4:v4.10.0-rc2",
+        "exit": 0,
+        "compatibility_edits": [
+          "in the ephemeral compatibility copy only, replace Std.HashMap with its historical Lean.HashMap namespace",
+          "in the ephemeral compatibility copy only, replace optional GetElem lookup with HashMap.find?"
+        ],
+        "compatibility_statement_sha256": "33623926a4a3292b7b23e14dd675020de22fecabf4ecea87ed4d0a05c184b3f7",
+        "compatibility_extract_sha256": "309659e03a791da4514a3b162fc19433c3e3101bbb1b0b76fb85fd5a0028a8fd",
+        "encoding_contract_unchanged": true
+      }
+    ]
+  },
+  "aggregate": {
+    "historical_parents_reconstructed": 3,
+    "historical_parent_target_builds_passed": 3,
+    "closures_extracted": 3,
+    "closure_parse_errors": 0,
+    "exact_child_statements_elaborated_in_parent": 3,
+    "unchanged_child_proofs_accepted_in_parent": 3,
+    "HomeIndex.home": {
+      "refused_multi_carrier": 3,
+      "exact_proposals": 0
+    },
+    "HomeIndex.statement_candidates": {
+      "refused_multi_carrier": 3,
+      "exact_proposals": 0
+    },
+    "HomeIndex.carrier_statement_candidates": {
+      "exact_proposal": 1,
+      "wrong_target": 1,
+      "refused": 1,
+      "no_attached_requirement": 0
+    },
+    "diagnostic_after_targeted_produces_class_guard_ablation": {
+      "exact_proposal": 2,
+      "wrong_target": 1,
+      "refused": 0,
+      "method_change_accepted": false
+    },
+    "bounded_population_exact_proposal_rate": "1/3",
+    "bounded_population_proof_success_rate": "3/3",
+    "recall_claim": false
+  },
+  "replays": [
+    {
+      "ordinal": 1,
+      "parent": "a54dd1cf0ba3953f2d46ae8ded15cc74b98de128",
+      "child": "114b8de56ffcd3c2e5c69396f118bbe39754c04c",
+      "toolchain": "leanprover/lean4:v4.18.0-rc1",
+      "module": "Mathlib.Algebra.Group.Hom.Defs",
+      "declaration": "map_div'",
+      "event": {
+        "source": "MonoidHomClass",
+        "target": "MulHomClass",
+        "args": "F G H",
+        "carrier": 1
+      },
+      "reconstruction": {
+        "parent_head_verified": true,
+        "target_build_exit": 0,
+        "source_worktree_clean": true
+      },
+      "extraction": {
+        "local_rows": 434,
+        "local_bytes": 643001,
+        "local_sha256": "196b5219326c2dcb415d0ed8049ee861164ccb70c4cb281edeba56ab8b092e2b",
+        "local_import_ms": 712,
+        "local_encode_write_ms": 415,
+        "closure_rows": 60048,
+        "closure_bytes": 680945949,
+        "closure_sha256": "be802c20b95d11237c9e97723cf81d8ce124df039b99bc29efe2803b7febf3d5",
+        "closure_import_ms": 726,
+        "closure_select_ms": 717,
+        "closure_encode_write_ms": 83713,
+        "closure_wall_seconds": 86.20,
+        "raw_target_requirements": 17,
+        "target_requirement_carriers": [0, 1],
+        "raw_paths_are_ephemeral": true
+      },
+      "detector": {
+        "classes": 303,
+        "lattice_edges": 151,
+        "forgetful_instances": 544,
+        "parse_errors": 0,
+        "load_seconds": 7.010,
+        "index_seconds": 169.022,
+        "peak_rss_kib": 1103456,
+        "HomeIndex.home": {"skipped": "multi-carrier", "carriers": 3},
+        "HomeIndex.statement_candidates": {"skipped": "multi-carrier", "carriers": 2},
+        "carrier_retained_requirements": 9,
+        "carrier_event_binder": {
+          "class": "MonoidHomClass",
+          "carrier": 1,
+          "verdict": "no-attached-requirement",
+          "candidates": []
+        },
+        "exact_event_proposed": false,
+        "population_outcome": "wrong_target",
+        "search_artifact_sha256": "b839d6129d9b6f87827a98f6b6ebfe1082a213387b7c6c8cf6e6182eb501d7e7"
+      },
+      "validation": {
+        "source_telescope_delta": "exactly MonoidHomClass F G H to MulHomClass F G H",
+        "proof_text_unchanged": true,
+        "standalone_exact_child_statement_and_proof_in_parent_exit": 0,
+        "probe_sha256": "d0b18b32c2e65b2e837444b9fcf699c6b6f8eb68e73d0144f23882e048f4384f",
+        "outcome": "proof_success"
+      },
+      "loss_localization": "the event binder is judged, but class-head ancestry has no attached ancestor requirement for the multi-parameter hom class; MulHomClass is therefore excluded despite a kernel-accepted expert proof"
+    },
+    {
+      "ordinal": 2,
+      "parent": "71f079f9d2860606575d65f12a9ad4e34d80a841",
+      "child": "a5f50bc33216ba08f7e555873f7475f1b93579e2",
+      "toolchain": "leanprover/lean4:v4.12.0-rc1",
+      "module": "Mathlib.RingTheory.Finiteness",
+      "declaration": "Module.Finite.finite_basis",
+      "event": {
+        "source": "Ring",
+        "target": "Semiring",
+        "args": "R",
+        "carrier": 0
+      },
+      "reconstruction": {
+        "parent_head_verified": true,
+        "target_build_exit": 0,
+        "source_worktree_clean": true
+      },
+      "extraction": {
+        "local_rows": 90,
+        "local_bytes": 437421,
+        "local_sha256": "c4819ce61b13d198b6afb44206797449a6c1107d6d6ca88ddeecf71a118e707d",
+        "local_import_ms": 1211,
+        "local_encode_write_ms": 721,
+        "closure_rows": 106733,
+        "closure_bytes": 219979294,
+        "closure_sha256": "8abe6a56a73ff280b9289b16635b35579301bb9e3944cbb4800841d6ffe28732",
+        "closure_import_ms": 1212,
+        "closure_select_ms": 1144,
+        "closure_encode_write_ms": 72764,
+        "closure_wall_seconds": 75.95,
+        "raw_target_requirements": 10,
+        "target_requirement_carriers": [0, 1],
+        "raw_paths_are_ephemeral": true
+      },
+      "detector": {
+        "classes": 634,
+        "lattice_edges": 881,
+        "forgetful_instances": 4123,
+        "parse_errors": 0,
+        "load_seconds": 5.544,
+        "index_seconds": 53.795,
+        "peak_rss_kib": 722880,
+        "HomeIndex.home": {"skipped": "multi-carrier", "carriers": 3},
+        "HomeIndex.statement_candidates": {"skipped": "multi-carrier", "carriers": 2},
+        "HomeIndex.carrier_statement_candidates": {"skipped": "produces-a-class"},
+        "exact_event_proposed": false,
+        "population_outcome": "refused",
+        "search_artifact_sha256": "645e671d44f670c9104d774dc6225301d389dfdb785fccb59a4f4044ca561427"
+      },
+      "validation": {
+        "source_telescope_delta": "exactly Ring R to Semiring R",
+        "proof_text_unchanged": true,
+        "standalone_exact_child_statement_and_proof_in_parent_exit": 0,
+        "probe_sha256": "8c95a64fb284520a5f1da3258bcf84fe4f5651aed6af31918f7e4ddb5a5043f0",
+        "outcome": "proof_success"
+      },
+      "loss_localization": "the theorem concludes the class-valued proposition Finite iota, so the whole declaration is refused before its Ring binder is judged"
+    },
+    {
+      "ordinal": 3,
+      "parent": "08c93a33a405639ed569abdbf535d687b2f10e0a",
+      "child": "af101290534012f2928c3d6d0d67f0aade6ef428",
+      "toolchain": "leanprover/lean4:v4.10.0-rc2",
+      "module": "Mathlib.Algebra.Polynomial.AlgebraMap",
+      "declaration": "Polynomial.map_aeval_eq_aeval_map",
+      "event": {
+        "source": "CommSemiring",
+        "target": "Semiring",
+        "args": "S",
+        "carrier": 2
+      },
+      "reconstruction": {
+        "parent_head_verified": true,
+        "target_build_exit": 0,
+        "source_worktree_clean": true
+      },
+      "extraction": {
+        "local_rows": 84,
+        "local_bytes": 469496,
+        "local_sha256": "3f6c99d79ef10d31bac7808ac9dbff30566a3411f12c9781c459220d194fbef0",
+        "local_import_ms": 1244,
+        "local_encode_write_ms": 641,
+        "closure_rows": 101096,
+        "closure_bytes": 155723574,
+        "closure_sha256": "9e6329d50329ec59a60ad111761371047aba2c9176399ecc5199407b5bc74da2",
+        "closure_import_ms": 1216,
+        "closure_select_ms": 1136,
+        "closure_encode_write_ms": 64653,
+        "closure_wall_seconds": 67.77,
+        "raw_target_requirements": 53,
+        "target_requirement_carriers": [0, 2, 3, 4],
+        "raw_paths_are_ephemeral": true
+      },
+      "detector": {
+        "classes": 599,
+        "lattice_edges": 863,
+        "forgetful_instances": 4052,
+        "parse_errors": 0,
+        "load_seconds": 4.755,
+        "index_seconds": 36.721,
+        "peak_rss_kib": 623344,
+        "HomeIndex.home": {"skipped": "multi-carrier", "carriers": 6},
+        "HomeIndex.statement_candidates": {"skipped": "multi-carrier", "carriers": 4},
+        "carrier_retained_requirements": 38,
+        "carrier_event_binder": {
+          "class": "CommSemiring",
+          "carrier": 2,
+          "verdict": "candidates",
+          "reached": ["NonAssocSemiring", "Semiring"],
+          "candidates": ["Semiring"]
+        },
+        "exact_event_proposed": true,
+        "population_outcome": "exact_proposal",
+        "search_artifact_sha256": "96cdfba06f438f516ba0ae7c3e6541c00190ea8d09589b0fca067d5afd2d4aa0"
+      },
+      "validation": {
+        "source_telescope_delta": "exactly CommSemiring S to Semiring S",
+        "proof_text_unchanged": true,
+        "standalone_exact_child_statement_and_proof_in_parent_exit": 0,
+        "probe_sha256": "c406144309c36e4a00ac2a070c6398056ab52ee583e1a40346008986c8d70ceb",
+        "outcome": "proof_success"
+      },
+      "loss_localization": "carrier-attached statement evidence isolates S from R, T, and U and proposes the expert target as the unique cover"
+    }
+  ],
+  "diagnostic_ablations": {
+    "finite_basis_produces_class_guard": {
+      "scope": "one frozen declaration after the normal result was recorded",
+      "guarded": {"skipped": "produces-a-class"},
+      "without_guard_event_binder": {
+        "class": "Ring",
+        "carrier": 0,
+        "verdict": "candidates",
+        "reached": ["Semiring"],
+        "candidates": ["Semiring"]
+      },
+      "exact_event_proposed": true,
+      "method_source_unchanged": true,
+      "ablation_script_sha256": "a83fe8d8794d43251c146a6cd571de4db4a716cbb6e49a20b1812eaf34a3a9bd",
+      "ablation_result_sha256": "2f4b55b2271ccf1f269a21434a84c57dd2ea7dbe02e562acc7b5377cc21e22",
+      "decision": "do not remove the broad guard on one example; first separate theorem claims from instance-producing declarations and measure false positives"
+    }
+  },
+  "decision": {
+    "default_method_change": "rejected",
+    "carrier_method_default_change": "rejected",
+    "reason": "the frozen three-event population contains one exact proposal, one representational miss, and one policy refusal; all three expert proofs are independently available in the parent",
+    "validated": "carrier-attached requirements recover an ordinary multi-carrier algebraic weakening without moving evidence between carriers",
+    "new_loss_clusters": [
+      "multi-parameter hom-class ancestry is not justified by the current attached class-head requirement test",
+      "the produces-a-class guard refuses theorem claims such as Finite iota before binder search"
+    ],
+    "next_refinement": "split class-valued theorem claims from instance-producing declarations, score that guard change on a frozen control population, and design a parameter-aware requirement relation for multi-parameter hom classes before changing defaults",
+    "claim_boundary": "this is a source-screened, detector-blind bounded population of three expert events, not a recall estimate"
+  }
+}

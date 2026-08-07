@@ -1,0 +1,66 @@
+name = "FerrisHoward"
+version = "0.1.0"
+defaultTargets = ["FerrisHoward", "Tests"]
+
+# The extractor lives in its own package because it imports only `Lean`, which lets a
+# workspace on a *different* toolchain depend on it by path and emit the same JSONL. See
+# `atlas-extract/lakefile.toml` for why that matters.
+[[require]]
+name = "atlasExtract"
+path = "../atlas-extract"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.32.2"
+
+# The language. Globbed rather than rooted: `lake build` compiles every module under
+# `FerrisHoward/`, so a file that no one imports still has to compile. That is what
+# Mathlib's `mk_all --check` buys with an import-completeness check, obtained here
+# structurally instead (PLAN I1).
+#
+# The root module is listed explicitly: `X.+` does not include `X`, and without it Lake
+# does not consider the root a workspace module at all — `import FerrisHoward` then
+# silently resolves to whatever stale olean is on disk.
+[[lean_lib]]
+name = "FerrisHoward"
+globs = ["FerrisHoward", "FerrisHoward.+"]
+
+# Fixtures. Deliberate errors are legal here as long as every one of them is captured by
+# `#guard_msgs`; an uncaptured error fails the build, which is the point.
+# Archived feasibility spikes live in `lean/spikes/`, outside any lib: several fail by
+# design, and they are run by hand with `lake env lean spikes/<file>.lean`.
+[[lean_lib]]
+name = "Tests"
+globs = ["Tests", "Tests.+"]
+
+# The B1 extractor as a program. Its own imports are `Lean` only; the environment it walks
+# is loaded at runtime, so building this does not drag Mathlib through the linker.
+[[lean_exe]]
+name = "fh_emit"
+root = "FhEmit"
+supportInterpreter = true
+
+# `fh check` v0 (A1.9 / C1): elaborate an FH file, report JSON with FH-source spans.
+[[lean_exe]]
+name = "fh_check"
+root = "FhCheck"
+supportInterpreter = true
+
+[[lean_exe]]
+name = "fh_batch"
+root = "FhBatch"
+supportInterpreter = true
+
+# B7's validation clusters. Plain Lean statement-level formalization, deliberately not FH:
+# `atlas-validation.md` §2 rules that the clusters carry no dependency on FH milestones, so
+# the Atlas can be scored before the language is finished.
+[[lean_lib]]
+name = "Validation"
+globs = ["Validation", "Validation.+"]
+
+# The wallpaper-census formalization (research/physics/wallpaper-census.md) — its own
+# lib so the census can grow without entering the language's glob or the FH test tiers.
+[[lean_lib]]
+name = "Crystal"
+globs = ["Crystal.+"]

@@ -1,0 +1,27 @@
+# A *separate* workspace, and deliberately so.
+#
+# Physlib pins `leanprover/lean4:v4.32.0`; FerrisHoward is pinned to `v4.32.2`, and that
+# pin is load-bearing — the corpus, the round-trip gate and B7's frozen answer key all
+# depend on it. Making physlib a dependency of the main package would force the toolchains
+# to unify and invalidate all three.
+#
+# It does not have to. `atlas-extract` imports only `Lean`, so it compiles under either
+# toolchain and both workspaces take a path dependency on the *same* source. Both emit
+# `fh-stmt-v1` JSONL, and the Atlas consumes JSONL rather than oleans, so the slices
+# concatenate.
+#
+# Caveat for a merged corpus: two Mathlib patch versions can encode the same lemma
+# differently, so a merge is sound for analogy (skeletons) and not for identity (the
+# statement digest, and therefore B8's overlay keying).
+name = "FhPhysics"
+version = "0.1.0"
+defaultTargets = ["atlas_extract"]
+
+[[require]]
+name = "atlasExtract"
+path = "../atlas-extract"
+
+[[require]]
+name = "physlib"
+git = "https://github.com/leanprover-community/physlib"
+rev = "master"

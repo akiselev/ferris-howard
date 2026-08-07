@@ -1,0 +1,31 @@
+# The Atlas extractor, as a package both workspaces share.
+#
+# It imports **only `Lean`** — no Mathlib — and that is the property the whole
+# distribution strategy rests on. Because it has no Mathlib dependency, it compiles under
+# any toolchain, so a workspace pinned to a *different* Lean can depend on it by path and
+# extract the same `fh-stmt-v1` JSONL.
+#
+# That is why this is a package rather than files inside `lean/`: FerrisHoward is pinned to
+# `leanprover/lean4:v4.32.2` and that pin is load-bearing (the corpus, the round-trip gate,
+# B7's frozen key). Physics libraries are pinned elsewhere. Copying the extractor into each
+# workspace would work exactly once and then drift; a path dependency cannot.
+name = "atlasExtract"
+version = "0.1.0"
+defaultTargets = ["AtlasExtract"]
+
+# The module path is `FhAtlas.*` while the Lean *namespace* inside stays
+# `FerrisHoward.Atlas`. They have to differ: the main package globs `FerrisHoward.+`, so
+# leaving the modules under that prefix makes both packages claim the same names and Lake
+# resolves them to the main one, whose source no longer exists.
+#
+# Rooted, not globbed: this package is two modules and an executable, and listing them is
+# clearer than a pattern.
+[[lean_lib]]
+name = "AtlasExtract"
+roots = ["FhAtlas.Statement", "FhAtlas.Extract", "FhAtlas.Home"]
+
+[[lean_exe]]
+name = "atlas_extract"
+root = "AtlasExtract"
+# `#fh_extract` runs inside the elaborator, so the interpreter has to be available.
+supportInterpreter = true

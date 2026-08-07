@@ -1,0 +1,57 @@
+# ROADMAP.md — The Unified Program (v2)
+
+**Audience:** the agent (and the human), effective the day M0 (the FH skeleton per `ferris-howard-design.md`) and the couette-re-e campaign (`CLAUDE-couette.md`, driven by `couette-research.workflow.js`) are complete. Until then, those two documents govern and this file waits. v2 incorporates the toolchain designs completed after v1: debugging (`fh-debugger.md`), mining/grading/lints (`fh-mining-lints.md`), the correspondence (`fh-correspondence.md`), and the convergence layer (`fh-convergence.md`).
+
+**How to read identifiers.** Every letter-number identifier is written with its defining file; resolve against that file — letters collide across documents (bare `S1`–`S9` = substrate layers, `fh-substrate.md`; dotted `S1.2` = solid-state targets, `fh-solidstate-tier*.md`; `D1`–`D6` in `fh-research-round5-lhc.md` are LHC targets while `D1`–`D3` in `fh-diagnostics.md` are diagnostics milestones and `DB1`–`DB3` in `fh-debugger.md` are debugger milestones). Glossary: `P#` → `fh-priority-list.md` · quantum targets → `fh-quantum-research.md` · `A#` → `fh-physics-round2.md` · `B#` → `fh-research-round3.md` · `C#` → `fh-research-round4-sm.md` · `D#` (physics) → `fh-research-round5-lhc.md` · `V#` (probes) → `fh-statement-validity.md` · `E#` → `fh-codegen.md` · `L0–L4` (LaTeX) → `fh-latex.md` · `L-*` (lints) → `fh-mining-lints.md` · `MN#` (mining) → `fh-mining-lints.md` · `DB#` → `fh-debugger.md` · `FHC#` → `fh-correspondence.md` · `G#` → `CLAUDE-couette.md` · `G-A/B/C` → `fh-celestial-tiers.md` · `M0–M4` (meta ladder) → `fh-meta-effective.md` §6 · `H#` hard rules → `CLAUDE-couette.md` §2, enforced as compiler errors per `fh-diagnostics.md` · loop stamps (`CONVERGING/PLATEAUED/OSCILLATING/DIVERGING`) and content grades (`POLY/EXP/TOWER/VOID`) → `fh-convergence.md`, `fh-mining-lints.md`.
+
+**Standing law, all horizons:** every new statement passes the statement-tier vet battery (V1, V3, V7, V8, V10 — `fh-statement-validity.md`) before freeze; **every loop declares its potential function at birth and repairs obey the monotone policy** (`fh-convergence.md` §§1–2); every gate writes its ledger artifact; cost accounting (S5) and the security posture (S4) are active from every horizon's first commit (`fh-substrate.md`); lints L-RIGOR and L-REGIME (`fh-mining-lints.md` §3) are enforced from M0 onward; the answer-key discipline (H6) applies to external benchmarks and oracle tables (`fh-benchmarks.md` §6, `fh-codegen.md` §4) exactly as to our own.
+
+---
+
+## Horizon 1 — The proving season (starts at couette G4-PASS)
+
+Objective: convert the pipeline from "ran once" to "runs as a matter of course" — the Tier-1 priority targets plus the toolchain that amortizes them.
+
+1. **Finish P1** (`fh-priority-list.md`): couette G5–G7 per `CLAUDE-couette.md` — full battery, fidelity game (§16, `fh-statement-validity.md`), dispute adjudication from `statements-couette.fh` §6, artifact via the emit-lean round-trip gate (E1, `fh-codegen.md`), equations via L0→L2 (`fh-latex.md`), paper per Phase 7. Exit: the referee pack exists; the dossier spec (§22, `fh-statement-validity.md`) is drafted from it.
+2. **P2** (`fh-priority-list.md`): the EuclideanDomain deletion demo (B1, `fh-research-round3.md`) — first meta-solution hunt; ledger the synthesis trace as AbstractionBench seed (`fh-benchmarks.md` §5). Kill-criterion K1 attaches here.
+3. **P3**: Jarzynski/Crooks (`fh-statmech-tiers.md` Tier 2) — first external-community artifact; upstream candidate prelude lemmas (`fh-codegen.md` §2, `fh-statement-validity.md` §10).
+4. **P4**: the NPA/I3322 rational certificate (`fh-quantum-research.md`) — founds the positivity engine (A5, `fh-physics-round2.md`); register its skeleton row (`fh-atlas.md`).
+5. **P5**: the certified TDVP monitor — meta Milestone 1 (`fh-meta-effective.md` §4/§9); first shipped `Effective` artifact with its (error, regime, cost) triple and error-field instance (§2.1).
+6. **Toolchain riders:** E2 checker extraction with Aeneas round-trip (`fh-codegen.md` §1); **DB1** — `#[watch]`/`#[bound]` dual compilation with the LDLᵀ checker as first patient (`fh-debugger.md` §5); diagnostics D2 — agent payload + falsification triage (`fh-diagnostics.md` §6); **`fh grade` v0** stamping the couette tail-bound evaluator (expected `POLY`; anything else is a finding — `fh-mining-lints.md` §2c); the Wiedijk-100 FH stress suite as M0's regression corpus (`fh-benchmarks.md` §1a); oracle harness v0 on every extracted kernel (`fh-codegen.md` §4).
+
+**Exit:** five referee packs (or four plus one ledgered honest failure); positivity engine live; Effective library non-empty; extraction round-trips green; every active loop carrying a declared potential function. Choose Horizon 2's emphasis with the human, using S5 cost data.
+
+## Horizon 2 — Amortization (the second consumers)
+
+Objective: prove the machinery is a template; each item deliberately reuses a Horizon-1 engine.
+
+1. **Plasma δW transplant** (`fh-plasma-tiers.md` Tier 2): the couette workflow re-run with the physics renamed; measure and ledger transplant cost — the program's economics headline.
+2. **P6/P11** (`fh-priority-list.md`): wallpaper census (S1.2, `fh-solidstate-tier1.md`; oracles: Bilbao/OEIS) and helium brackets (`fh-qchem-tiers.md`/`fh-amo-tiers.md` Tier 2; oracle: Drake tables) — riding P1's interval infrastructure.
+3. **P7 + the benchmark audit** (`fh-priority-list.md`; `fh-benchmarks.md` §2): the W-mass certified combination (D1, `fh-research-round5-lhc.md`) and the vet-battery audit of an AI-prover benchmark — the referee genre's two debuts.
+4. **P10**: the physlib quantum bundle (`fh-quantum-corpus.md` shortlist) — ecosystem citizenship; **L-LIN** (`fh-mining-lints.md` §3) lands with this elaboration.
+5. **Atlas goes live:** the rediscovery-benchmark Tier-1 must-pass targets (`fh-atlas-validation.md`) against the populated corpus; first blinded calibration round (§17, `fh-statement-validity.md`) with **`fh converge` v0 monitoring the calibration loop's per-class recall** (`fh-convergence.md` §5).
+6. **Debugger completes:** DB2 (trace + REPL frame-loading) and DB3 (interval blame) wired to the oracle harness — a table disagreement auto-triggers the traced-replay triage ladder (`fh-debugger.md` §§3–5).
+7. **MN1** (`fh-mining-lints.md` §1): the Dialectica/monotone interpretation metaprogram on the toy fragment — mining's beachhead.
+8. **P8, P9, P12** as capacity allows; P8's differential-geometry spike (`fh-gr-tiers.md` Tier 1) gates its own continuation.
+
+**Exit:** transplant cost measured and small; Atlas must-passes green; calibration curve v1 published in dossiers; debugger acceptance test passed (corrupted-certificate localization with blame certificate, `fh-debugger.md` §5).
+
+## Horizon 3 — The research programs open
+
+Objective: from targets to tracks. Subfield entries at Tier 1–2 ordered by engine-fit and measured cost: solid state (S2.1 + S2.2, `fh-solidstate-tier2.md`), celestial T1–T2 → the a-posteriori KAM spine (`fh-celestial-tiers.md`), fluids Tier-3 SOS bounds (`fh-fluids-tiers.md`), qchem Tier-3 RDM engine (`fh-qchem-tiers.md`), stat-mech Peierls (`fh-statmech-tiers.md` Tier 3). Meta program **M2**: the `Effective` type lands in FH with a C3-style composed budget re-derived inside it (`fh-meta-effective.md` §9; `fh-research-round4-sm.md`), and §8.1's `atlas resolve` runs live on a recurring tail-lemma residual. **Discovered-stratum experiment 1 under the RG criterion**: B1's engine on Mathlib refactor history, with corpus-doubling fixed-point checks as the second acceptance test (`fh-convergence.md` §4); release AbstractionBench v1 and FaithfulBench-Physics (`fh-benchmarks.md` §5). **MN2**: mine one real Mathlib convergence proof against its hand-mined literature rate (oracle discipline). **FHC1–FHC4** (`fh-correspondence.md`): the correspondence's positive part, then the limitative theorems atop the imported provability libraries — the Atlas-incompleteness and vet-incompleteness results that ground the calibration doctrine as corollary. Begin the quantum-gravity interface corpus (Tier 1, `fh-qgravity-tiers.md`).
+
+**Exit:** three tracks at Tier-2 cadence; two benchmarks released; the envelope operation executable and **grade-ranked** (`fh-mining-lints.md` §2c) against the real library; FHC3 proven.
+
+## Horizon 4 — Flagships (explicit human green-light + written proposal, each)
+
+The summits, with a track record behind them: the Hubbard bracket program (S4.1, `fh-solidstate-tier4.md`); the holographic entropy cone census (Tier 3, `fh-qgravity-tiers.md`); N-body M3–M4 and the Le Verrier gates G-A→G-C (`fh-celestial-tiers.md` Tier 4+; `fh-meta-effective.md` §6) — with certified Lyapunov floors doubling as the convergence layer's proven-divergence exhibits (`fh-convergence.md` §3c); the end-to-end certified Schwinger simulation (C3, `fh-research-round4-sm.md`); the Frauchiger–Renner adjudication at depth (B4, `fh-research-round3.md`); **MN3** — mining as a standing Effective-library service; and the φ⁴₂ *proposal* — blueprint plus funding case, not attempted solo (B5, `fh-research-round3.md`). Selection rule: at most two concurrent flagships, chosen by S5 cost curves and engine maturity, each with its own CLAUDE-couette-style operational contract (clone the structure, never the physics).
+
+---
+
+## Kill criteria (honesty switches, checked and ledgered at every horizon exit)
+
+**(K1)** Deletion-demo failure after honest effort weakens the Atlas-synthesis thesis, not the certification pipeline: scope Atlas claims down, continue the proving tracks. **(K2)** Battery recall measured below the ~19%-baseline detection needs (§17) halts all validity-forward publication claims until fixed — never publish a dossier the calibration data doesn't back. **(K3)** S5 cost-per-theorem trending worse than compute-price decline on a track triggers an off-ramp review, not more agents. **(K4)** Any silent meaning-change escaping the battery post-publication triggers the full §21 erratum protocol on our own work first. **(K5, new)** A loop stamped `DIVERGING` by `fh converge` may not simply be re-run: it must be dispositioned per `fh-convergence.md` §5 — corpus gap, proven wildness (cite the theorem, cap the loop), or metric artifact — before further spend.
+
+## The loop that never closes
+
+Every horizon feeds the permanent systems: dossiers into the trust graph (§20, `fh-statement-validity.md`), failures into the error-fingerprint corpus (§5, `fh-diagnostics.md`), stubborn residuals into promotion candidates (§8, `fh-meta-effective.md`), loop potentials into `fh converge`, costs into the priority re-ranking, everything into the ledger. Maintenance rule: re-rank at every horizon exit using measured costs; retire this file's predictions against actuals; and remember that the correspondence proves the frontier stays open (FHC3 — the map extends forever and completes never), so the roadmap's job is not to finish but to keep the gradient pointed at reality. The constitution outranks it as it outranks everything: *search dirty, certify clean, state precisely, ledger everything, and let the kernel be the only judge.*
