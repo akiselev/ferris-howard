@@ -7,6 +7,12 @@ corpus is ~7.4 GB resident and the two arms must not share a process:
     uv run scripts/phys-budget-check.py --arm off   # shipped cutoff: expects 0/4
     uv run scripts/phys-budget-check.py --arm on    # work budget:    expects 4/4
 
+The §74 dictionary knobs ride the same expectations: `--rank-by-retention` and
+`--keep-displaced` re-run the dictionary half under the new ordering/crowding control,
+and the arm must still hit 4/4 — a knob that recovers the entropy bridge by losing a
+pre-registered correspondence has moved the false negative, not removed it. The paired
+bridge gate is `scripts/phys-entropy-bridge-check.py`.
+
 The ground truth is the four pre-registered classical<->quantum information
 correspondences (physlib-classical-quantum.md §2a), found by exhaustive anti-unification
 at conclusion-anchored retention 0.697-0.889 and returned by the shipped `dictionary` not
@@ -63,6 +69,14 @@ def main() -> int:
     ap.add_argument("--arm", choices=["on", "off"], required=True)
     ap.add_argument("--slice", type=pathlib.Path, default=BASE)
     ap.add_argument("--budget", type=int, default=W)
+    # The §74 assembly knobs, applied to the dictionary half only (they are dictionary
+    # knobs). The pass criterion does not move: T1-T4 were the budget repair's ground
+    # truth, and a rank key or crowding control that loses any of them has traded the
+    # measured recall for the new ordering — exactly the regression this arm exists to
+    # catch. The similar half is knob-free either way, so `proposed` doubles as the
+    # control that a dictionary-side miss is the assembly's fault, not retrieval's.
+    ap.add_argument("--rank-by-retention", action="store_true")
+    ap.add_argument("--keep-displaced", action="store_true")
     args = ap.parse_args()
 
     if not args.slice.exists():
@@ -71,7 +85,13 @@ def main() -> int:
         return 0
 
     budget = args.budget if args.arm == "on" else None
-    rec: dict = {"arm": args.arm, "posting_work_budget": budget, "slice": str(args.slice)}
+    rec: dict = {
+        "arm": args.arm,
+        "posting_work_budget": budget,
+        "rank_by_retention": args.rank_by_retention,
+        "per_decl_keep_displaced": args.keep_displaced,
+        "slice": str(args.slice),
+    }
 
     t = time.time()
     c = fa.Corpus.load(args.slice)
@@ -119,6 +139,8 @@ def main() -> int:
                 theorems_only=True,
                 anchor="conclusion",
                 posting_work_budget=budget,
+                rank_by_retention=args.rank_by_retention,
+                per_decl_keep_displaced=args.keep_displaced,
             )
             found = [
                 f"{r.left} ~ {r.right}"

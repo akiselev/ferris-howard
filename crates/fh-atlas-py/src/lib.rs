@@ -1654,6 +1654,7 @@ impl Corpus {
             let idx = guard.as_mut().expect("skeletons() builds it");
             let d = dict::dictionary(
                 idx,
+                None,
                 left,
                 right,
                 &cfg,
@@ -1699,6 +1700,7 @@ impl Corpus {
             let idx = guard.as_mut().expect("skeletons() builds it");
             let d = dict::dictionary(
                 idx,
+                None,
                 left,
                 right,
                 &cfg,
@@ -1760,6 +1762,7 @@ impl Corpus {
             let idx = guard.as_mut().expect("skeletons() builds it");
             let d = dict::dictionary(
                 idx,
+                None,
                 left,
                 right,
                 &cfg,
@@ -1785,8 +1788,17 @@ impl Corpus {
     // surface where the defect was measured: at the shipped cutoff the ClassicalInfo ~
     // Entropy dictionary returns none of the four pre-registered correspondences — none
     // is even a candidate — and with the keys admitted they are its top rows (§66).
+    // The three §74 knobs land here in the same change that adds them to the engine, per
+    // CLAUDE.md §6: a query that exists only below the binding is one validation scripts
+    // cannot afford to call. `rank_by_retention` orders candidates and rows by retention
+    // (the four validated cross-domain correspondences rank 437–1,150 of 3,029 under the
+    // scored key against 17–525 under retention); `per_decl_keep_displaced` moves the
+    // per-left cap to (left, skeleton) so a structurally different claim is not evicted by
+    // a higher-ranked lookalike (315 rows displaced, the entropy bridge among them); and
+    // `exclude_cited` drops rows whose declarations cite each other, frontier's notion —
+    // 14 of §74's graded top-40 were a framework paired with its own instantiations.
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (left, right, per_decl = 1, theorems_only = true, anchor = "root", normalize_arity = false, score = "retention", max_per_right = None, posting_work_budget = None))]
+    #[pyo3(signature = (left, right, per_decl = 1, theorems_only = true, anchor = "root", normalize_arity = false, score = "retention", max_per_right = None, posting_work_budget = None, rank_by_retention = false, per_decl_keep_displaced = false, exclude_cited = false))]
     fn dictionary(
         &self,
         py: Python<'_>,
@@ -1799,6 +1811,9 @@ impl Corpus {
         score: &str,
         max_per_right: Option<usize>,
         posting_work_budget: Option<usize>,
+        rank_by_retention: bool,
+        per_decl_keep_displaced: bool,
+        exclude_cited: bool,
     ) -> PyResult<Dictionary> {
         // The anchor reaches `dictionary` for the same reason it reaches `similar` and
         // `generalize`. Without it the Z~FF dictionary returned **0 rows** while the pairs
@@ -1818,6 +1833,9 @@ impl Corpus {
             let idx = guard.as_mut().expect("skeletons() builds it");
             Ok(dict::dictionary(
                 idx,
+                // Always passed: the graph is already resident, and the engine refuses
+                // `exclude_cited` without one.
+                Some(&self.graph),
                 left,
                 right,
                 &cfg,
@@ -1825,6 +1843,9 @@ impl Corpus {
                     per_decl,
                     theorems_only,
                     max_per_right,
+                    rank_by_retention,
+                    per_decl_keep_displaced,
+                    exclude_cited,
                     ..dict::DictOptions::default()
                 },
             ))

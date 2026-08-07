@@ -31,6 +31,7 @@ use std::io::{BufRead, Write};
 use std::path::Path;
 use std::process::Command;
 
+use fh_atlas::dict::{DictOptions, dictionary};
 use fh_atlas::graph::{Graph, Lens};
 use fh_atlas::json::{self, Value};
 use fh_atlas::skel::index::{Anchor, IndexConfig, SkeletonIndex};
@@ -233,6 +234,58 @@ fn tool_list() -> Value {
             ),
         ),
         tool(
+            "atlas_dictionary",
+            "The maximal partial functor between two theory prefixes: skeleton-matched \
+             rows plus the counts of unmatched declarations on each side. The three \
+             assembly knobs are the §74 repairs, all default-off. `rank_by_retention` \
+             orders by retention instead of the full score — cross-domain, size-flavoured \
+             score factors reward shared framework mass, and the validated \
+             classical<->quantum correspondences rank 437-1,150 of 3,029 under the scored \
+             key against 17-525 under retention. `per_decl_keep_displaced` counts the \
+             per-left cap per skeleton, so a structurally different claim is not evicted \
+             by a higher-ranked lookalike (315 rows were displaced that way, the von \
+             Neumann ~ Gibbs entropy bridge among them). `exclude_cited` drops rows whose \
+             declarations cite each other — usage, not analogy. Set \
+             `posting_work_budget=2000` with `anchor=conclusion` when hunting across \
+             theories, as for `atlas_similar`. Loads the slice and builds an index per \
+             call; loops belong on the Python binding.",
+            string_schema(
+                &[
+                    ("slice", "path to a JSONL extraction from `atlas_extract`"),
+                    ("left", "left theory: a module prefix, e.g. `QuantumInfo`"),
+                    ("right", "right theory: a module prefix"),
+                    ("top", "how many rows to print (default 20)"),
+                    ("per_decl", "rows kept per left declaration (default 1)"),
+                    (
+                        "anchor",
+                        "`root` (default) compares whole statements; `conclusion` \
+                         compares what they conclude, which cross-theory analogy needs",
+                    ),
+                    (
+                        "posting_work_budget",
+                        "postings walked per query under keep-all admission; omit for \
+                         the shipped frequency cutoff",
+                    ),
+                    (
+                        "rank_by_retention",
+                        "`true` ranks candidates and rows by retention instead of the \
+                         scored key (default `false`)",
+                    ),
+                    (
+                        "per_decl_keep_displaced",
+                        "`true` counts the per_decl cap per (left, skeleton) so \
+                         structurally distinct claims are kept (default `false`)",
+                    ),
+                    (
+                        "exclude_cited",
+                        "`true` drops rows whose two declarations cite each other, \
+                         either lens, either direction (default `false`)",
+                    ),
+                ],
+                &["slice", "left", "right"],
+            ),
+        ),
+        tool(
             "atlas_why",
             "A shortest citation chain from one declaration down to another. The \
              'decompile the relationship' primitive: the first thing to run when asked \
@@ -423,6 +476,81 @@ fn call_tool(params: &Value) -> Result<String, String> {
                 .collect::<Vec<_>>()
                 .join("\n"))
         }
+        "atlas_dictionary" => {
+            let path = arg("slice")?;
+            let text = std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
+            let (left, right) = (arg("left")?, arg("right")?);
+            let opt_num = |k: &str| -> Result<Option<usize>, String> {
+                args.get(k)
+                    .and_then(|v| v.as_str())
+                    .map(|s| {
+                        s.parse::<usize>()
+                            .map_err(|_| format!("`{k}` must be a number, got `{s}`"))
+                    })
+                    .transpose()
+            };
+            // Booleans arrive as strings under `string_schema`, like the numbers; a
+            // malformed one is the caller's error to hear about, not a default.
+            let opt_bool = |k: &str| -> Result<bool, String> {
+                match args.get(k).and_then(|v| v.as_str()) {
+                    None | Some("false") => Ok(false),
+                    Some("true") => Ok(true),
+                    Some(other) => Err(format!("`{k}` must be `true` or `false`, got `{other}`")),
+                }
+            };
+            let top = opt_num("top")?.unwrap_or(20);
+            let anchor = match args
+                .get("anchor")
+                .and_then(|v| v.as_str())
+                .unwrap_or("root")
+            {
+                "root" => Anchor::Root,
+                "conclusion" => Anchor::Conclusion,
+                other => return Err(format!("unknown anchor `{other}`")),
+            };
+            let cfg = IndexConfig {
+                anchor,
+                posting_work_budget: opt_num("posting_work_budget")?,
+                ..IndexConfig::default()
+            };
+            let opts = DictOptions {
+                per_decl: opt_num("per_decl")?.unwrap_or(1),
+                rank_by_retention: opt_bool("rank_by_retention")?,
+                per_decl_keep_displaced: opt_bool("per_decl_keep_displaced")?,
+                exclude_cited: opt_bool("exclude_cited")?,
+                ..DictOptions::default()
+            };
+            // The graph is only paid for when the filter that reads it is on; the engine
+            // refuses `exclude_cited` without one, so this cannot silently no-op.
+            let graph = if opts.exclude_cited {
+                Some(Graph::from_jsonl(&text).map_err(|e| e.to_string())?)
+            } else {
+                None
+            };
+            let mut idx = SkeletonIndex::build(&text, &cfg).map_err(|e| e.to_string())?;
+            let d = dictionary(&mut idx, graph.as_ref(), &left, &right, &cfg, &opts);
+            let mut out = String::new();
+            for r in d.rows.iter().take(top) {
+                out.push_str(&format!(
+                    "ret {:.3}  score {:.4}  {:<14}  {} ~ {}{}\n",
+                    r.retention,
+                    r.score,
+                    r.status.name(),
+                    r.left,
+                    r.right,
+                    if r.transportable { "" } else { "  (scoped)" }
+                ));
+            }
+            out.push_str(&format!(
+                "\n{} rows; unmatched: {} in {}, {} in {}\n",
+                d.rows.len(),
+                d.missing_left.len(),
+                d.left_theory,
+                d.missing_right.len(),
+                d.right_theory
+            ));
+            Ok(out)
+        }
         "atlas_why" => {
             let g = load(&arg("slice")?)?;
             let (from, to) = (arg("from")?, arg("to")?);
@@ -589,6 +717,7 @@ mod tests {
         assert!(names.contains(&"atlas_why"));
         assert!(names.contains(&"atlas_closure"));
         assert!(names.contains(&"atlas_similar"));
+        assert!(names.contains(&"atlas_dictionary"));
         assert!(names.contains(&"statement_verify"));
         // Delegated to `lean-lsp-mcp` per agent-interface §1's amendment: composition
         // over reimplementation. A `search` here would be the second-best one.
@@ -752,6 +881,78 @@ mod tests {
         assert!(
             on.contains(" q "),
             "the work budget must admit the crowded key and surface `q`: {on}"
+        );
+    }
+
+    /// `atlas_dictionary`'s §74 knobs through the MCP surface, paired.
+    ///
+    /// The fixture is the `linearSol` pattern: the left's best-ranked partner is the
+    /// framework lemma its proof cites, so with the knobs off the row must pair them —
+    /// the shipped behaviour — and with `exclude_cited=true` the slot must pass to the
+    /// unlinked candidate rather than to nobody. Off asserting the linked pair is the
+    /// half that keeps this from passing on a server that returns nothing.
+    #[test]
+    fn atlas_dictionary_pairs_exclude_cited_with_its_ablation() {
+        let dir = std::env::temp_dir().join("fh-mcp-dictionary-test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let shared = "a(a(a(c(5:LE.le,0),c(4:Real,0)),c(3:iii,0)),c(2:zz,0))";
+        let row = |name: &str, module: &str, stmt: &str, proof: &str| {
+            format!(
+                "{{\"name\":\"{name}\",\"kind\":\"theorem\",\"module\":\"{module}\",\
+                 \"stmt\":\"fh-stmt-v1;{stmt}\",\"uses_statement\":[],\"uses_proof\":[{proof}]}}"
+            )
+        };
+        let rows = [
+            row(
+                "l1",
+                "L",
+                &format!("a(a(c(2:Eq,0),{shared}),c(1:u,0))"),
+                "\"rf\"",
+            ),
+            row("rf", "R", &format!("a(a(c(2:Eq,0),{shared}),c(1:v,0))"), ""),
+            row(
+                "rg",
+                "R",
+                "a(a(c(2:Eq,0),a(a(a(c(5:LE.le,0),c(4:Real,0)),c(3:jjj,0)),c(2:qq,0))),c(1:u,0))",
+                "",
+            ),
+        ];
+        let slice = dir.join("slice.jsonl");
+        std::fs::write(&slice, rows.join("\n")).unwrap();
+        let s = slice.display().to_string();
+
+        let dict_rows = |knob: Option<&str>| -> String {
+            let knob_arg = match knob {
+                Some(v) => format!(",\"exclude_cited\":\"{v}\""),
+                None => String::new(),
+            };
+            let req = format!(
+                r#"{{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{{"name":"atlas_dictionary","arguments":{{"slice":"{s}","left":"L","right":"R"{knob_arg}}}}}}}"#
+            );
+            let r = call(&req);
+            let res = r.get("result").unwrap();
+            assert_eq!(res.get("isError"), Some(&Value::Bool(false)), "{res:?}");
+            res.get("content").unwrap().as_list().unwrap()[0]
+                .get("text")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string()
+        };
+
+        let off = dict_rows(None);
+        assert!(
+            off.contains("l1 ~ rf"),
+            "off, the citation-linked framework partner wins the slot: {off}"
+        );
+        let on = dict_rows(Some("true"));
+        assert!(
+            !on.contains("l1 ~ rf"),
+            "on, the citation-linked pair must be dropped: {on}"
+        );
+        assert!(
+            on.contains("l1 ~ rg"),
+            "on, the slot must pass to the unlinked candidate, not to nobody: {on}"
         );
     }
 

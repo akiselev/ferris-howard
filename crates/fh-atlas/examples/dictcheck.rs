@@ -82,6 +82,7 @@ fn main() {
     let t2 = std::time::Instant::now();
     let d = dictionary(
         &mut idx,
+        None,
         "Mathlib.Order",
         "Mathlib.Algebra",
         &cfg,
@@ -163,6 +164,7 @@ fn main() {
     };
     let dc = dictionary(
         &mut idx,
+        None,
         "Mathlib.Order",
         "Mathlib.Algebra",
         &cfg,

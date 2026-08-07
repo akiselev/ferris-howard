@@ -164,6 +164,47 @@ pub struct DictOptions {
     /// heuristic and is reported as one**: it caught 6.9% of rows on the first slice, and
     /// a principled fix needs a field the extractor does not yet have.
     pub exclude_roles: Vec<String>,
+    /// Order candidates and rows by `retention` instead of by the full score.
+    ///
+    /// Off by default because `Row::score`'s caveat still holds within one theory:
+    /// retention omits `scoped_penalty`, so it prefers rows that cannot be transported.
+    /// *Across* theories the trade inverts (findings §74): every size-flavoured factor in
+    /// the score rewards shared framework mass — rows agreeing on tens of thousands of
+    /// apparatus nodes and no claim — which is anti-correlated with cross-domain content.
+    /// Measured on the 95,268-row physics corpus, the four validated classical↔quantum
+    /// correspondences rank 437–1,150 of 3,029 under retention × support against 17–525
+    /// under retention alone. The tie-breaks are `similar`'s own: `common`, then `vars`,
+    /// then the name.
+    ///
+    /// The re-ordering happens inside the retrieved pool: retrieval still returns the
+    /// `pool_width` best *by score*, so a partner outside that pool is not recovered by
+    /// this knob — widen `pool_width` for that.
+    pub rank_by_retention: bool,
+    /// Count the `per_decl` cap per (left, skeleton) instead of per left.
+    ///
+    /// `per_decl = 1` is winner-take-all, and winner-take-all manufactures false
+    /// negatives: §74 measured 315 rows displaced, among them the unregistered
+    /// von Neumann ~ Gibbs entropy bridge (`Sᵥₙ_nonneg ~ CanonicalEnsemble.entropy_nonneg`,
+    /// retention 0.684), evicted by a content-free positivity lookalike (`0 ≤ Z`,
+    /// retention 0.9412). No rank key repairs that — the lookalike outscores the bridge on
+    /// retention too — so the honest control keeps the displaced row rather than re-losing
+    /// it. Two rows with the *same* rendered skeleton are the same structural claim worn by
+    /// different partners, and capping those loses nothing; a row with a *different*
+    /// skeleton is a different claim, and deleting a claim is exactly the §74 defect. So
+    /// the cap moves to (left, skeleton): each structurally distinct claim gets its own
+    /// `per_decl` slots, and family clones stay capped.
+    pub per_decl_keep_displaced: bool,
+    /// Drop rows whose two declarations cite each other — either direction, either lens.
+    ///
+    /// `frontier` discounts citation traffic for the same reason: similarity plus traffic
+    /// is usage, not analogy. §74's graded top-40 was led by 14 rows pairing a framework
+    /// with its own instantiations — every anomaly-cancellation lemma against the
+    /// `linearSol` structure field its proof projects out of. The notion is frontier's:
+    /// a *direct* `uses_statement`/`uses_proof` edge, not transitive reachability, which
+    /// on a corpus where everything rests on shared plumbing would be a different and far
+    /// more destructive filter. Requires the citation graph to be passed to
+    /// [`dictionary`]; asking for the filter without one is refused, not ignored.
+    pub exclude_cited: bool,
 }
 
 impl Default for DictOptions {
@@ -175,6 +216,9 @@ impl Default for DictOptions {
             max_per_right: None,
             exclude_subprefix: Vec::new(),
             exclude_roles: Vec::new(),
+            rank_by_retention: false,
+            per_decl_keep_displaced: false,
+            exclude_cited: false,
         }
     }
 }
@@ -191,17 +235,41 @@ fn excluded_role(name: &str, roles: &[String]) -> bool {
     })
 }
 
+/// Frontier's citation notion, applied to one ordered pair: does `from`'s statement or
+/// proof cite `to` directly? [`frontier`] counts exactly these edges when it discounts a
+/// theory pair for traffic; `exclude_cited` reuses the notion so the two queries agree
+/// about what "citation-linked" means.
+fn cites_directly(g: &Graph, from: &str, to: &str) -> bool {
+    g.get(from).is_some_and(|d| {
+        d.uses_statement
+            .iter()
+            .chain(d.uses_proof.iter())
+            .any(|u| u == to)
+    })
+}
+
 /// Assemble the maximal partial functor between two theories.
 /// `theorems_only` for the same reason [`frontier`] wants it: a dictionary row between two
 /// *recursors* (`Compl.rec ~ Star.rec`) is a fact about how Lean compiles inductive types,
 /// not a structure-preserving map between theories.
+///
+/// `graph` is only consulted when `opts.exclude_cited` asks for it; every other option
+/// works with `None`. Asking for the citation filter without a graph panics rather than
+/// silently keeping the citation-linked rows — a filter that quietly does nothing is
+/// indistinguishable from a clean result, which is the failure mode §5's traps keep
+/// documenting.
 pub fn dictionary(
     idx: &mut SkeletonIndex,
+    graph: Option<&Graph>,
     left: &str,
     right: &str,
     cfg: &IndexConfig,
     opts: &DictOptions,
 ) -> Dictionary {
+    assert!(
+        graph.is_some() || !opts.exclude_cited,
+        "exclude_cited needs the citation graph: pass `Some(&graph)` to `dictionary`"
+    );
     let (per_decl, theorems_only) = (opts.per_decl, opts.theorems_only);
     // Retrieval itself is restricted to the target theory, so the pool is candidates that
     // can become rows rather than a global top-N mostly discarded a line later.
@@ -228,14 +296,30 @@ pub fn dictionary(
     // When a right may be claimed only so many times, the contest has to be settled
     // globally: greedy per-left assembly hands a contested right to whichever left the
     // iteration reached first, which is alphabetical order and not a judgement. Candidates
-    // are therefore collected, sorted by score, and allocated best-first.
+    // are therefore collected, sorted by the rank key (the score, or retention when
+    // `rank_by_retention` is set), and allocated best-first.
     let mut pending: Vec<(f32, Row)> = Vec::new();
 
     for name in &lefts {
-        let Ok(neighbours) = idx.similar(name, opts.pool_width, cfg) else {
+        let Ok(mut neighbours) = idx.similar(name, opts.pool_width, cfg) else {
             continue;
         };
+        // The retrieved pool is still `similar`'s top `pool_width` by score; the knob
+        // re-orders the choice *within* it, with `similar`'s own tie-breaks so the two
+        // orderings differ in exactly one thing — the key.
+        if opts.rank_by_retention {
+            neighbours.sort_by(|a, b| {
+                b.retention
+                    .total_cmp(&a.retention)
+                    .then(b.common.cmp(&a.common))
+                    .then(a.vars.cmp(&b.vars))
+                    .then(a.name.cmp(&b.name))
+            });
+        }
         let mut kept = 0;
+        // Rows already kept for this left, by rendered skeleton — the unit
+        // `per_decl_keep_displaced` caps on.
+        let mut kept_per_skeleton: HashMap<String, usize> = HashMap::new();
         for n in neighbours {
             if !in_theory(&n.module, right) || (theorems_only && !idx.is_theorem(&n.name)) {
                 continue;
@@ -250,12 +334,35 @@ pub fn dictionary(
             if excluded_role(&n.name, &opts.exclude_roles) {
                 continue;
             }
+            // Filtered here, before slot accounting, so a citation-linked candidate frees
+            // its slot for the next-ranked genuine one instead of consuming it.
+            if opts.exclude_cited {
+                let g = graph.expect("asserted at entry");
+                if cites_directly(g, name, &n.name) || cites_directly(g, &n.name, name) {
+                    continue;
+                }
+            }
+            if opts.per_decl_keep_displaced {
+                let c = kept_per_skeleton.entry(n.skeleton.clone()).or_insert(0);
+                if *c >= per_decl {
+                    continue;
+                }
+                *c += 1;
+            }
             let status = match (idx.is_theorem(name), idx.is_theorem(&n.name)) {
                 (true, true) => Status::BothProven,
                 (true, false) | (false, true) => Status::OneProven,
                 (false, false) => Status::NeitherProven,
             };
             let score = n.score;
+            // The key the global contest is settled by, when there is one. It has to be
+            // the same key the per-left choice used, or `max_per_right` would evict on a
+            // different judgement than the one that admitted.
+            let rank_key = if opts.rank_by_retention {
+                n.retention
+            } else {
+                score
+            };
             let row = Row {
                 left: name.clone(),
                 right: n.name.clone(),
@@ -270,10 +377,10 @@ pub fn dictionary(
                 matched_right.insert(row.right.clone());
                 rows.push(row);
             } else {
-                pending.push((score, row));
+                pending.push((rank_key, row));
             }
             kept += 1;
-            if kept >= per_decl {
+            if !opts.per_decl_keep_displaced && kept >= per_decl {
                 break;
             }
         }
@@ -283,12 +390,21 @@ pub fn dictionary(
         pending.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.left.cmp(&b.1.left)));
         let mut claims: HashMap<String, usize> = HashMap::new();
         let mut per_left: HashMap<String, usize> = HashMap::new();
+        let mut per_left_skeleton: HashMap<(String, String), usize> = HashMap::new();
         for (_s, row) in pending {
             let c = claims.entry(row.right.clone()).or_insert(0);
             if *c >= cap {
                 continue;
             }
-            let l = per_left.entry(row.left.clone()).or_insert(0);
+            // The same unit the retrieval loop counted in: per left, or per
+            // (left, skeleton) when displaced claims are kept.
+            let l = if opts.per_decl_keep_displaced {
+                per_left_skeleton
+                    .entry((row.left.clone(), row.skeleton.clone()))
+                    .or_insert(0)
+            } else {
+                per_left.entry(row.left.clone()).or_insert(0)
+            };
             if *l >= per_decl {
                 continue;
             }
@@ -313,7 +429,20 @@ pub fn dictionary(
     // `Relativity ~ QFT` dictionary opened with `CausalCharacter.lightLike ~
     // annihilate.sizeOf_spec`, and adding a derivativeness penalty to the score changed
     // the presented rows not at all, because the presentation never consulted the score.
-    rows.sort_by(|a, b| b.score.total_cmp(&a.score).then(a.left.cmp(&b.left)));
+    //
+    // `rank_by_retention` is the measured exception (§74): for *cross-domain* content
+    // every size-flavoured score factor rewards shared apparatus mass, so the caller who
+    // set the knob gets retention here too — the presented order and the per-left choice
+    // must agree on the key, or the knob would choose one row and show another first.
+    if opts.rank_by_retention {
+        rows.sort_by(|a, b| {
+            b.retention
+                .total_cmp(&a.retention)
+                .then(a.left.cmp(&b.left))
+        });
+    } else {
+        rows.sort_by(|a, b| b.score.total_cmp(&a.score).then(a.left.cmp(&b.left)));
+    }
     Dictionary {
         left_theory: left.to_string(),
         right_theory: right.to_string(),
@@ -1134,5 +1263,310 @@ mod select_tests {
             Some(LeftState::Unmatched { best }) => assert_eq!(best, "x"),
             other => panic!("expected `c` to be Unmatched, got {other:?}"),
         }
+    }
+}
+
+/// The §74 assembly knobs, each paired with the ablation that must restore the shipped
+/// behaviour. Every fixture also asserts the premise it depends on (which candidate the
+/// two keys prefer, which rows are citation-linked), so a scoring change that erodes the
+/// fixture fails loudly instead of letting the knob test pass without testing anything.
+#[cfg(test)]
+mod assembly_tests {
+    use super::*;
+    use crate::skel::index::{IndexConfig, SkeletonIndex};
+
+    /// A 7-node concrete spine, shared so every genuine pair clears `min_common = 6`.
+    const SH: &str = "a(a(a(c(5:LE.le,0),c(4:Real,0)),c(3:iii,0)),c(2:zz,0))";
+
+    fn row_json(
+        name: &str,
+        module: &str,
+        stmt: &str,
+        uses_stmt: &[&str],
+        uses_proof: &[&str],
+    ) -> String {
+        let quote = |xs: &[&str]| {
+            xs.iter()
+                .map(|u| format!("\"{u}\""))
+                .collect::<Vec<_>>()
+                .join(",")
+        };
+        format!(
+            "{{\"name\":\"{name}\",\"kind\":\"theorem\",\"module\":\"{module}\",\
+             \"stmt\":\"fh-stmt-v1;{stmt}\",\"uses_statement\":[{}],\"uses_proof\":[{}]}}",
+            quote(uses_stmt),
+            quote(uses_proof),
+        )
+    }
+
+    fn rights_of(d: &Dictionary, left: &str) -> Vec<String> {
+        d.rows
+            .iter()
+            .filter(|r| r.left == left)
+            .map(|r| r.right.clone())
+            .collect()
+    }
+
+    /// One left, two right-theory candidates whose two keys disagree: `ra` shares more
+    /// structure (higher retention) but its one variable is scoped, so the score's
+    /// `scoped_penalty` demotes it below `rb`. Off must keep the score's choice — that is
+    /// the shipped behaviour the golden pins — and on must keep retention's.
+    #[test]
+    fn rank_by_retention_changes_which_candidate_wins_and_off_keeps_the_score_order() {
+        let corpus = [
+            row_json(
+                "l1",
+                "L",
+                &format!("a(a(c(2:Eq,0),{SH}),pi(s(0),a(c(1:f,0),b0)))"),
+                &[],
+                &[],
+            ),
+            // Same spine, and the difference sits under `l1`'s binder: the lgg variable
+            // abstracts `a(f, b0)` against `k`, mentions the bound thing, and is scoped.
+            row_json("ra", "R", &format!("a(a(c(2:Eq,0),{SH}),pi(s(0),c(1:k,0)))"), &[], &[]),
+            // Four clean constant-for-constant differences: less shared structure, no
+            // scoped variable, so the score prefers it while retention does not.
+            row_json(
+                "rb",
+                "R",
+                "a(a(c(2:Eq,0),a(a(a(c(5:LE.le,0),c(3:Rho,0)),c(3:jjj,0)),c(2:qq,0))),pi(s(0),a(c(1:g,0),b0)))",
+                &[],
+                &[],
+            ),
+        ]
+        .join("\n");
+        let cfg = IndexConfig::default();
+        let mut idx = SkeletonIndex::build(&corpus, &cfg).expect("build");
+
+        // The premise, asserted before the claim: the two keys must actually disagree.
+        let pool_cfg = IndexConfig {
+            restrict_prefix: Some("R".into()),
+            theorems_only: true,
+            ..cfg.clone()
+        };
+        let ns = idx.similar("l1", 16, &pool_cfg).expect("similar");
+        let get = |name: &str| {
+            ns.iter()
+                .find(|n| n.name == name)
+                .unwrap_or_else(|| panic!("`{name}` not proposed: {ns:?}"))
+        };
+        let (ra, rb) = (get("ra").clone(), get("rb").clone());
+        assert!(
+            ra.retention > rb.retention && rb.score > ra.score,
+            "fixture premise broken — the keys no longer disagree \
+             (ra: ret {:.3} score {:.3}, rb: ret {:.3} score {:.3})",
+            ra.retention,
+            ra.score,
+            rb.retention,
+            rb.score
+        );
+
+        let d_off = dictionary(&mut idx, None, "L", "R", &cfg, &DictOptions::default());
+        assert_eq!(
+            rights_of(&d_off, "l1"),
+            vec!["rb".to_string()],
+            "with the knob off, the score's choice is the shipped one"
+        );
+        let d_on = dictionary(
+            &mut idx,
+            None,
+            "L",
+            "R",
+            &cfg,
+            &DictOptions {
+                rank_by_retention: true,
+                ..DictOptions::default()
+            },
+        );
+        assert_eq!(
+            rights_of(&d_on, "l1"),
+            vec!["ra".to_string()],
+            "with the knob on, retention's choice wins the per_decl slot"
+        );
+    }
+
+    /// §74's eviction, in miniature: the winner-take-all slot goes to `ra`, and the
+    /// structurally different claim `rx` is silently deleted. The knob must recover `rx`
+    /// **without** uncapping `ra`'s family — `rz` carries the same skeleton as `ra`, is
+    /// the same claim worn by another partner, and must stay capped, or the knob is just
+    /// `per_decl = ∞` renamed.
+    #[test]
+    fn keep_displaced_recovers_a_structurally_different_claim_without_uncapping_its_family() {
+        let corpus = [
+            row_json(
+                "l2",
+                "L",
+                &format!("a(a(c(2:Eq,0),{SH}),c(1:u,0))"),
+                &[],
+                &[],
+            ),
+            row_json(
+                "ra",
+                "R",
+                &format!("a(a(c(2:Eq,0),{SH}),c(1:v,0))"),
+                &[],
+                &[],
+            ),
+            row_json(
+                "rz",
+                "R",
+                &format!("a(a(c(2:Eq,0),{SH}),c(1:w,0))"),
+                &[],
+                &[],
+            ),
+            row_json(
+                "rx",
+                "R",
+                "a(a(c(2:Eq,0),a(a(a(c(5:LE.le,0),c(4:Real,0)),c(3:jjj,0)),c(2:qq,0))),c(1:u,0))",
+                &[],
+                &[],
+            ),
+        ]
+        .join("\n");
+        let cfg = IndexConfig::default();
+        let mut idx = SkeletonIndex::build(&corpus, &cfg).expect("build");
+
+        let d_off = dictionary(&mut idx, None, "L", "R", &cfg, &DictOptions::default());
+        assert_eq!(
+            rights_of(&d_off, "l2"),
+            vec!["ra".to_string()],
+            "the ablation: winner-take-all keeps only the top candidate, which is the \
+             shipped defect this knob exists to control"
+        );
+
+        let d_on = dictionary(
+            &mut idx,
+            None,
+            "L",
+            "R",
+            &cfg,
+            &DictOptions {
+                per_decl_keep_displaced: true,
+                ..DictOptions::default()
+            },
+        );
+        let rights = rights_of(&d_on, "l2");
+        assert!(
+            rights.contains(&"ra".to_string()) && rights.contains(&"rx".to_string()),
+            "the displaced structurally-different claim must be kept: {rights:?}"
+        );
+        assert!(
+            !rights.contains(&"rz".to_string()),
+            "a same-skeleton clone is the same claim and must stay capped: {rights:?}"
+        );
+        // The two kept rows genuinely differ structurally; if a change ever makes their
+        // skeletons render identically, the fixture stops testing the cap's unit.
+        let (a, x) = (
+            d_on.rows.iter().find(|r| r.right == "ra").unwrap(),
+            d_on.rows.iter().find(|r| r.right == "rx").unwrap(),
+        );
+        assert_ne!(a.skeleton, x.skeleton, "fixture premise broken");
+    }
+
+    /// The `linearSol` pattern from §74's graded top-40: the best-ranked partner is the
+    /// framework lemma the left is proved *by* (proof lens, left→right), the second cites
+    /// the left in its own statement (statement lens, right→left), and only the third is
+    /// an actual analogy candidate. On, both linked rows are dropped **and the slot moves
+    /// on** — the left keeps a row rather than vanishing from the dictionary.
+    #[test]
+    fn exclude_cited_drops_linked_pairs_under_both_lenses_and_frees_the_slot() {
+        let corpus = [
+            row_json(
+                "l3",
+                "L",
+                &format!("a(a(c(2:Eq,0),{SH}),c(1:u,0))"),
+                &[],
+                &["rf"],
+            ),
+            row_json(
+                "rf",
+                "R",
+                &format!("a(a(c(2:Eq,0),{SH}),c(1:v,0))"),
+                &[],
+                &[],
+            ),
+            row_json(
+                "rh",
+                "R",
+                &format!("a(a(c(2:Eq,0),{SH}),c(1:w,0))"),
+                &["l3"],
+                &[],
+            ),
+            row_json(
+                "rg",
+                "R",
+                "a(a(c(2:Eq,0),a(a(a(c(5:LE.le,0),c(4:Real,0)),c(3:jjj,0)),c(2:qq,0))),c(1:u,0))",
+                &[],
+                &[],
+            ),
+        ]
+        .join("\n");
+        let cfg = IndexConfig::default();
+        let mut idx = SkeletonIndex::build(&corpus, &cfg).expect("build");
+        let graph = Graph::from_jsonl(&corpus).expect("graph");
+
+        let d_off = dictionary(
+            &mut idx,
+            Some(&graph),
+            "L",
+            "R",
+            &cfg,
+            &DictOptions::default(),
+        );
+        assert_eq!(
+            rights_of(&d_off, "l3"),
+            vec!["rf".to_string()],
+            "the ablation: off, the framework partner the left is proved by wins the slot"
+        );
+
+        let d_on = dictionary(
+            &mut idx,
+            Some(&graph),
+            "L",
+            "R",
+            &cfg,
+            &DictOptions {
+                exclude_cited: true,
+                ..DictOptions::default()
+            },
+        );
+        assert_eq!(
+            rights_of(&d_on, "l3"),
+            vec!["rg".to_string()],
+            "on, both citation-linked candidates are dropped and the slot passes to the \
+             unlinked one — not to nobody"
+        );
+        assert!(
+            !d_on.missing_left.contains(&"l3".to_string()),
+            "the left must stay matched; deleting it would trade one false negative for \
+             another"
+        );
+    }
+
+    /// A filter that silently does nothing is indistinguishable from a clean result, so
+    /// asking for the citation filter without a citation graph is refused outright.
+    #[test]
+    #[should_panic(expected = "exclude_cited needs the citation graph")]
+    fn exclude_cited_without_a_graph_refuses_rather_than_silently_keeping_rows() {
+        let corpus = row_json(
+            "l4",
+            "L",
+            &format!("a(a(c(2:Eq,0),{SH}),c(1:u,0))"),
+            &[],
+            &[],
+        );
+        let cfg = IndexConfig::default();
+        let mut idx = SkeletonIndex::build(&corpus, &cfg).expect("build");
+        let _ = dictionary(
+            &mut idx,
+            None,
+            "L",
+            "R",
+            &cfg,
+            &DictOptions {
+                exclude_cited: true,
+                ..DictOptions::default()
+            },
+        );
     }
 }

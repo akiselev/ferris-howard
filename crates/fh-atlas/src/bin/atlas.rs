@@ -307,7 +307,7 @@ fn run(args: &[String]) -> Result<Report, String> {
                 exclude_subprefix: exclude.clone(),
                 ..DictOptions::default()
             };
-            let d = dictionary(&mut idx, left, right, &cfg, &opts);
+            let d = dictionary(&mut idx, None, left, right, &cfg, &opts);
             let mut out = String::new();
             for r in d.rows.iter().take(top) {
                 out.push_str(&format!(

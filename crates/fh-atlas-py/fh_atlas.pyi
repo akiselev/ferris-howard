@@ -911,6 +911,9 @@ class Corpus:
         score: Score = "retention",
         max_per_right: int | None = None,
         posting_work_budget: int | None = None,
+        rank_by_retention: bool = False,
+        per_decl_keep_displaced: bool = False,
+        exclude_cited: bool = False,
     ) -> Dictionary:
         """The maximal partial functor between two theories.
 
@@ -923,6 +926,25 @@ class Corpus:
         measured on: at the shipped cutoff the ClassicalInfo ~ Entropy dictionary returns
         none of the four pre-registered correspondences — none is even a candidate — and
         with the keys admitted they are its top rows (findings §66).
+
+        The three assembly knobs are §74's, all default-off:
+
+        `rank_by_retention` orders candidates and rows by retention (with `similar`'s
+        tie-breaks) instead of the full score. Cross-domain, every size-flavoured score
+        factor rewards shared framework mass: the four validated classical<->quantum
+        correspondences rank 437-1,150 of 3,029 under the scored key against 17-525 under
+        retention alone. The re-ordering acts within the retrieved pool (the engine's
+        `pool_width`, 64 by score), so a partner outside that pool is not recovered by
+        this knob.
+
+        `per_decl_keep_displaced` counts the `per_decl` cap per (left, skeleton) instead
+        of per left: a structurally different claim is no longer evicted by a
+        higher-ranked lookalike (315 rows were displaced that way, the von Neumann ~
+        Gibbs entropy bridge among them), while same-skeleton family clones stay capped.
+
+        `exclude_cited` drops rows whose two declarations cite each other — either
+        direction, either lens, frontier's notion of a citation link. 14 of §74's graded
+        top-40 were a framework paired with its own instantiations.
         """
 
     def transport(
