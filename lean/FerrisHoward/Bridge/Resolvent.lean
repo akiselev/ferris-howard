@@ -33,13 +33,14 @@ open Lean Elab Command
 
 /-- The four declaration sets visible to the Resolvent exporter in the current environment. -/
 structure Manifest where
-  specs : Array Name
-  observables : Array Name
-  properties : Array Name
-  reifications : Array Name
+  specs : NameSet
+  observables : NameSet
+  properties : NameSet
+  reifications : NameSet
   deriving Inhabited
 
-/-- Read bridge labels from the elaborated Lean environment. -/
+/-- Read bridge labels from the elaborated Lean environment. `NameSet` is an ordered set, so
+iterating the result gives deterministic output without depending on registration order. -/
 def getManifest : CoreM Manifest := do
   return {
     specs := ← Lean.labelled `resolvent_spec
@@ -48,11 +49,8 @@ def getManifest : CoreM Manifest := do
     reifications := ← Lean.labelled `resolvent_reification
   }
 
-private def sorted (xs : Array Name) : Array Name :=
-  xs.qsort (fun a b => a.toString < b.toString)
-
-private def emitRows (kind : String) (names : Array Name) : CommandElabM Unit := do
-  for name in sorted names do
+private def emitRows (kind : String) (names : NameSet) : CommandElabM Unit := do
+  for name in names do
     -- Stable tab-separated protocol intended to be trivial to ingest without parsing Lean
     -- pretty-printer output. The declaration name is environment-resolved; surface FH
     -- syntax and source spelling never enter the semantic payload.
