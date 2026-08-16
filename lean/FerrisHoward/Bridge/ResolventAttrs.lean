@@ -17,11 +17,14 @@ the same module that registers it. `FerrisHoward.Bridge.Resolvent` imports these
 provides the manifest/reporting commands.
 -/
 
+/-- Kernel-visible declaration intended to be reified as a Resolvent `ScientificSpec`. -/
 register_label_attr resolvent_spec
-  "kernel-visible declaration intended to be reified as a Resolvent ScientificSpec"
+
+/-- Declaration describing a mathematical observable or measurement model for Resolvent. -/
 register_label_attr resolvent_observable
-  "declaration describing a mathematical observable or measurement model for Resolvent"
+
+/-- Proved/asserted property intended to become a Resolvent validation contract. -/
 register_label_attr resolvent_property
-  "proved/asserted property intended to become a Resolvent validation contract"
+
+/-- Candidate theorem/certificate declaration connecting Lean semantics to a Resolvent artifact. -/
 register_label_attr resolvent_reification
-  "candidate theorem/certificate declaration connecting Lean semantics to a Resolvent artifact"
