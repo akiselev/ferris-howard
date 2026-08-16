@@ -3,6 +3,7 @@ Copyright (c) 2026 Ferris–Howard contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import FerrisHoward.Bridge.Comprehension
+import FerrisHoward.Bridge.Resolvent
 import FerrisHoward.Emit
 import FerrisHoward.Lint.Coercion
 import FerrisHoward.Bridge.Mathlib
@@ -26,7 +27,8 @@ Layout (design §2):
 * `FerrisHoward/Lint/` — post-elaboration diagnostics, which are *not* part of the
   translation and can be switched off without changing what FH means;
 * `FerrisHoward/Report/` — tooling commands over the elaborated environment;
-* `FerrisHoward/Bridge/` — the Mathlib name/notation bridge (M2);
+* `FerrisHoward/Bridge/` — Mathlib and external semantic bridges, including the
+  Lean-first Resolvent scientific-manifest labels;
 * `FerrisHoward/Test/` — the four-tier harness, imported by fixtures under `Tests/`.
 
 Importing this module reserves FH's keywords as tokens in the importing file — an
