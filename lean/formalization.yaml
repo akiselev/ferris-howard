@@ -1,0 +1,131 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+version: "v0.4"
+
+project:
+  name: "Crystallographic restriction in dimension two"
+  description: >-
+    A Lean formalization of the classical two-dimensional crystallographic restriction:
+    every finite-order element of GL(2,Z) has order 1, 2, 3, 4, or 6. The submission also
+    records explicit integral matrices attaining orders 4 and 6.
+  authors:
+    - "Alexander Kiselev"
+  license: "Apache-2.0"
+  responsible_maintainers:
+    - "Alexander Kiselev"
+
+repository:
+  role: "substantive-development"
+
+classification:
+  arxiv: ["math.GR"]
+  msc2020: ["20H15", "20H25"]
+
+sources:
+  - title: "The Crystallographic Restriction, Permutations, and Goldbach's Conjecture"
+    authors:
+      - "John Bamberg"
+      - "Grant Cairns"
+      - "Devin Kilminster"
+    id: "doi:10.1080/00029890.2003.11919956"
+    type: "article"
+    location: "American Mathematical Monthly 110 (2003), no. 3, 202-209; dimension-two crystallographic restriction"
+    relationship: "independently-proves"
+    note: >-
+      This source states the classical dimension-two result as Ord_2 = {1,2,3,4,6} for
+      finite orders realized by integral invertible 2x2 matrices. The Lean development
+      gives an independent formal proof rather than a line-by-line formalization of the
+      article's argument.
+    author_endorsement: "not-contacted"
+
+related_formalizations: []
+
+status:
+  scope: >-
+    The proved headline theorem is the arithmetic crystallographic restriction for
+    finite-order elements of GL(2,Z). It does not yet formalize the complete classification
+    of finite subgroups of GL(2,Z), the classification of the seventeen wallpaper groups,
+    or the geometric reduction from an arbitrary wallpaper group to its integral point-group
+    representation. Explicit witnesses show that orders 4 and 6 occur.
+  sorry_count: 0
+  sorry_in_definitions: 0
+  axioms: []
+  main_results:
+    - declaration: "Palomar.CrystallographicRestriction.main_result"
+      file: "Solution.lean"
+      sorry_count: 0
+      axioms: []
+      comparator_config: "comparator.json"
+    - declaration: "Palomar.CrystallographicRestriction.order_four_occurs"
+      file: "Solution.lean"
+      sorry_count: 0
+      axioms: []
+      comparator_config: "comparator.json"
+    - declaration: "Palomar.CrystallographicRestriction.order_six_occurs"
+      file: "Solution.lean"
+      sorry_count: 0
+      axioms: []
+      comparator_config: "comparator.json"
+
+automation:
+  methods:
+    - method: "agent"
+      models: []
+      framework: "ChatGPT and repository coding agents"
+      tool_setup: >-
+        AI-assisted theorem development and repository analysis, with Lean/Mathlib tactics
+        and kernel checking used as the correctness boundary.
+      cost:
+        wall_time: "not tracked"
+        spend_usd: "not tracked"
+        hardware: "local and hosted development environments"
+      prompting_notes: >-
+        Human-directed iterative formalization: state the mathematical milestone first,
+        develop the proof against Mathlib, add non-vacuity/sharpness witnesses, and validate
+        the resulting declaration with independent build and kernel checks.
+  spend_usd: "not tracked"
+  notes: >-
+    The formal proof was developed with substantial agent assistance. Mathematical scope,
+    source attribution, statement selection, and submission preparation are human-directed.
+
+fidelity:
+  divergences: >-
+    The source discusses the crystallographic restriction more generally and in its
+    crystallographic setting. The submitted headline theorem isolates the equivalent
+    dimension-two arithmetic statement for finite-order elements of GL(2,Z). The Lean proof
+    uses a rational minimal-polynomial/characteristic-polynomial argument and is not a
+    line-by-line transcription of the cited article.
+
+review:
+  status: "self-assessed and agent-reviewed"
+  reviewers: []
+  notes: >-
+    The statement and proof architecture were re-audited against the literature and against
+    the repository source. CI is extended in the submission-preparation branch to build the
+    Crystal library and Solution module and to replay the restriction module with Lean's
+    fresh kernel checker. Palomar Comparator/NanoDa verification remains the final mechanical
+    gate before submission.
+
+alignment:
+  namespace: "Palomar.CrystallographicRestriction"
+  statements:
+    - source: "Dimension-two crystallographic restriction Ord_2 = {1,2,3,4,6}"
+      lean: "Palomar.CrystallographicRestriction.main_result"
+      module: "Solution"
+      status: "proved"
+      note: >-
+        Formalizes the exclusion direction: a finite-order element of GL(2,Z) has order in
+        {1,2,3,4,6}.
+    - source: "Sharpness of the dimension-two restriction"
+      lean: "Palomar.CrystallographicRestriction.order_four_occurs"
+      module: "Solution"
+      status: "proved"
+      note: "Provides an explicit integral matrix of order 4."
+    - source: "Sharpness of the dimension-two restriction"
+      lean: "Palomar.CrystallographicRestriction.order_six_occurs"
+      module: "Solution"
+      status: "proved"
+      note: "Provides an explicit integral matrix of order 6."
+
+acknowledgements: >-
+  Lean and Mathlib provide the matrix, polynomial, minimal-polynomial, finite-order, and
+  tactic infrastructure used by the proof.
