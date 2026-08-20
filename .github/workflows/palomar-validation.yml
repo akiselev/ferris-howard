@@ -1,0 +1,49 @@
+name: Palomar validation
+
+on:
+  pull_request:
+    paths:
+      - 'lean/Crystal/**'
+      - 'lean/Challenge.lean'
+      - 'lean/Solution.lean'
+      - 'lean/comparator.json'
+      - 'lean/formalization.yaml'
+      - 'lean/lakefile.toml'
+      - 'lean/lake-manifest.json'
+      - 'lean/lean-toolchain'
+      - '.github/workflows/palomar-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  crystallographic-restriction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Crystal proof and Palomar solution
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: lean
+          build-args: Crystal Solution
+          use-mathlib-cache: true
+          test: false
+          lint: false
+
+      - name: Fresh-kernel replay of proof development
+        working-directory: lean
+        run: lake env leanchecker --fresh Crystal.Wallpaper.Restriction
+
+      - name: Check advertised axiom surface
+        working-directory: lean
+        run: |
+          cat > /tmp/palomar-axioms.lean <<'EOF'
+          import Solution
+          #print axioms Palomar.CrystallographicRestriction.main_result
+          #print axioms Palomar.CrystallographicRestriction.order_four_occurs
+          #print axioms Palomar.CrystallographicRestriction.order_six_occurs
+          EOF
+          lake env lean /tmp/palomar-axioms.lean 2>&1 | tee /tmp/palomar-axioms.log
+          if grep -Eq 'sorryAx|Lean\.ofReduceBool' /tmp/palomar-axioms.log; then
+            echo 'Palomar-forbidden axiom detected'
+            exit 1
+          fi

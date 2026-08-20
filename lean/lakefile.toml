@@ -64,3 +64,14 @@ globs = ["Validation", "Validation.+"]
 [[lean_lib]]
 name = "Crystal"
 globs = ["Crystal.+"]
+
+# Palomar keeps the advertised statement separate from the proof. These are intentionally
+# not default targets: Challenge contains the deliberate `sorry` placeholders Comparator
+# expects, while CI builds Solution explicitly with warnings-as-errors enabled elsewhere.
+[[lean_lib]]
+name = "Challenge"
+roots = ["Challenge"]
+
+[[lean_lib]]
+name = "Solution"
+roots = ["Solution"]
