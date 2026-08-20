@@ -1,0 +1,1627 @@
+{
+ "slice": "/tmp/fh-physlib.jsonl",
+ "seed": 20260804,
+ "n": 14563,
+ "closure": 0.123861135636152,
+ "census": {
+  "kinds": {
+   "inductive": 172,
+   "def": 4493,
+   "theorem": 9489,
+   "constructor": 221,
+   "recursor": 172,
+   "opaque": 16
+  },
+  "axioms": [],
+  "non_kernel_axioms": [],
+  "honesty": 18,
+  "honesty_empty_whitelist": 18,
+  "unproved": [
+   [
+    "CPTPMap.bddAbove_achievesRate",
+    "theorem",
+    "QuantumInfo.Capacity.Capacity",
+    "sorryAx"
+   ],
+   [
+    "CPTPMap.coherentInfo_le_quantumCapacity",
+    "theorem",
+    "QuantumInfo.Capacity.Capacity",
+    "sorryAx"
+   ],
+   [
+    "CPTPMap.not_achievesRate_gt_log_dim_in",
+    "theorem",
+    "QuantumInfo.Capacity.Capacity",
+    "sorryAx"
+   ],
+   [
+    "CPTPMap.not_achievesRate_gt_log_dim_out",
+    "theorem",
+    "QuantumInfo.Capacity.Capacity",
+    "sorryAx"
+   ],
+   [
+    "CPTPMap.quantumCapacity_eq_piProd_coherentInfo",
+    "theorem",
+    "QuantumInfo.Capacity.Capacity",
+    "sorryAx"
+   ],
+   [
+    "CPTPMap.quantumCapacity_ge_log_dim_in",
+    "theorem",
+    "QuantumInfo.Capacity.Capacity",
+    "sorryAx"
+   ],
+   [
+    "CPTPMap.zero_le_quantumCapacity",
+    "theorem",
+    "QuantumInfo.Capacity.Capacity",
+    "sorryAx"
+   ],
+   [
+    "ClassicalMechanics.CoplanarDoublePendulum.ConfigurationSpace",
+    "def",
+    "Physlib.ClassicalMechanics.Pendulum.CoplanarDoublePendulum",
+    "sorryAx"
+   ],
+   [
+    "Cosmology.FLRW",
+    "def",
+    "Physlib.Cosmology.FLRW.Basic",
+    "sorryAx"
+   ],
+   [
+    "MState.fidelity_channel_nondecreasing",
+    "theorem",
+    "QuantumInfo.States.Mixed.Fidelity",
+    "sorryAx"
+   ],
+   [
+    "QuantumMechanics.HydrogenAtom.angularMomentumSqr_commutation_lrlSqr",
+    "theorem",
+    "Physlib.QuantumMechanics.Hydrogen.LaplaceRungeLenzVector",
+    "sorryAx"
+   ],
+   [
+    "QuantumMechanics.HydrogenAtom.angularMomentum_commutation_lrl",
+    "theorem",
+    "Physlib.QuantumMechanics.Hydrogen.LaplaceRungeLenzVector",
+    "sorryAx"
+   ],
+   [
+    "QuantumMechanics.HydrogenAtom.angularMomentum_commutation_lrlSqr",
+    "theorem",
+    "Physlib.QuantumMechanics.Hydrogen.LaplaceRungeLenzVector",
+    "sorryAx"
+   ],
+   [
+    "RigidBody.solidSphere_inertiaTensor",
+    "theorem",
+    "Physlib.ClassicalMechanics.RigidBody.SolidSphere",
+    "sorryAx"
+   ],
+   [
+    "WickContraction.Perm.isFull_of_isFull",
+    "theorem",
+    "Physlib.QFT.PerturbationTheory.WickContraction.Perm",
+    "sorryAx"
+   ],
+   [
+    "WickContraction.Perm.perm_uncontractedList",
+    "theorem",
+    "Physlib.QFT.PerturbationTheory.WickContraction.Perm",
+    "sorryAx"
+   ],
+   [
+    "realLorentzTensor.leviCivita_contract_self",
+    "theorem",
+    "Physlib.Relativity.Tensors.LeviCivita.Basic",
+    "sorryAx"
+   ],
+   [
+    "realLorentzTensor.leviCivita_contract_three",
+    "theorem",
+    "Physlib.Relativity.Tensors.LeviCivita.Basic",
+    "sorryAx"
+   ]
+  ],
+  "prose": 76,
+  "prose_by_marker": {
+   "InformalLemma": 44,
+   "InformalDefinition": 32
+  },
+  "prose_by_subfield": {
+   "Physlib.StatisticalMechanics": 1,
+   "Physlib.Relativity": 5,
+   "Physlib.Particles": 29,
+   "Physlib.QuantumMechanics": 14,
+   "Physlib.ClassicalMechanics": 26,
+   "Physlib.SpaceAndTime": 1
+  },
+  "prose_examples": [
+   [
+    "CanonicalEnsemble.twoState_entropy_eq",
+    "Physlib.StatisticalMechanics.CanonicalEnsemble.TwoState",
+    "InformalLemma"
+   ],
+   [
+    "Fermion.RightHandedWeyl.dualEquiv",
+    "Physlib.Relativity.Fermions.Weyl.Duals",
+    "InformalDefinition"
+   ],
+   [
+    "Fermion.RightHandedWeyl.dualEquiv_equivariant",
+    "Physlib.Relativity.Fermions.Weyl.Duals",
+    "InformalLemma"
+   ],
+   [
+    "GeorgiGlashow.GaugeGroupI",
+    "Physlib.Particles.BeyondTheStandardModel.GeorgiGlashow.Basic",
+    "InformalDefinition"
+   ],
+   [
+    "GeorgiGlashow.embedSM\u2124\u2086",
+    "Physlib.Particles.BeyondTheStandardModel.GeorgiGlashow.Basic",
+    "InformalDefinition"
+   ],
+   [
+    "GeorgiGlashow.inclSM",
+    "Physlib.Particles.BeyondTheStandardModel.GeorgiGlashow.Basic",
+    "InformalDefinition"
+   ],
+   [
+    "GeorgiGlashow.inclSM_ker",
+    "Physlib.Particles.BeyondTheStandardModel.GeorgiGlashow.Basic",
+    "InformalLemma"
+   ],
+   [
+    "PatiSalam.GaugeGroupI",
+    "Physlib.Particles.BeyondTheStandardModel.PatiSalam.Basic",
+    "InformalDefinition"
+   ],
+   [
+    "PatiSalam.GaugeGroup\u2124\u2082",
+    "Physlib.Particles.BeyondTheStandardModel.PatiSalam.Basic",
+    "InformalDefinition"
+   ],
+   [
+    "PatiSalam.embedSM\u2124\u2083",
+    "Physlib.Particles.BeyondTheStandardModel.PatiSalam.Basic",
+    "InformalDefinition"
+   ],
+   [
+    "PatiSalam.embedSM\u2124\u2086To\u2124\u2082",
+    "Physlib.Particles.BeyondTheStandardModel.PatiSalam.Basic",
+    "InformalDefinition"
+   ],
+   [
+    "PatiSalam.gaugeGroupISpinEquiv",
+    "Physlib.Particles.BeyondTheStandardModel.PatiSalam.Basic",
+    "InformalDefinition"
+   ]
+  ]
+ },
+ "view": {
+  "n": 14563,
+  "claims": 9489,
+  "no_stmt": 0,
+  "roundtrip_failures": 0,
+  "conclusion_gate_violations": 0,
+  "total_statement_bytes": 553362103,
+  "vocabulary": 6041
+ },
+ "inventory": {
+  "skeletons": 8040,
+  "shared": 809,
+  "pairs": 740,
+  "skipped_buckets": 0,
+  "distinct": 414,
+  "top": [
+   [
+    "Function.Injective",
+    "Function.Surjective",
+    13
+   ],
+   [
+    "Physlib.Wirtinger.dWirtingerAntiCoord",
+    "Physlib.Wirtinger.dWirtingerCoord",
+    10
+   ],
+   [
+    "WickContraction.fstFieldOfContract",
+    "WickContraction.sndFieldOfContract",
+    9
+   ],
+   [
+    "Physlib.Wirtinger.dWirtingerDir",
+    "Physlib.Wirtinger.dWirtingerAntiDir",
+    8
+   ],
+   [
+    "Dimension.charge",
+    "Dimension.mass",
+    6
+   ],
+   [
+    "Dimension.charge",
+    "Dimension.temperature",
+    6
+   ],
+   [
+    "Dimension.charge",
+    "Dimension.time",
+    6
+   ],
+   [
+    "Dimension.mass",
+    "Dimension.temperature",
+    6
+   ],
+   [
+    "Dimension.mass",
+    "Dimension.time",
+    6
+   ],
+   [
+    "Dimension.temperature",
+    "Dimension.time",
+    6
+   ],
+   [
+    "Dimension.charge",
+    "Dimension.length",
+    6
+   ],
+   [
+    "Dimension.length",
+    "Dimension.mass",
+    6
+   ],
+   [
+    "Dimension.length",
+    "Dimension.temperature",
+    6
+   ],
+   [
+    "Function.Surjective",
+    "Function.Bijective",
+    6
+   ],
+   [
+    "SMRHN.SM",
+    "SMRHN.SMNoGrav",
+    6
+   ],
+   [
+    "CanonicalEnsemble.partitionFunction",
+    "CanonicalEnsemble.mathematicalPartitionFunction",
+    5
+   ],
+   [
+    "CreateAnnihilate.annihilate",
+    "CreateAnnihilate.create",
+    5
+   ],
+   [
+    "Dimension.length",
+    "Dimension.time",
+    5
+   ],
+   [
+    "FieldSpecification.FieldOpFreeAlgebra.normalOrderF",
+    "FieldSpecification.FieldOpFreeAlgebra.timeOrderF",
+    5
+   ],
+   [
+    "FieldSpecification.WickAlgebra.anPart",
+    "FieldSpecification.WickAlgebra.crPart",
+    5
+   ],
+   [
+    "FieldSpecification.WickAlgebra.normalOrder",
+    "FieldSpecification.WickAlgebra.timeOrder",
+    5
+   ],
+   [
+    "Function.Injective",
+    "Function.Bijective",
+    5
+   ],
+   [
+    "LorentzGroup.IsOrthochronous",
+    "LorentzGroup.IsProper",
+    5
+   ],
+   [
+    "SMRHN.PlusU1.BL",
+    "SMRHN.PlusU1.Y",
+    5
+   ],
+   [
+    "FTheory.SU5.FluxesFive.chiralIndicesOfD",
+    "FTheory.SU5.FluxesFive.chiralIndicesOfL",
+    4
+   ],
+   [
+    "FTheory.SU5.FluxesTen.chiralIndicesOfE",
+    "FTheory.SU5.FluxesTen.chiralIndicesOfQ",
+    4
+   ],
+   [
+    "FTheory.SU5.FluxesTen.chiralIndicesOfE",
+    "FTheory.SU5.FluxesTen.chiralIndicesOfU",
+    4
+   ],
+   [
+    "FTheory.SU5.FluxesTen.chiralIndicesOfQ",
+    "FTheory.SU5.FluxesTen.chiralIndicesOfU",
+    4
+   ],
+   [
+    "FieldSpecification.FieldOp.inAsymp",
+    "FieldSpecification.FieldOp.outAsymp",
+    4
+   ],
+   [
+    "FieldSpecification.FieldOpFreeAlgebra.anPartF",
+    "FieldSpecification.FieldOpFreeAlgebra.crPartF",
+    4
+   ],
+   [
+    "HermitianMat.projLT",
+    "HermitianMat.projLE",
+    4
+   ],
+   [
+    "LinearPMap.variance",
+    "LinearPMap.standardDeviation",
+    4
+   ],
+   [
+    "SMRHN.PlusU1",
+    "SMRHN.SM",
+    4
+   ],
+   [
+    "SMRHN.PlusU1",
+    "SMRHN.SMNoGrav",
+    4
+   ],
+   [
+    "SM\u03bdACCs.accSU3",
+    "SM\u03bdACCs.accSU2",
+    4
+   ],
+   [
+    "SM\u03bdACCs.accYY",
+    "SM\u03bdACCs.accSU2",
+    4
+   ],
+   [
+    "SM\u03bdACCs.accGrav",
+    "SM\u03bdACCs.accSU2",
+    4
+   ],
+   [
+    "SM\u03bdACCs.accSU3",
+    "SM\u03bdACCs.accYY",
+    4
+   ],
+   [
+    "SM\u03bdACCs.accGrav",
+    "SM\u03bdACCs.accSU3",
+    4
+   ],
+   [
+    "SM\u03bdACCs.accGrav",
+    "SM\u03bdACCs.accYY",
+    4
+   ]
+  ]
+ },
+ "routes": [
+  {
+   "name": "CPTPMap.bddAbove_achievesRate",
+   "kind": "theorem",
+   "module": "QuantumInfo.Capacity.Capacity",
+   "subfield": "QuantumInfo.Capacity",
+   "bytes": 447,
+   "slots": 14,
+   "conclusion_head": "BddAbove",
+   "binders": 7,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 1
+   },
+   "distinct_constants": 10,
+   "vocab_in_proved": 10,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "CPTPMap.AchievesRate",
+     5
+    ],
+    [
+     "BddAbove",
+     10
+    ],
+    [
+     "setOf",
+     35
+    ],
+    [
+     "CPTPMap",
+     136
+    ],
+    [
+     "Real.instLE",
+     425
+    ],
+    [
+     "Complex.instRCLike",
+     1288
+    ]
+   ]
+  },
+  {
+   "name": "CPTPMap.coherentInfo_le_quantumCapacity",
+   "kind": "theorem",
+   "module": "QuantumInfo.Capacity.Capacity",
+   "subfield": "QuantumInfo.Capacity",
+   "bytes": 509,
+   "slots": 13,
+   "conclusion_head": "LE.le",
+   "binders": 8,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 11,
+   "vocab_in_proved": 9,
+   "vocab_coverage": 0.8181818181818182,
+   "rarest_constants": [
+    [
+     "coherentInfo",
+     2
+    ],
+    [
+     "CPTPMap.quantumCapacity",
+     4
+    ],
+    [
+     "CPTPMap",
+     136
+    ],
+    [
+     "Real.instLE",
+     425
+    ],
+    [
+     "MState",
+     454
+    ],
+    [
+     "LE.le",
+     892
+    ]
+   ]
+  },
+  {
+   "name": "CPTPMap.not_achievesRate_gt_log_dim_in",
+   "kind": "theorem",
+   "module": "QuantumInfo.Capacity.Capacity",
+   "subfield": "QuantumInfo.Capacity",
+   "bytes": 902,
+   "slots": 31,
+   "conclusion_head": "Not",
+   "binders": 9,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 20,
+   "vocab_in_proved": 20,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "Real.logb",
+     4
+    ],
+    [
+     "CPTPMap.AchievesRate",
+     5
+    ],
+    [
+     "Fintype.card",
+     65
+    ],
+    [
+     "CPTPMap",
+     136
+    ],
+    [
+     "Nat.cast",
+     148
+    ],
+    [
+     "Not",
+     198
+    ]
+   ]
+  },
+  {
+   "name": "CPTPMap.not_achievesRate_gt_log_dim_out",
+   "kind": "theorem",
+   "module": "QuantumInfo.Capacity.Capacity",
+   "subfield": "QuantumInfo.Capacity",
+   "bytes": 902,
+   "slots": 31,
+   "conclusion_head": "Not",
+   "binders": 9,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 20,
+   "vocab_in_proved": 20,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "Real.logb",
+     4
+    ],
+    [
+     "CPTPMap.AchievesRate",
+     5
+    ],
+    [
+     "Fintype.card",
+     65
+    ],
+    [
+     "CPTPMap",
+     136
+    ],
+    [
+     "Nat.cast",
+     148
+    ],
+    [
+     "Not",
+     198
+    ]
+   ]
+  },
+  {
+   "name": "CPTPMap.quantumCapacity_eq_piProd_coherentInfo",
+   "kind": "theorem",
+   "module": "QuantumInfo.Capacity.Capacity",
+   "subfield": "QuantumInfo.Capacity",
+   "bytes": 2639,
+   "slots": 92,
+   "conclusion_head": "Eq",
+   "binders": 7,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 21,
+   "vocab_in_proved": 19,
+   "vocab_coverage": 0.9047619047619048,
+   "rarest_constants": [
+    [
+     "coherentInfo",
+     2
+    ],
+    [
+     "CPTPMap.quantumCapacity",
+     4
+    ],
+    [
+     "CPTPMap.piProd",
+     4
+    ],
+    [
+     "SupSet.sSup",
+     4
+    ],
+    [
+     "Real.instSupSet",
+     11
+    ],
+    [
+     "Fintype.decidablePiFintype",
+     12
+    ]
+   ]
+  },
+  {
+   "name": "CPTPMap.quantumCapacity_ge_log_dim_in",
+   "kind": "theorem",
+   "module": "QuantumInfo.Capacity.Capacity",
+   "subfield": "QuantumInfo.Capacity",
+   "bytes": 862,
+   "slots": 29,
+   "conclusion_head": "LE.le",
+   "binders": 7,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 19,
+   "vocab_in_proved": 18,
+   "vocab_coverage": 0.9473684210526315,
+   "rarest_constants": [
+    [
+     "CPTPMap.quantumCapacity",
+     4
+    ],
+    [
+     "Real.logb",
+     4
+    ],
+    [
+     "Fintype.card",
+     65
+    ],
+    [
+     "CPTPMap",
+     136
+    ],
+    [
+     "Nat.cast",
+     148
+    ],
+    [
+     "Real.instNatCast",
+     259
+    ]
+   ]
+  },
+  {
+   "name": "CPTPMap.zero_le_quantumCapacity",
+   "kind": "theorem",
+   "module": "QuantumInfo.Capacity.Capacity",
+   "subfield": "QuantumInfo.Capacity",
+   "bytes": 537,
+   "slots": 17,
+   "conclusion_head": "LE.le",
+   "binders": 8,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 13,
+   "vocab_in_proved": 12,
+   "vocab_coverage": 0.9230769230769231,
+   "rarest_constants": [
+    [
+     "CPTPMap.quantumCapacity",
+     4
+    ],
+    [
+     "Nonempty",
+     100
+    ],
+    [
+     "CPTPMap",
+     136
+    ],
+    [
+     "Real.instLE",
+     425
+    ],
+    [
+     "LE.le",
+     892
+    ],
+    [
+     "Complex.instRCLike",
+     1288
+    ]
+   ]
+  },
+  {
+   "name": "ClassicalMechanics.CoplanarDoublePendulum.ConfigurationSpace",
+   "kind": "def",
+   "module": "Physlib.ClassicalMechanics.Pendulum.CoplanarDoublePendulum",
+   "subfield": "Physlib.ClassicalMechanics",
+   "bytes": 7,
+   "slots": 0,
+   "conclusion_head": null,
+   "binders": 0,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 0,
+   "vocab_in_proved": 0,
+   "vocab_coverage": 0.0,
+   "rarest_constants": []
+  },
+  {
+   "name": "Cosmology.FLRW",
+   "kind": "def",
+   "module": "Physlib.Cosmology.FLRW.Basic",
+   "subfield": "Physlib.Cosmology",
+   "bytes": 7,
+   "slots": 0,
+   "conclusion_head": null,
+   "binders": 0,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 0,
+   "vocab_in_proved": 0,
+   "vocab_coverage": 0.0,
+   "rarest_constants": []
+  },
+  {
+   "name": "MState.fidelity_channel_nondecreasing",
+   "kind": "theorem",
+   "module": "QuantumInfo.States.Mixed.Fidelity",
+   "subfield": "QuantumInfo.States",
+   "bytes": 1203,
+   "slots": 30,
+   "conclusion_head": "GE.ge",
+   "binders": 9,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 12,
+   "vocab_in_proved": 12,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "MState.fidelity",
+     7
+    ],
+    [
+     "GE.ge",
+     13
+    ],
+    [
+     "CPTPMap.instMFunLike",
+     40
+    ],
+    [
+     "CPTPMap",
+     136
+    ],
+    [
+     "Real.instLE",
+     425
+    ],
+    [
+     "MState",
+     454
+    ]
+   ]
+  },
+  {
+   "name": "QuantumMechanics.HydrogenAtom.angularMomentumSqr_commutation_lrlSqr",
+   "kind": "theorem",
+   "module": "Physlib.QuantumMechanics.Hydrogen.LaplaceRungeLenzVector",
+   "subfield": "Physlib.QuantumMechanics",
+   "bytes": 297506,
+   "slots": 7594,
+   "conclusion_head": "Eq",
+   "binders": 2,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 60,
+   "vocab_in_proved": 60,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "QuantumMechanics.angularMomentumOperatorSqr",
+     8
+    ],
+    [
+     "QuantumMechanics.HydrogenAtom.lrlOperator",
+     9
+    ],
+    [
+     "QuantumMechanics.HydrogenAtom.toSpaceDQuantumSystem",
+     16
+    ],
+    [
+     "LieRingModule.toBracket",
+     20
+    ],
+    [
+     "LieRing.toAddCommGroup",
+     20
+    ],
+    [
+     "lieRingSelfModule",
+     20
+    ]
+   ]
+  },
+  {
+   "name": "QuantumMechanics.HydrogenAtom.angularMomentum_commutation_lrl",
+   "kind": "theorem",
+   "module": "Physlib.QuantumMechanics.Hydrogen.LaplaceRungeLenzVector",
+   "subfield": "Physlib.QuantumMechanics",
+   "bytes": 625030,
+   "slots": 15959,
+   "conclusion_head": "Eq",
+   "binders": 5,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 97,
+   "vocab_in_proved": 97,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "QuantumMechanics.HydrogenAtom.lrlOperator",
+     9
+    ],
+    [
+     "ContinuousLinearMap.instAddMonoid",
+     11
+    ],
+    [
+     "QuantumMechanics.HydrogenAtom.toSpaceDQuantumSystem",
+     16
+    ],
+    [
+     "ContinuousLinearMap.sub",
+     16
+    ],
+    [
+     "LieRingModule.toBracket",
+     20
+    ],
+    [
+     "LieRing.toAddCommGroup",
+     20
+    ]
+   ]
+  },
+  {
+   "name": "QuantumMechanics.HydrogenAtom.angularMomentum_commutation_lrlSqr",
+   "kind": "theorem",
+   "module": "Physlib.QuantumMechanics.Hydrogen.LaplaceRungeLenzVector",
+   "subfield": "Physlib.QuantumMechanics",
+   "bytes": 297783,
+   "slots": 7600,
+   "conclusion_head": "Eq",
+   "binders": 4,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 60,
+   "vocab_in_proved": 60,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "QuantumMechanics.HydrogenAtom.lrlOperator",
+     9
+    ],
+    [
+     "QuantumMechanics.HydrogenAtom.toSpaceDQuantumSystem",
+     16
+    ],
+    [
+     "LieRingModule.toBracket",
+     20
+    ],
+    [
+     "LieRing.toAddCommGroup",
+     20
+    ],
+    [
+     "lieRingSelfModule",
+     20
+    ],
+    [
+     "QuantumMechanics.angularMomentumOperator",
+     21
+    ]
+   ]
+  },
+  {
+   "name": "RigidBody.solidSphere_inertiaTensor",
+   "kind": "theorem",
+   "module": "Physlib.ClassicalMechanics.RigidBody.SolidSphere",
+   "subfield": "Physlib.ClassicalMechanics",
+   "bytes": 4394,
+   "slots": 196,
+   "conclusion_head": "Eq",
+   "binders": 3,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 41,
+   "vocab_in_proved": 41,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "RigidBody.solidSphere",
+     3
+    ],
+    [
+     "RigidBody.inertiaTensor",
+     5
+    ],
+    [
+     "NNReal.instZero",
+     48
+    ],
+    [
+     "Matrix.smul",
+     66
+    ],
+    [
+     "Matrix.one",
+     100
+    ],
+    [
+     "instSMulOfMul",
+     223
+    ]
+   ]
+  },
+  {
+   "name": "WickContraction.Perm.isFull_of_isFull",
+   "kind": "theorem",
+   "module": "Physlib.QFT.PerturbationTheory.WickContraction.Perm",
+   "subfield": "Physlib.QFT",
+   "bytes": 709,
+   "slots": 18,
+   "conclusion_head": "WickContraction.IsFull",
+   "binders": 8,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 8,
+   "vocab_in_proved": 8,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "WickContraction.Perm",
+     5
+    ],
+    [
+     "WickContraction.IsFull",
+     6
+    ],
+    [
+     "WickContraction.GradingCompliant",
+     24
+    ],
+    [
+     "List.length",
+     375
+    ],
+    [
+     "WickContraction",
+     380
+    ],
+    [
+     "FieldSpecification.FieldOp",
+     486
+    ]
+   ]
+  },
+  {
+   "name": "WickContraction.Perm.perm_uncontractedList",
+   "kind": "theorem",
+   "module": "Physlib.QFT.PerturbationTheory.WickContraction.Perm",
+   "subfield": "Physlib.QFT",
+   "bytes": 674,
+   "slots": 16,
+   "conclusion_head": "List.Perm",
+   "binders": 7,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 9,
+   "vocab_in_proved": 9,
+   "vocab_coverage": 1.0,
+   "rarest_constants": [
+    [
+     "WickContraction.Perm",
+     5
+    ],
+    [
+     "List.Perm",
+     7
+    ],
+    [
+     "WickContraction.GradingCompliant",
+     24
+    ],
+    [
+     "WickContraction.uncontractedListGet",
+     106
+    ],
+    [
+     "List.length",
+     375
+    ],
+    [
+     "WickContraction",
+     380
+    ]
+   ]
+  },
+  {
+   "name": "realLorentzTensor.leviCivita_contract_self",
+   "kind": "theorem",
+   "module": "Physlib.Relativity.Tensors.LeviCivita.Basic",
+   "subfield": "Physlib.Relativity",
+   "bytes": 71036165,
+   "slots": 2829071,
+   "conclusion_head": "Eq",
+   "binders": 0,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 87,
+   "vocab_in_proved": 83,
+   "vocab_coverage": 0.9540229885057471,
+   "rarest_constants": [
+    [
+     "realLorentzTensor.leviCivita_contract_self._proof_1",
+     1
+    ],
+    [
+     "realLorentzTensor.leviCivita_contract_self._proof_2",
+     1
+    ],
+    [
+     "realLorentzTensor.leviCivita_contract_self._proof_3",
+     1
+    ],
+    [
+     "realLorentzTensor.leviCivita_contract_self._proof_4",
+     1
+    ],
+    [
+     "TensorSpecies.Tensor.toDualMapAtIndex",
+     7
+    ],
+    [
+     "realLorentzTensor.leviCivita",
+     8
+    ]
+   ]
+  },
+  {
+   "name": "realLorentzTensor.leviCivita_contract_three",
+   "kind": "theorem",
+   "module": "Physlib.Relativity.Tensors.LeviCivita.Basic",
+   "subfield": "Physlib.Relativity",
+   "bytes": 64015764,
+   "slots": 2546289,
+   "conclusion_head": "Eq",
+   "binders": 0,
+   "R1_identity": [],
+   "R5_conclusion": {
+    "identical": [],
+    "identical_n": 0,
+    "same_tree": [],
+    "same_tree_n": 0
+   },
+   "R3_rewrite": [],
+   "R3_null": {
+    "hits": 0,
+    "tried": 0
+   },
+   "distinct_constants": 94,
+   "vocab_in_proved": 88,
+   "vocab_coverage": 0.9361702127659575,
+   "rarest_constants": [
+    [
+     "realLorentzTensor.leviCivita_contract_three._proof_1",
+     1
+    ],
+    [
+     "realLorentzTensor.leviCivita_contract_three._proof_2",
+     1
+    ],
+    [
+     "realLorentzTensor.leviCivita_contract_three._proof_3",
+     1
+    ],
+    [
+     "realLorentzTensor.leviCivita_contract_three._proof_4",
+     1
+    ],
+    [
+     "ZSMul.toSMul",
+     1
+    ],
+    [
+     "SubNegMonoid.toZSMul",
+     1
+    ]
+   ]
+  }
+ ],
+ "equivalent_refused_nonempty_class": [],
+ "prose_distinct_statements": 2,
+ "cross_library": {
+  "physics_claims": 9484,
+  "reaching": 0,
+  "distance_hist": {},
+  "at_k_le_1": [],
+  "by_subfield": [
+   [
+    "Physlib.QFT",
+    0,
+    1292,
+    0.0
+   ],
+   [
+    "Physlib.Mathematics",
+    0,
+    834,
+    0.0
+   ],
+   [
+    "QuantumInfo.ForMathlib",
+    0,
+    978,
+    0.0
+   ],
+   [
+    "Physlib.Particles",
+    0,
+    1124,
+    0.0
+   ],
+   [
+    "QuantumInfo.States",
+    0,
+    221,
+    0.0
+   ],
+   [
+    "QuantumInfo.Channels",
+    0,
+    265,
+    0.0
+   ],
+   [
+    "Physlib.StatisticalMechanics",
+    0,
+    171,
+    0.0
+   ],
+   [
+    "Physlib.Units",
+    0,
+    220,
+    0.0
+   ],
+   [
+    "Physlib.Electromagnetism",
+    0,
+    407,
+    0.0
+   ],
+   [
+    "Physlib.ClassicalMechanics",
+    0,
+    323,
+    0.0
+   ],
+   [
+    "QuantumInfo.Entropy",
+    0,
+    155,
+    0.0
+   ],
+   [
+    "Physlib.QuantumMechanics",
+    0,
+    676,
+    0.0
+   ],
+   [
+    "Physlib.CondensedMatter",
+    0,
+    30,
+    0.0
+   ],
+   [
+    "Physlib.Relativity",
+    0,
+    1413,
+    0.0
+   ],
+   [
+    "Physlib.SpaceAndTime",
+    0,
+    839,
+    0.0
+   ],
+   [
+    "Physlib.StringTheory",
+    0,
+    206,
+    0.0
+   ],
+   [
+    "Physlib.FluidDynamics",
+    0,
+    21,
+    0.0
+   ],
+   [
+    "QuantumInfo.ResourceTheory",
+    0,
+    74,
+    0.0
+   ],
+   [
+    "QuantumInfo.ClassicalInfo",
+    0,
+    101,
+    0.0
+   ],
+   [
+    "Physlib.Meta",
+    0,
+    33,
+    0.0
+   ],
+   [
+    "Physlib.Thermodynamics",
+    0,
+    44,
+    0.0
+   ]
+  ],
+  "spread_observed": 0.0,
+  "spread_null_p95": 0.0
+ },
+ "frontier_distance": {
+  "targets": 18,
+  "targets_reaching": 0,
+  "controls": 336,
+  "controls_reaching": 83,
+  "target_rows": [
+   [
+    "MState.fidelity_channel_nondecreasing",
+    null,
+    null
+   ],
+   [
+    "CPTPMap.quantumCapacity_eq_piProd_coherentInfo",
+    null,
+    null
+   ],
+   [
+    "CPTPMap.coherentInfo_le_quantumCapacity",
+    null,
+    null
+   ],
+   [
+    "CPTPMap.quantumCapacity_ge_log_dim_in",
+    null,
+    null
+   ],
+   [
+    "ClassicalMechanics.CoplanarDoublePendulum.ConfigurationSpace",
+    null,
+    null
+   ],
+   [
+    "Cosmology.FLRW",
+    null,
+    null
+   ],
+   [
+    "WickContraction.Perm.isFull_of_isFull",
+    null,
+    null
+   ],
+   [
+    "WickContraction.Perm.perm_uncontractedList",
+    null,
+    null
+   ],
+   [
+    "realLorentzTensor.leviCivita_contract_self",
+    null,
+    null
+   ],
+   [
+    "realLorentzTensor.leviCivita_contract_three",
+    null,
+    null
+   ],
+   [
+    "CPTPMap.zero_le_quantumCapacity",
+    null,
+    null
+   ],
+   [
+    "CPTPMap.not_achievesRate_gt_log_dim_in",
+    null,
+    null
+   ],
+   [
+    "CPTPMap.not_achievesRate_gt_log_dim_out",
+    null,
+    null
+   ],
+   [
+    "QuantumMechanics.HydrogenAtom.angularMomentumSqr_commutation_lrlSqr",
+    null,
+    null
+   ],
+   [
+    "QuantumMechanics.HydrogenAtom.angularMomentum_commutation_lrl",
+    null,
+    null
+   ],
+   [
+    "QuantumMechanics.HydrogenAtom.angularMomentum_commutation_lrlSqr",
+    null,
+    null
+   ],
+   [
+    "CPTPMap.bddAbove_achievesRate",
+    null,
+    null
+   ],
+   [
+    "RigidBody.solidSphere_inertiaTensor",
+    null,
+    null
+   ]
+  ],
+  "control_distances": [
+   0,
+   0,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   4,
+   4,
+   5,
+   5,
+   5,
+   6,
+   6,
+   6,
+   6,
+   6,
+   7,
+   7,
+   7,
+   8,
+   10,
+   12,
+   12,
+   12
+  ]
+ },
+ "controls": {
+  "planted": 60,
+  "planted_recovered": 59,
+  "planted_named": 59,
+  "decoys": 60,
+  "decoys_routed": 0,
+  "calibration_n": 120,
+  "calibration_r1": 2,
+  "calibration_r3": 7,
+  "calibration_r5": 6,
+  "null_hits": 0,
+  "null_tried": 94
+ }
+}

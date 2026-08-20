@@ -1,0 +1,153 @@
+{
+  "schema": "fh-kuna-e1-result-v1",
+  "executed_at": "2026-08-05",
+  "status": "completed-second-genuine-miss-and-bounded-carrier-schema-ablation",
+  "manifest": {
+    "path": "research/data/kuna-e1-replay4-manifest.json",
+    "sha256": "e4b380f288b5ffc819d2a51b0ad6fcc462fe262d3d5e40daa98201632bd709f9"
+  },
+  "replay": {
+    "parent": "ff11cd51652709cdc648592c03b5933bfcb1fb7e",
+    "child": "4cea329f5d28ff4afb3c77deefa3d615b69a7172",
+    "toolchain": "leanprover/lean4:v4.24.0",
+    "module": "Mathlib.Algebra.Algebra.Operations",
+    "declaration": "Submodule.mul_mem_smul_iff",
+    "event": {"source": "CommRing", "target": "Ring", "args": "S"},
+    "parent_build": {"jobs": 1106, "exit": 0, "source_worktree_clean": true},
+    "child_build": {"jobs": 1106, "exit": 0, "source_worktree_clean": true}
+  },
+  "dependency_isolation": {
+    "source_diff": "one binder-head replacement; proof text unchanged",
+    "weakened_signature_in_parent_exit": 0,
+    "weakened_signature_in_child_exit": 0,
+    "actual_child_proof_in_parent_exit": 0,
+    "actual_child_proof_in_child_exit": 0,
+    "same_commit_prerequisite": false
+  },
+  "extractor": {
+    "standalone_lean_only_package": true,
+    "source_files": {
+      "atlas-extract/lakefile.toml": "a194f71d7d0349c4954805363c5b6b8b3d06415445d982e957251aa77f04104c",
+      "atlas-extract/AtlasExtract.lean": "be49b34cb3ad684bcdcd19d81b756bbde6332ee60bc8d2eddc01a6215305bf5d",
+      "atlas-extract/FhAtlas/Extract.lean": "e296f1be37209a52f95549bccde795b1212c8624cd86a6f4a886de64b0b86528",
+      "atlas-extract/FhAtlas/Statement.lean": "e0d5a35d91dd6a7cc3333a978dcb8173041ba7144c1849f172d0fcc2db57203c"
+    },
+    "rows": 143479,
+    "bytes": 175172683,
+    "sha256": "11d709b781f5b4e35b2c745eddee3bdb7fa20dc90c97c659551450a50e954a3d",
+    "import_ms": 1392,
+    "encode_write_ms": 88514,
+    "wall_seconds": 92.28,
+    "json_validation": "143479 of 143479 rows parsed",
+    "raw_path": "/tmp/fh-kuna-e1r4-parent-ff11cd51.jsonl",
+    "raw_path_is_ephemeral": true
+  },
+  "row_detector": {
+    "path": "scripts/fh_home.py",
+    "sha256": "92c8c6904c49485a11dfe1a810f9f10ced89e018f00a5d98b926286f01791ede",
+    "rows": 143479,
+    "classes": 729,
+    "lattice_edges": 829,
+    "forgetful_instances": 4033,
+    "parse_errors": 0,
+    "load_seconds": 4.424,
+    "index_seconds": 46.282,
+    "peak_rss_kib": 650060,
+    "default_instance_binders": [
+      ["CommSemiring", 0],
+      ["CommRing", 2],
+      ["Algebra", 1]
+    ],
+    "parameter_aware_instance_binders": [
+      ["CommSemiring", 0],
+      ["CommRing", 2],
+      ["Algebra", 2]
+    ],
+    "HomeIndex.home": {"skipped": "multi-carrier", "carriers": 3},
+    "HomeIndex.statement_candidates": {"skipped": "multi-carrier", "carriers": 2},
+    "exact_event_proposed": false
+  },
+  "carrier_aware_lean": {
+    "source": "lean/FerrisHoward/Atlas/Home.lean",
+    "source_sha256": "cd9e61acf3f3e161204c5c28839b52b09c419127869c8c5176d60a16a127a140",
+    "carrier_rule": "align class application arguments with the class telescope, discard instance-implicit parameters, and select the last structural free variable",
+    "current_regression": {
+      "source": "lean/Tests/Atlas/Home.lean",
+      "source_sha256": "274bc4a68a3e216697541269f326d563bc7b8f712fcf59f272c7ddfcaf452ae3",
+      "fixture": "trailingInstanceCarrier",
+      "exit": 0
+    },
+    "historical_compatibility_edits": [
+      "remove two result-pattern type annotations unsupported by Lean 4.24",
+      "replace String.trimAscii with String.trim"
+    ],
+    "candidates": [
+      {"source": "CommSemiring", "carrier": "R", "target": "Semiring"},
+      {"source": "CommRing", "carrier": "S", "target": "Ring"},
+      {"source": "Algebra", "carrier": "S", "target": "unused"}
+    ],
+    "exact_event_proposed": true,
+    "generic_ladder": "not proved",
+    "supplied_unchanged_child_proof": "PROVED",
+    "exit": 0
+  },
+  "carrier_attached_statement_ablation": {
+    "scope": "the frozen 143479-row parent closure with only the target row re-extracted under the new schema; this is not a whole-closure schema migration or a recall denominator",
+    "extractor": {
+      "source": "atlas-extract/FhAtlas/Extract.lean",
+      "source_sha256": "2bdd7b9cb00982037f3169b91186ebed24b87c542a2f108967eecc89fa09a8ce",
+      "test": "lean/Tests/Atlas/Extract.lean",
+      "test_sha256": "e4e7c13eddfae388ad14f8cada93671818090a44e3c96d6fc2971d6b76de87bb",
+      "field": "requirements_statement",
+      "entry": ["source", "class", "carrier"],
+      "carrier_contract": "zero-based outer forall position; emit only when the structural carrier argument is directly that binder; omit concrete, composite, and local carriers",
+      "historical_toolchain_build_exit": 0,
+      "historical_local_module_rows": 135,
+      "historical_local_import_ms": 1383,
+      "historical_local_encode_write_ms": 903,
+      "target_raw_requirements": 50,
+      "target_carriers": [0, 2],
+      "proof_side_performance_ablation": {
+        "proof_enabled_encode_write_ms": 18567,
+        "statement_only_encode_write_ms": 848,
+        "decision": "omit proof carrier evidence from the row schema"
+      }
+    },
+    "search_method": {
+      "path": "scripts/fh_home.py",
+      "sha256": "112e6057df5025f7d4b8d12f48cbfbd89101678161c39c722eba2b38ed2bb435",
+      "method": "HomeIndex.carrier_statement_candidates",
+      "selftest": "scripts/fh-home-search-selftest.py",
+      "selftest_sha256": "b3a31c69742e950949062e1d0f5ed45178a2dcc809ed73ad14cebbd1e4f11161",
+      "load_seconds": 4.316,
+      "index_seconds": 46.189,
+      "peak_rss_kib": 647756,
+      "retained_statement_requirements": 17,
+      "binders": [
+        {"source": "CommSemiring", "carrier": 0, "verdict": "at-home", "candidates": []},
+        {"source": "CommRing", "carrier": 2, "verdict": "candidates", "candidates": ["CommSemiring", "Ring", "Semiring"]},
+        {"source": "Algebra", "carrier": 2, "verdict": "at-home", "candidates": []}
+      ],
+      "exact_event_proposed": true
+    },
+    "frozen_methods_unchanged": {
+      "HomeIndex.home": {"skipped": "multi-carrier", "carriers": 3},
+      "HomeIndex.statement_candidates": {"skipped": "multi-carrier", "carriers": 2}
+    },
+    "validation_boundary": "candidate search only; statement re-elaboration filters the three candidates and the unchanged child proof remains the kernel certificate for Ring"
+  },
+  "loss_localization": {
+    "baseline": "the conservative row detector refuses declarations whose instance binders span multiple carriers",
+    "search_lane": "parameter-aware class roles reduce a spurious Algebra carrier but the theorem still genuinely spans R and S",
+    "missing_representation": "rows store used constant names but not the carrier attached to each use site, so flat evidence cannot safely judge the CommRing S binder",
+    "downstream_stages": "the carrier-aware Lean environment proposes Ring exactly and the repaired prover certifies the historical proof"
+  },
+  "decision": {
+    "row_detector_change": "rejected",
+    "reason": "removing the multi-carrier refusal without carrier-attached use-site evidence would make cross-carrier false proposals possible",
+    "search_lane_change": "accepted as default-off after direct-carrier and performance ablations",
+    "validated_architecture": "carrier-aware candidate generation followed by statement re-elaboration and kernel proof",
+    "next_refinement": "freeze a bounded population of multi-carrier events, re-extract only those rows with requirements_statement, and measure newly judgeable proposals plus statement and proof outcomes before considering any default change",
+    "claim": "two dependency-isolated development replays now expose two distinct false-negative clusters; this remains too small for recall"
+  }
+}

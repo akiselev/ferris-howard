@@ -1,0 +1,50 @@
+{
+  "schema": "fh-kuna-e1-manifest-v1",
+  "frozen_at": "2026-08-05",
+  "source": {
+    "e0_artifact": "research/data/kuna-e0-events.json",
+    "e0_sha256": "5f5ab50e22fbaeea9728d16e3b45018e9a045c7a5fb9cae4f403b64c07b064a5",
+    "detector": "scripts/fh_home.py",
+    "detector_sha256": "612bbe49285994b4e0d7d01d5caa8b00a3856b1aeebe4865f95f3215a407ce11"
+  },
+  "selection": {
+    "unit": "single direct theorem-binder event",
+    "rule": "newest E0 own theorem event with one carrier, one retained event in its commit, a non-metaprogramming Mathlib file, and exactly one whole-telescope binder change",
+    "eligible_before_whole_telescope_screen": 12,
+    "screened_newer": [
+      {"child": "fc892cf1d14d5f923b34ab9b79e62bd903e9eb36", "declaration": "Finsupp.isPWO", "rejected": "also replaces WellFoundedLT with WellQuasiOrderedLE"},
+      {"child": "ee4aed768f1011aebf10c4d5f65dd4cc365f776a", "declaration": "HahnSeries.orderTop_one", "rejected": "also replaces Nontrivial with One and NeZero"},
+      {"child": "3ed8cd1505fe", "declaration": "MeasureTheory.AEStronglyMeasurable.enorm", "rejected": "one source class becomes two independent classes"},
+      {"child": "2d8f64e7a934", "declaration": "MeasureTheory.det_one_smulRight", "rejected": "one source class becomes three independent classes"}
+    ],
+    "purpose": "development replay after replay 1 falsified independent-event eligibility",
+    "not_blind": true,
+    "detector_output_seen_before_freeze": false
+  },
+  "development": [
+    {
+      "child": "edcdc3e1603a3d61b9e9e2cea650beaa663f26bb",
+      "parent": "09242aa0f47b50626ae7552e5695f06fd4068b7a",
+      "date": "2024-11-20",
+      "parent_toolchain": "leanprover/lean4:v4.14.0-rc2",
+      "module": "Mathlib.Order.Filter.ZeroAndBoundedAtFilter",
+      "parent_file": "Mathlib/Order/Filter/ZeroAndBoundedAtFilter.lean",
+      "declaration": "Filter.ZeroAtFilter.boundedAtFilter",
+      "events": [
+        {"source": "NormedAddCommGroup", "target": "SeminormedAddGroup", "args": "β", "stratum": "own"}
+      ]
+    }
+  ],
+  "evaluation": {
+    "kind": "prospective",
+    "rule": "qualifying Mathlib commits after E0 head 905b95818eb32af7874a58b427f50c1711a5e96c",
+    "events": []
+  },
+  "verdicts": {
+    "exact_proposal": "detector proposes the declaration/source/target/carrier event on the parent",
+    "wrong_target": "detector judges the declaration but proposes another target",
+    "refused": "detector refuses the declaration before candidate generation",
+    "not_expressible": "the exact single-binder child signature does not elaborate in the parent environment",
+    "missed": "the exact child signature is parent-expressible but the detector does not propose it"
+  }
+}

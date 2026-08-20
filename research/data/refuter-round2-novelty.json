@@ -1,0 +1,34 @@
+{
+ "corpus": "/tmp/mathlib-closure.jsonl",
+ "screened_against": 470435,
+ "coverage": 0.9973864745243538,
+ "novel": [
+  [
+   "Mathlib.Tactic.Ring.Common.add_pf_add_gt",
+   "CommSemiring",
+   "AddCommSemigroup"
+  ],
+  [
+   "Mathlib.Tactic.Ring.Common.add_pf_add_overlap",
+   "CommSemiring",
+   "AddCommSemigroup"
+  ],
+  [
+   "CauSeq.rat_inf_continuous_lemma",
+   "IsStrictOrderedRing",
+   "IsOrderedAddMonoid"
+  ],
+  [
+   "CauSeq.rat_sup_continuous_lemma",
+   "IsStrictOrderedRing",
+   "IsOrderedAddMonoid"
+  ],
+  [
+   "Mathlib.Tactic.Ring.Common.add_pf_add_lt",
+   "CommSemiring",
+   "AddSemigroup"
+  ]
+ ],
+ "rediscovery": [],
+ "unscreenable": []
+}

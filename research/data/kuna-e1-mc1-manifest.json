@@ -1,0 +1,64 @@
+{
+  "schema": "fh-kuna-e1-mc1-manifest-v1",
+  "frozen_at": "2026-08-05",
+  "status": "frozen-before-instance-metadata-implementation",
+  "source": {
+    "mc0_manifest": "research/data/kuna-e1-mc0-manifest.json",
+    "mc0_manifest_sha256": "eff667dc486259c87400d8322a739c5e166f653ca365be50d90bca643e9f3c05",
+    "mc0_result": "research/data/kuna-e1-mc0-result.json",
+    "mc0_result_sha256": "fbdb46bb246462a44f562091cddeae16952a6e01d8013ee1edbd4a49238df4ac",
+    "historical_parent": "71f079f9d2860606575d65f12a9ad4e34d80a841",
+    "toolchain": "leanprover/lean4:v4.12.0-rc1",
+    "module": "Mathlib.RingTheory.Finiteness",
+    "baseline_closure_path": "/tmp/fh-kuna-mc0-p2-closure.jsonl",
+    "baseline_closure_path_is_ephemeral": true,
+    "baseline_closure_rows": 106733,
+    "baseline_closure_sha256": "8abe6a56a73ff280b9289b16635b35579301bb9e3944cbb4800841d6ffe28732",
+    "extractor": "atlas-extract/FhAtlas/Extract.lean",
+    "extractor_sha256": "2bdd7b9cb00982037f3169b91186ebed24b87c542a2f108967eecc89fa09a8ce",
+    "detector": "scripts/fh_home.py",
+    "detector_sha256": "112e6057df5025f7d4b8d12f48cbfbd89101678161c39c722eba2b38ed2bb435"
+  },
+  "audit_population": {
+    "unit": "every declaration in the frozen parent closure whose conclusion head is recognized as a class by baseline HomeIndex",
+    "selection_seen_before_freeze": true,
+    "detector_outputs_seen_before_freeze": true,
+    "not_blind": true,
+    "positive_event": {
+      "declaration": "Module.Finite.finite_basis",
+      "source": "Ring",
+      "target": "Semiring",
+      "args": "R",
+      "carrier": 0,
+      "expert_proof_already_verified_in_parent": true
+    }
+  },
+  "representation": {
+    "new_row_field": "is_instance",
+    "field_contract": "an explicit JSON boolean for every row, computed from Lean.Meta.isInstanceCore in the imported historical environment",
+    "reason": "constant kind cannot distinguish an ordinary theorem concluding a class-valued proposition from a theorem registered as an instance",
+    "historical_compatibility_required": true
+  },
+  "policy_ablation": {
+    "scope": "HomeIndex.carrier_statement_candidates only",
+    "rule": "a class-producing declaration remains refused unless its own row explicitly carries is_instance=false; true and missing metadata remain conservative refusals",
+    "HomeIndex.home_unchanged": true,
+    "HomeIndex.statement_candidates_unchanged": true,
+    "legacy_rows_unchanged": true
+  },
+  "required_measurements": [
+    "class-producing declarations by constant kind and registered-instance status",
+    "registered instances newly judged by the ablation",
+    "non-instance class-valued declarations newly judged by the ablation",
+    "candidate-bearing binder events and class-pair families among those declarations",
+    "the exact finite_basis event outcome",
+    "historical extraction time, row count, parse errors, and memory"
+  ],
+  "acceptance": {
+    "representation": "accept only if the exact historical extractor compiles, every refreshed row has a boolean, and the instance oracle has no unknowns",
+    "safety": "accept the option-gated policy split only if zero rows marked is_instance=true enter candidate generation",
+    "positive": "finite_basis must propose Semiring exactly and its already-verified child proof remains the kernel certificate",
+    "default_activation": "not authorized by this audit regardless of outcome; proof precision requires a separately frozen control population"
+  },
+  "claim_boundary": "a post-hoc structural policy audit on one historical closure, not detector recall and not proposal precision"
+}

@@ -1,0 +1,23 @@
+# ledger/phase0-ground-check.md
+**Date:** 2026-08-01 · **Phase:** 0 · **Agent:** Claude (chat-session ground check) · **Status: GATE G0 — PASS WITH AMENDMENTS**
+
+## 1. Environment check — DEFERRED (blocked, non-fatal)
+This session's container has no Lean/Lake/elan/cargo toolchain (verified: only python3 present; 1 vCPU, 3.9 GiB RAM). A Mathlib build is infeasible here. **Deferred item for the dev machine:** install elan + pinned toolchain, `lake exe cache get`, confirm clean build + REPL + gate scripts. Requirements note: ≥ 8 cores / 16 GiB recommended for comfortable Mathlib iteration; olean cache mandatory.
+
+## 2. Formalization prior-art search — CLEAR (our novelty claim stands)
+No machine-checked hydrodynamic stability threshold exists anywhere we can find. Adjacent findings, all ledger-worthy:
+- **Nearest neighbor (useful, not competing):** a brand-new Lean library for control-theoretic stability (Lyapunov/LaSalle-type), self-described as the first formalization of stability theory in Lean; prior art in Rocq (LaSalle) and Isabelle (small-gain). ODE/control setting, not hydrodynamics, no energy method, no PDE thresholds. ACTION: evaluate as a dependency for Lyapunov-style lemma shapes.
+- **Precedent for the genre (excellent for writeup framing):** Tooby-Smith (Apr 2026) formalized the stability analysis of the 2HDM potential into Lean and *found an error invalidating the main theorem of a widely cited 2006 paper* — formalization-of-stability-literature catching real mistakes is now a documented phenomenon.
+- **Noise field:** multiple Navier–Stokes millennium "Lean proof" claims circulate (blog/social-tier); a LeanDojo repo hosts NS *statement* formulations. None touch energy stability. Treat NS-millennium claim-space as radioactive in all communications: our writeup must be unmistakably not-that.
+
+## 3. Ground-truth check — ⚠ MAJOR FINDING: the classical threshold is CONTESTED
+The answer key cannot be a single number. The literature state:
+- **Classical values** (variational maximization of production/dissipation from the Reynolds–Orr identity, channel normalized to [−1,1]): Orr 1907 computed **44.3** on spanwise (2D) perturbations; Joseph 1966 computed **20.65** on streamwise perturbations; Joseph–Carmi and Busse consolidated the classical picture. Poiseuille analogues: 49.55 (Joseph–Carmi) vs 87.6 (Orr).
+- **The live dispute (2021–2023, incl. a 2023 SIAM J. Appl. Math paper):** the Falsaperla–Mulone–Perrone line claims the classical conclusion is *not correct* — asserting streamwise perturbations are L²-energy stable for **all** Reynolds numbers, that the admissible-class maximization should be restricted, and hence that the true monotone-energy threshold is Orr's spanwise value (44.3), a "nonlinear Squire theorem." This directly contradicts Joseph/Busse and the field's standard number.
+- **Consequences for this project:** (a) **G1 statement design is now the whole ballgame, exactly as CLAUDE.md predicted** — "energy stability of plane Couette" is ambiguous in the current literature; our frozen statements must name the quadratic form AND the admissible perturbation class explicitly, and the theorem is about *that variational problem*, with prose mapping to the literature's competing readings. (b) **The project's value just increased:** a kernel-checked adjudication — certifying which precisely-stated variational problem has threshold ≈20.65 and which has ≈44.3, with the difference exhibited as a hypothesis diff — is the formal-referee genre (B4/D1) walking into its first fluid-dynamics dispute, against a live SIAM-published controversy. Recommend elevating this from side effect to co-deliverable. (c) ANSWER_KEY.md must record BOTH thresholds keyed to their admissible classes, plus the dispute's citation trail.
+
+## 4. Rigorous-numerics prior art — none found for these thresholds
+The dispute literature is analytical/variational; no interval-arithmetic or certified-computation treatment of Re_E located in these passes. Standing caveat: this session ran two search passes; the dev-machine Phase 0 refresh should re-run with additional queries (validated numerics + energy stability; Orr–Sommerfeld certified spectra) before G1 sign-off.
+
+## 5. Gate G0 verdict
+PASS WITH AMENDMENTS: proceed to Phase 1 **after** (i) dev-machine environment check, (ii) CLAUDE.md §0 patched to reflect the contested-threshold finding and dual-target framing (patched this session), (iii) ANSWER_KEY.md drafted with the two-threshold structure. The mathematics is ready; the statement layer now knows exactly how careful it must be — which is Phase 0 doing precisely its job.

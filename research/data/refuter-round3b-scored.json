@@ -1,0 +1,2521 @@
+{
+ "counts": {
+  "proved": 35,
+  "not_proved": 28,
+  "no_statement": 358
+ },
+ "tactic_wins": {
+  "aesop": 8,
+  "simp": 11,
+  "rfl": 16
+ },
+ "invalid_shards": [],
+ "incomplete_shards": [],
+ "pending_shards": [],
+ "missing": [],
+ "unrecognised": 0,
+ "proved": [
+  {
+   "decl": "Tropical.trop_max_def",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "tactic": "aesop"
+  },
+  {
+   "decl": "Tropical.trop_sup_def",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "tactic": "aesop"
+  },
+  {
+   "decl": "Tropical.untrop_max",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "tactic": "aesop"
+  },
+  {
+   "decl": "Tropical.untrop_sup",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "tactic": "aesop"
+  },
+  {
+   "decl": "WithBot.coe_max",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "tactic": "simp"
+  },
+  {
+   "decl": "WithBot.coe_min",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "tactic": "simp"
+  },
+  {
+   "decl": "WithTop.coe_max",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "tactic": "simp"
+  },
+  {
+   "decl": "WithTop.coe_min",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "tactic": "simp"
+  },
+  {
+   "decl": "Tropical.trop_max_def",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "tactic": "aesop"
+  },
+  {
+   "decl": "Tropical.trop_sup_def",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "tactic": "aesop"
+  },
+  {
+   "decl": "Tropical.untrop_max",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "tactic": "aesop"
+  },
+  {
+   "decl": "Tropical.untrop_sup",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "tactic": "aesop"
+  },
+  {
+   "decl": "WithBot.coe_max",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "tactic": "simp"
+  },
+  {
+   "decl": "WithTop.coe_max",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "tactic": "simp"
+  },
+  {
+   "decl": "WithBot.coe_min",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "tactic": "simp"
+  },
+  {
+   "decl": "WithTop.coe_min",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "tactic": "simp"
+  },
+  {
+   "decl": "AddOpposite.nonneg_op",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "AddOpposite.nonneg_unop",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "AddOpposite.one_le_op",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "AddOpposite.one_le_unop",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "AddOpposite.op_le_one",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "AddOpposite.op_nonpos",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "AddOpposite.unop_le_one",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "AddOpposite.unop_nonpos",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "MulOpposite.one_le_op",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "MulOpposite.one_le_unop",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "MulOpposite.op_le_one",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "MulOpposite.op_nonneg",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "MulOpposite.op_nonpos",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "MulOpposite.unop_le_one",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "MulOpposite.unop_nonneg",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "MulOpposite.unop_nonpos",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "tactic": "rfl"
+  },
+  {
+   "decl": "sInf_pair",
+   "source": "CompleteLattice",
+   "target": "ConditionallyCompleteLattice",
+   "tactic": "simp"
+  },
+  {
+   "decl": "sSup_pair",
+   "source": "CompleteLattice",
+   "target": "ConditionallyCompleteLattice",
+   "tactic": "simp"
+  },
+  {
+   "decl": "Associates.FactorSet.coe_add",
+   "source": "CommMonoidWithZero",
+   "target": "CommMonoid",
+   "tactic": "simp"
+  }
+ ],
+ "not_proved": [
+  {
+   "decl": "Matrix.conjTranspose_zsmul",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid"
+  },
+  {
+   "decl": "Matrix.conjTranspose_zsmul",
+   "source": "AddGroup",
+   "target": "SubNegMonoid"
+  },
+  {
+   "decl": "codisjoint_iff_compl_le_left",
+   "source": "BooleanAlgebra",
+   "target": "BiheytingAlgebra"
+  },
+  {
+   "decl": "codisjoint_iff_compl_le_right",
+   "source": "BooleanAlgebra",
+   "target": "BiheytingAlgebra"
+  },
+  {
+   "decl": "compl_inf",
+   "source": "BooleanAlgebra",
+   "target": "BiheytingAlgebra"
+  },
+  {
+   "decl": "compl_symmDiff_self",
+   "source": "BooleanAlgebra",
+   "target": "BiheytingAlgebra"
+  },
+  {
+   "decl": "symmDiff_compl_self",
+   "source": "BooleanAlgebra",
+   "target": "BiheytingAlgebra"
+  },
+  {
+   "decl": "symmDiff_top",
+   "source": "BooleanAlgebra",
+   "target": "BiheytingAlgebra"
+  },
+  {
+   "decl": "top_sdiff",
+   "source": "BooleanAlgebra",
+   "target": "BiheytingAlgebra"
+  },
+  {
+   "decl": "top_symmDiff",
+   "source": "BooleanAlgebra",
+   "target": "BiheytingAlgebra"
+  },
+  {
+   "decl": "Disjoint.symmDiff_left",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra"
+  },
+  {
+   "decl": "sInf_insert",
+   "source": "CompleteLattice",
+   "target": "ConditionallyCompleteLattice"
+  },
+  {
+   "decl": "sInf_union",
+   "source": "CompleteLattice",
+   "target": "ConditionallyCompleteLattice"
+  },
+  {
+   "decl": "sSup_insert",
+   "source": "CompleteLattice",
+   "target": "ConditionallyCompleteLattice"
+  },
+  {
+   "decl": "sSup_union",
+   "source": "CompleteLattice",
+   "target": "ConditionallyCompleteLattice"
+  },
+  {
+   "decl": "mul_nsmul",
+   "source": "AddMonoid",
+   "target": "NSMul"
+  },
+  {
+   "decl": "nsmul_iterate",
+   "source": "AddMonoid",
+   "target": "NSMul"
+  },
+  {
+   "decl": "Codisjoint.bihimp_left",
+   "source": "BooleanAlgebra",
+   "target": "GeneralizedHeytingAlgebra"
+  },
+  {
+   "decl": "Codisjoint.bihimp_right",
+   "source": "BooleanAlgebra",
+   "target": "GeneralizedHeytingAlgebra"
+  },
+  {
+   "decl": "lt_sSup_iff",
+   "source": "CompleteLinearOrder",
+   "target": "ConditionallyCompleteLinearOrder"
+  },
+  {
+   "decl": "sInf_lt_iff",
+   "source": "CompleteLinearOrder",
+   "target": "ConditionallyCompleteLinearOrder"
+  },
+  {
+   "decl": "lt_sSup_iff",
+   "source": "CompleteLinearOrder",
+   "target": "ConditionallyCompleteLinearOrderBot"
+  },
+  {
+   "decl": "sInf_lt_iff",
+   "source": "CompleteLinearOrder",
+   "target": "ConditionallyCompleteLinearOrderBot"
+  },
+  {
+   "decl": "iSup_symmDiff_iSup_le",
+   "source": "CompleteBooleanAlgebra",
+   "target": "CompleteDistribLattice"
+  },
+  {
+   "decl": "iSup_symmDiff_iSup_le",
+   "source": "CompleteBooleanAlgebra",
+   "target": "Order.Coframe"
+  },
+  {
+   "decl": "orderOf_eq_zero_iff_eq_zero",
+   "source": "GroupWithZero",
+   "target": "MonoidWithZero"
+  },
+  {
+   "decl": "Polynomial.tendsto_atBot_iff_leadingCoeff_nonpos",
+   "source": "NormedField",
+   "target": "NormedCommRing"
+  },
+  {
+   "decl": "Polynomial.tendsto_atBot_iff_leadingCoeff_nonpos",
+   "source": "NormedField",
+   "target": "NormedDivisionRing"
+  }
+ ],
+ "no_statement": [
+  {
+   "decl": "Finset.sortedGT_sort",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.sortedLT_sort",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.DegLex.single_strictAnti",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.Lex.single_strictAnti",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedGE_insertionSort",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedGE_mergeSort",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedLE_insertionSort",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedLE_mergeSort",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "NNRat.Nonneg.coe_ofScientific",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_div",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_inv",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_nnqsmul",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_nnratCast",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_zpow",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.inv_mk",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_div_mk",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_nnqsmul",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_zpow",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.apply_le_of_toColex",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.apply_le_of_toLex",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.toLex_monotone",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.toLex_strictMono",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Positive.coe_inv",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Positive.coe_zpow",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.coe_div",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.coe_zpow",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.normSq_div",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.normSq_zpow",
+   "source": "LinearOrder",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.sortedGT_sort",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.sortedLT_sort",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.DegLex.single_strictAnti",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.Lex.single_strictAnti",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedGE_insertionSort",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedGE_mergeSort",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedLE_insertionSort",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedLE_mergeSort",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "NNRat.Nonneg.coe_ofScientific",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_div",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_inv",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_nnqsmul",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_nnratCast",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.inv_mk",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_div_mk",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_nnqsmul",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.apply_le_of_toColex",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.apply_le_of_toLex",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.toLex_monotone",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.toLex_strictMono",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Positive.coe_inv",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Positive.coe_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.coe_div",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.coe_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.normSq_div",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.normSq_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Codisjoint.bihimp_left",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Codisjoint.bihimp_right",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.inf_sdiff_left",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.inf_sdiff_right",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_assoc",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_eq_inf",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_eq_left",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_eq_right",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_himp_left",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_himp_right",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_le_iff_left",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_le_iff_right",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_left_injective",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_left_surjective",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_right_injective",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "bihimp_right_surjective",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "codisjoint_bihimp_sup",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "codisjoint_himp_self_left",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "codisjoint_himp_self_right",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "codisjoint_iff_compl_le_left",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "codisjoint_iff_compl_le_right",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "compl_inf",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "compl_symmDiff_self",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "himp_bihimp_left",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "himp_bihimp_right",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "inf_himp_bihimp",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ofBoolRing_neg",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "symmDiff_compl_self",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "symmDiff_top",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "top_sdiff",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "top_symmDiff",
+   "source": "BooleanAlgebra",
+   "target": "BooleanRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.sortedGT_sort",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.sortedLT_sort",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.DegLex.single_strictAnti",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.Lex.single_strictAnti",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedGE_insertionSort",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedGE_mergeSort",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedLE_insertionSort",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedLE_mergeSort",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "NNRat.Nonneg.coe_ofScientific",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_div",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_inv",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_nnqsmul",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_nnratCast",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.inv_mk",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_div_mk",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_nnqsmul",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.apply_le_of_toColex",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.apply_le_of_toLex",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.toLex_monotone",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.toLex_strictMono",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Positive.coe_inv",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Positive.coe_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.coe_div",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.coe_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.normSq_div",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Quaternion.normSq_zpow",
+   "source": "LinearOrder",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.Colex.le_def",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.Colex.singleton_le_singleton",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.Colex.singleton_lt_singleton",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.Colex.toColex_le_singleton",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.Colex.toColex_le_toColex",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finset.Colex.toColex_sdiff_le_toColex_sdiff",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.bot_eq_zero",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_natCast",
+   "source": "PartialOrder",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ExceptT.run_pure",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ReaderT.run_map",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ReaderT.run_mapConst",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ReaderT.run_pure",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ReaderT.run_seq",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ReaderT.run_seqLeft",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ReaderT.run_seqRight",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "SatisfiesM_ReaderT_eq",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "StateRefT'.lift_pure",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "StateT.map_const",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "StateT.run_pure",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Std.Iterators.PostconditionT.property_pure",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Std.Iterators.PostconditionT.pure_eq_pure",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Std.Iterators.ULiftT.run_pure",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WriterT.run_map",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WriterT.run_pure",
+   "source": "Monad",
+   "target": "Applicative",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.imI_sub",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.imJ_sub",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.imK_sub",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.im_sub",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.mk_sub_mk",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.re_sub",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_neg",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_sub",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_neg",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_sub",
+   "source": "AddGroup",
+   "target": "SubtractionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Complex.coe_smul",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Module.isTorsionFree_int_iff_isAddTorsionFree",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_add",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_neg",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_sub",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_add",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_neg",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_sub",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithTop.LinearOrderedAddCommGroup.coe_neg",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithTop.LinearOrderedAddCommGroup.coe_sub",
+   "source": "AddCommGroup",
+   "target": "SubtractionCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.imI_sub",
+   "source": "AddGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.imJ_sub",
+   "source": "AddGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.imK_sub",
+   "source": "AddGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.mk_sub_mk",
+   "source": "AddGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.re_sub",
+   "source": "AddGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_neg",
+   "source": "AddGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_sub",
+   "source": "AddGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_neg",
+   "source": "AddGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_sub",
+   "source": "AddGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_add",
+   "source": "AddCommGroup",
+   "target": "AddGroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_neg",
+   "source": "AddCommGroup",
+   "target": "AddGroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_sub",
+   "source": "AddCommGroup",
+   "target": "AddGroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_add",
+   "source": "AddCommGroup",
+   "target": "AddGroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_neg",
+   "source": "AddCommGroup",
+   "target": "AddGroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_sub",
+   "source": "AddCommGroup",
+   "target": "AddGroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithTop.LinearOrderedAddCommGroup.coe_neg",
+   "source": "AddCommGroup",
+   "target": "AddGroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithTop.LinearOrderedAddCommGroup.coe_sub",
+   "source": "AddCommGroup",
+   "target": "AddGroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.imI_sub",
+   "source": "AddGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.imJ_sub",
+   "source": "AddGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.imK_sub",
+   "source": "AddGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.mk_sub_mk",
+   "source": "AddGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.re_sub",
+   "source": "AddGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_sub",
+   "source": "AddGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_sub",
+   "source": "AddGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.comp_sdiff_comp",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_bot",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_inf_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_sdiff_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_sup_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.not_comp_le_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.not_comp_lt_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.DegLex.single_strictAnti",
+   "source": "LinearOrder",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.Lex.single_strictAnti",
+   "source": "LinearOrder",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedGE_insertionSort",
+   "source": "LinearOrder",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedGE_mergeSort",
+   "source": "LinearOrder",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedLE_insertionSort",
+   "source": "LinearOrder",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "List.sortedLE_mergeSort",
+   "source": "LinearOrder",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.apply_le_of_toColex",
+   "source": "LinearOrder",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Pi.apply_le_of_toLex",
+   "source": "LinearOrder",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nucleus.sInf_apply",
+   "source": "CompleteLattice",
+   "target": "ConditionallyCompleteLattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nucleus.sInf_apply",
+   "source": "CompleteLattice",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "sInf_insert",
+   "source": "CompleteLattice",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "sInf_pair",
+   "source": "CompleteLattice",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "sInf_union",
+   "source": "CompleteLattice",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "sSup_insert",
+   "source": "CompleteLattice",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "sSup_pair",
+   "source": "CompleteLattice",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "sSup_union",
+   "source": "CompleteLattice",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "IsUnit.neg",
+   "source": "HasDistribNeg",
+   "target": "InvolutiveNeg",
+   "reason": "source binder not found or the target cannot be applied to its arguments"
+  },
+  {
+   "decl": "SemiconjBy.neg_one_left",
+   "source": "HasDistribNeg",
+   "target": "InvolutiveNeg",
+   "reason": "source binder not found or the target cannot be applied to its arguments"
+  },
+  {
+   "decl": "SemiconjBy.neg_one_right",
+   "source": "HasDistribNeg",
+   "target": "InvolutiveNeg",
+   "reason": "source binder not found or the target cannot be applied to its arguments"
+  },
+  {
+   "decl": "Units.coe_neg_one",
+   "source": "HasDistribNeg",
+   "target": "InvolutiveNeg",
+   "reason": "source binder not found or the target cannot be applied to its arguments"
+  },
+  {
+   "decl": "Units.val_neg",
+   "source": "HasDistribNeg",
+   "target": "InvolutiveNeg",
+   "reason": "source binder not found or the target cannot be applied to its arguments"
+  },
+  {
+   "decl": "neg_one_pow_eq_or",
+   "source": "HasDistribNeg",
+   "target": "InvolutiveNeg",
+   "reason": "source binder not found or the target cannot be applied to its arguments"
+  },
+  {
+   "decl": "AddAut.vadd_def",
+   "source": "AddMonoid",
+   "target": "AddZero",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "SkewMonoidAlgebra.coeff_zero",
+   "source": "AddMonoid",
+   "target": "AddZero",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "SkewMonoidAlgebra.ofCoeff_zero",
+   "source": "AddMonoid",
+   "target": "AddZero",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_add",
+   "source": "AddMonoid",
+   "target": "AddZero",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_add",
+   "source": "AddMonoid",
+   "target": "AddZero",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddAut.vadd_def",
+   "source": "AddMonoid",
+   "target": "AddZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "SkewMonoidAlgebra.coeff_zero",
+   "source": "AddMonoid",
+   "target": "AddZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "SkewMonoidAlgebra.ofCoeff_zero",
+   "source": "AddMonoid",
+   "target": "AddZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_add",
+   "source": "AddMonoid",
+   "target": "AddZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_add",
+   "source": "AddMonoid",
+   "target": "AddZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddOpposite.op_nsmul",
+   "source": "AddMonoid",
+   "target": "NSMul",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddOpposite.unop_nsmul",
+   "source": "AddMonoid",
+   "target": "NSMul",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithTop.coe_nsmul",
+   "source": "AddMonoid",
+   "target": "NSMul",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddMonoid.End.zero_apply",
+   "source": "AddCommMonoid",
+   "target": "AddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.bot_eq_zero",
+   "source": "AddCommMonoid",
+   "target": "AddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ofDegLex_add",
+   "source": "AddCommMonoid",
+   "target": "AddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "toDegLex_add",
+   "source": "AddCommMonoid",
+   "target": "AddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WeierstrassCurve.Jacobian.Point.add_point",
+   "source": "Field",
+   "target": "EuclideanDomain",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WeierstrassCurve.Jacobian.Point.neg_point",
+   "source": "Field",
+   "target": "EuclideanDomain",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WeierstrassCurve.Projective.Point.add_point",
+   "source": "Field",
+   "target": "EuclideanDomain",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WeierstrassCurve.Projective.Point.neg_point",
+   "source": "Field",
+   "target": "EuclideanDomain",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_inf_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "DistribLattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_sup_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "DistribLattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.not_comp_le_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "DistribLattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.not_comp_lt_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "DistribLattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_neg",
+   "source": "AddCommGroup",
+   "target": "InvolutiveNeg",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_neg",
+   "source": "AddCommGroup",
+   "target": "InvolutiveNeg",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithTop.LinearOrderedAddCommGroup.coe_neg",
+   "source": "AddCommGroup",
+   "target": "InvolutiveNeg",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_neg",
+   "source": "AddCommGroup",
+   "target": "NegZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_neg",
+   "source": "AddCommGroup",
+   "target": "NegZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithTop.LinearOrderedAddCommGroup.coe_neg",
+   "source": "AddCommGroup",
+   "target": "NegZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_sub",
+   "source": "AddCommGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_sub",
+   "source": "AddCommGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithTop.LinearOrderedAddCommGroup.coe_sub",
+   "source": "AddCommGroup",
+   "target": "SubNegMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_sub",
+   "source": "AddCommGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_sub",
+   "source": "AddCommGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithTop.LinearOrderedAddCommGroup.coe_sub",
+   "source": "AddCommGroup",
+   "target": "SubNegZeroMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuadraticAlgebra.re_intCast",
+   "source": "AddCommGroupWithOne",
+   "target": "AddGroupWithOne",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.re_intCast",
+   "source": "AddCommGroupWithOne",
+   "target": "AddGroupWithOne",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.re_natCast",
+   "source": "AddCommGroupWithOne",
+   "target": "AddGroupWithOne",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddAut.vadd_def",
+   "source": "AddMonoid",
+   "target": "AddSemigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_add",
+   "source": "AddMonoid",
+   "target": "AddSemigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_add",
+   "source": "AddMonoid",
+   "target": "AddSemigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "CategoryTheory.GradedObject.hom_ext",
+   "source": "CategoryTheory.Category",
+   "target": "CategoryTheory.CategoryStruct",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "CategoryTheory.WithInitial.false_of_to_star",
+   "source": "CategoryTheory.Category",
+   "target": "CategoryTheory.CategoryStruct",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "CategoryTheory.WithTerminal.false_of_from_star",
+   "source": "CategoryTheory.Category",
+   "target": "CategoryTheory.CategoryStruct",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ConjAct.ofConjAct_zero",
+   "source": "GroupWithZero",
+   "target": "DivInvOneMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ConjAct.toConjAct_zero",
+   "source": "GroupWithZero",
+   "target": "DivInvOneMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "orderOf_eq_zero_iff_eq_zero",
+   "source": "GroupWithZero",
+   "target": "DivInvOneMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ConjAct.ofConjAct_zero",
+   "source": "GroupWithZero",
+   "target": "DivisionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ConjAct.toConjAct_zero",
+   "source": "GroupWithZero",
+   "target": "DivisionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "orderOf_eq_zero_iff_eq_zero",
+   "source": "GroupWithZero",
+   "target": "DivisionMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ArchimedeanClass.mk_mul",
+   "source": "IsStrictOrderedRing",
+   "target": "IsOrderedCancelAddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ArchimedeanClass.mk_one",
+   "source": "IsStrictOrderedRing",
+   "target": "IsOrderedCancelAddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ArchimedeanClass.mk_pow",
+   "source": "IsStrictOrderedRing",
+   "target": "IsOrderedCancelAddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_nnqsmul",
+   "source": "Semifield",
+   "target": "CommSemiring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_zpow",
+   "source": "Semifield",
+   "target": "CommSemiring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_nnqsmul",
+   "source": "Semifield",
+   "target": "CommSemiring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_nnqsmul",
+   "source": "Semifield",
+   "target": "DivisionSemiring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.coe_zpow",
+   "source": "Semifield",
+   "target": "DivisionSemiring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Nonneg.mk_nnqsmul",
+   "source": "Semifield",
+   "target": "DivisionSemiring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddOpposite.op_zsmul",
+   "source": "SubNegMonoid",
+   "target": "AddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddOpposite.unop_zsmul",
+   "source": "SubNegMonoid",
+   "target": "AddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "natCast_zsmul",
+   "source": "SubNegMonoid",
+   "target": "AddMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddOpposite.op_zsmul",
+   "source": "SubNegMonoid",
+   "target": "NSMul",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddOpposite.unop_zsmul",
+   "source": "SubNegMonoid",
+   "target": "NSMul",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "natCast_zsmul",
+   "source": "SubNegMonoid",
+   "target": "NSMul",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddOpposite.op_zsmul",
+   "source": "SubNegMonoid",
+   "target": "ZSMul",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddOpposite.unop_zsmul",
+   "source": "SubNegMonoid",
+   "target": "ZSMul",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "natCast_zsmul",
+   "source": "SubNegMonoid",
+   "target": "ZSMul",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Complex.coe_smul",
+   "source": "AddCommGroup",
+   "target": "AddCancelCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Module.isTorsionFree_int_iff_isAddTorsionFree",
+   "source": "AddCommGroup",
+   "target": "AddCancelCommMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_add",
+   "source": "AddCommGroup",
+   "target": "AddCommMagma",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_add",
+   "source": "AddCommGroup",
+   "target": "AddCommMagma",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.ofLp_add",
+   "source": "AddCommGroup",
+   "target": "AddSemigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithLp.toLp_add",
+   "source": "AddCommGroup",
+   "target": "AddSemigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ofDegLex_add",
+   "source": "AddCommMonoid",
+   "target": "AddCommMagma",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "toDegLex_add",
+   "source": "AddCommMonoid",
+   "target": "AddCommMagma",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ofDegLex_add",
+   "source": "AddCommMonoid",
+   "target": "AddCommSemigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "toDegLex_add",
+   "source": "AddCommMonoid",
+   "target": "AddCommSemigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ofDegLex_add",
+   "source": "AddCommMonoid",
+   "target": "AddSemigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "toDegLex_add",
+   "source": "AddCommMonoid",
+   "target": "AddSemigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "AddMonoid.End.zero_apply",
+   "source": "AddCommMonoid",
+   "target": "AddZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.bot_eq_zero",
+   "source": "AddCommMonoid",
+   "target": "AddZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_neg",
+   "source": "AddGroup",
+   "target": "InvolutiveNeg",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_neg",
+   "source": "AddGroup",
+   "target": "InvolutiveNeg",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.ofConv_neg",
+   "source": "AddGroup",
+   "target": "NegZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "WithConv.toConv_neg",
+   "source": "AddGroup",
+   "target": "NegZeroClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Codisjoint.bihimp_left",
+   "source": "BooleanAlgebra",
+   "target": "GeneralizedBooleanAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Codisjoint.bihimp_right",
+   "source": "BooleanAlgebra",
+   "target": "GeneralizedBooleanAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Codisjoint.bihimp_left",
+   "source": "BooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Codisjoint.bihimp_right",
+   "source": "BooleanAlgebra",
+   "target": "GeneralizedCoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Polynomial.coe_normUnit",
+   "source": "CommRing",
+   "target": "CommSemiring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.coe_pow",
+   "source": "CommRing",
+   "target": "CommSemiring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Polynomial.coe_normUnit",
+   "source": "CommRing",
+   "target": "Ring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.coe_pow",
+   "source": "CommRing",
+   "target": "Ring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulOpposite.op_zpow",
+   "source": "DivInvMonoid",
+   "target": "Monoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulOpposite.unop_zpow",
+   "source": "DivInvMonoid",
+   "target": "Monoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulOpposite.op_zpow",
+   "source": "DivInvMonoid",
+   "target": "NPow",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulOpposite.unop_zpow",
+   "source": "DivInvMonoid",
+   "target": "NPow",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulOpposite.op_zpow",
+   "source": "DivInvMonoid",
+   "target": "ZPow",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulOpposite.unop_zpow",
+   "source": "DivInvMonoid",
+   "target": "ZPow",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuadraticAlgebra.re_nnratCast",
+   "source": "Field",
+   "target": "DivisionRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuadraticAlgebra.re_ratCast",
+   "source": "Field",
+   "target": "DivisionRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_inf_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_sup_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "Lattice",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.not_comp_le_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.not_comp_lt_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.not_comp_le_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.not_comp_lt_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulOpposite.op_pow",
+   "source": "Monoid",
+   "target": "NPow",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulOpposite.unop_pow",
+   "source": "Monoid",
+   "target": "NPow",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.re_natCast",
+   "source": "AddCommGroupWithOne",
+   "target": "AddCommMonoidWithOne",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuaternionAlgebra.re_natCast",
+   "source": "AddCommGroupWithOne",
+   "target": "AddMonoidWithOne",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Finsupp.bot_eq_zero",
+   "source": "AddCommMonoid",
+   "target": "AddZero",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuadraticAlgebra.re_natCast",
+   "source": "AddCommMonoidWithOne",
+   "target": "AddMonoidWithOne",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Matrix.conjTranspose_zsmul",
+   "source": "AddGroup",
+   "target": "AddCancelMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Matrix.conjTranspose_zsmul",
+   "source": "AddGroup",
+   "target": "AddRightCancelMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ofBoolRing_neg",
+   "source": "BooleanAlgebra",
+   "target": "CommRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "ofBoolRing_neg",
+   "source": "BooleanAlgebra",
+   "target": "HasDistribNeg",
+   "reason": "source binder not found or the target cannot be applied to its arguments"
+  },
+  {
+   "decl": "ofBoolRing_neg",
+   "source": "BooleanAlgebra",
+   "target": "InvolutiveNeg",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Associates.FactorSet.coe_add",
+   "source": "CommMonoidWithZero",
+   "target": "MonoidWithZero",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "iSup_symmDiff_iSup_le",
+   "source": "CompleteBooleanAlgebra",
+   "target": "Order.Frame",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuadraticAlgebra.re_nnratCast",
+   "source": "Field",
+   "target": "DivisionSemiring",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "QuadraticAlgebra.re_nnratCast",
+   "source": "Field",
+   "target": "Semifield",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_bot",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "OrderBot",
+   "reason": "source binder not found or the target cannot be applied to its arguments"
+  },
+  {
+   "decl": "Booleanisation.lift_inf_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "SemilatticeInf",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Booleanisation.lift_sup_lift",
+   "source": "GeneralizedBooleanAlgebra",
+   "target": "SemilatticeSup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "orderOf_eq_zero_iff_eq_zero",
+   "source": "GroupWithZero",
+   "target": "DivInvMonoid",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Metric.lipschitz_infDist_set",
+   "source": "MetricSpace",
+   "target": "EMetricSpace",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Metric.lipschitz_infDist_set",
+   "source": "MetricSpace",
+   "target": "PseudoMetricSpace",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulAut.smul_def",
+   "source": "Monoid",
+   "target": "MulOne",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulAut.smul_def",
+   "source": "Monoid",
+   "target": "MulOneClass",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "MulAut.smul_def",
+   "source": "Monoid",
+   "target": "Semigroup",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "CStarMatrix.uniformEmbedding_ofMatrix",
+   "source": "NonUnitalCStarAlgebra",
+   "target": "EMetricSpace",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "CStarMatrix.uniformEmbedding_ofMatrix",
+   "source": "NonUnitalCStarAlgebra",
+   "target": "NonUnitalNormedRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "CStarMatrix.uniformEmbedding_ofMatrix",
+   "source": "NonUnitalCStarAlgebra",
+   "target": "NonUnitalSeminormedRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "CStarMatrix.uniformEmbedding_ofMatrix",
+   "source": "NonUnitalCStarAlgebra",
+   "target": "PseudoEMetricSpace",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Polynomial.tendsto_atBot_iff_leadingCoeff_nonpos",
+   "source": "NormedField",
+   "target": "CommRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Polynomial.tendsto_atBot_iff_leadingCoeff_nonpos",
+   "source": "NormedField",
+   "target": "EuclideanDomain",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "sdiff_eq_sInf",
+   "source": "Order.Coframe",
+   "target": "CoheytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "himp_eq_sSup",
+   "source": "Order.Frame",
+   "target": "HeytingAlgebra",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "UniformSpace.Completion.coe_mul",
+   "source": "Ring",
+   "target": "NonAssocRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "UniformSpace.Completion.coe_mul",
+   "source": "Ring",
+   "target": "NonUnitalRing",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Fintype.toOrderBot.congr_simp",
+   "source": "SemilatticeInf",
+   "target": "PartialOrder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  },
+  {
+   "decl": "Fintype.toOrderBot.congr_simp",
+   "source": "SemilatticeInf",
+   "target": "Preorder",
+   "reason": "the rewritten statement is not type-correct after instance re-synthesis"
+  }
+ ]
+}

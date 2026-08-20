@@ -1,0 +1,489 @@
+{
+  "schema": "fh-kuna-e1-mc0-manifest-v1",
+  "frozen_at": "2026-08-05",
+  "source": {
+    "e0_artifact": "research/data/kuna-e0-events.json",
+    "e0_sha256": "5f5ab50e22fbaeea9728d16e3b45018e9a045c7a5fb9cae4f403b64c07b064a5",
+    "selector": "scripts/kuna-multicarrier-population.py",
+    "selector_sha256": "e440ecc3847d13e6d7a9ac2e54f9a6fe6ffa8bf6c89deaf0682c0ae598382922",
+    "extractor": "atlas-extract/FhAtlas/Extract.lean",
+    "extractor_sha256": "2bdd7b9cb00982037f3169b91186ebed24b87c542a2f108967eecc89fa09a8ce",
+    "search_method": "HomeIndex.carrier_statement_candidates",
+    "detector": "scripts/fh_home.py",
+    "detector_sha256": "112e6057df5025f7d4b8d12f48cbfbd89101678161c39c722eba2b38ed2bb435"
+  },
+  "selection": {
+    "unit": "one structurally retained own theorem-or-lemma E0 event",
+    "rule": "newest commits first; exactly one retained E0 move in the commit; own theorem or lemma; whole parsed source telescope changes only by that binder-head replacement; parent has at least two distinct instance-binder argument groups; exclude E1 replay 1-4",
+    "population_size": 3,
+    "ordering": "Git committer timestamp descending, then child hash and declaration",
+    "detector_outputs_seen_before_freeze": false,
+    "source_screening_seen_before_freeze": true,
+    "not_blind": true,
+    "screened_rejections_at_or_after_cutoff": [
+      {
+        "child": "8cf8a74bee8b26c02f12d6407bc7938683fd4ad7",
+        "parent": "8f9d9cff6bd728b17a24e163c9402775d9e6a365",
+        "date": "2026-02-16T15:42:27Z",
+        "subject": "feat: review lemmas about tendsto and group operations (#34792)",
+        "module": "Mathlib.Topology.Algebra.Group.Basic",
+        "parent_file": "Mathlib/Topology/Algebra/Group/Basic.lean",
+        "child_file": "Mathlib/Topology/Algebra/Group/Basic.lean",
+        "declaration": "Filter.tendsto_div_const_iff",
+        "event": {
+          "source": "CommGroupWithZero",
+          "target": "GroupWithZero",
+          "args": "G",
+          "stratum": "own"
+        },
+        "rejected": "already used by E1 replay 1-4"
+      },
+      {
+        "child": "fc892cf1d14d5f923b34ab9b79e62bd903e9eb36",
+        "parent": "6becb05db53ba2fefc500192b30f38faa6f52954",
+        "date": "2025-11-24T13:11:32Z",
+        "subject": "feat(Order): reprove Dickson's lemma (#31514)",
+        "module": "Mathlib.Data.Finsupp.PWO",
+        "parent_file": "Mathlib/Data/Finsupp/PWO.lean",
+        "child_file": "Mathlib/Data/Finsupp/PWO.lean",
+        "declaration": "Finsupp.isPWO",
+        "event": {
+          "source": "LinearOrder",
+          "target": "Preorder",
+          "args": "α",
+          "stratum": "own"
+        },
+        "rejected": "whole parsed telescope changes more than the retained E0 event",
+        "removed": [
+          {
+            "stratum": "own",
+            "class": "LinearOrder",
+            "args": "α"
+          },
+          {
+            "stratum": "own",
+            "class": "WellFoundedLT",
+            "args": "α"
+          }
+        ],
+        "added": [
+          {
+            "stratum": "own",
+            "class": "Preorder",
+            "args": "α"
+          },
+          {
+            "stratum": "own",
+            "class": "WellQuasiOrderedLE",
+            "args": "α"
+          }
+        ]
+      },
+      {
+        "child": "ee4aed768f1011aebf10c4d5f65dd4cc365f776a",
+        "parent": "9ea0de2d7520df8d560c8e6ce9629225cafd4510",
+        "date": "2025-11-24T08:57:35Z",
+        "subject": "feat (RingTheory/HahnSeries): introduce binomialFamily and generalized powers. (#31215)",
+        "module": "Mathlib.RingTheory.HahnSeries.Multiplication",
+        "parent_file": "Mathlib/RingTheory/HahnSeries/Multiplication.lean",
+        "child_file": "Mathlib/RingTheory/HahnSeries/Multiplication.lean",
+        "declaration": "HahnSeries.orderTop_one",
+        "event": {
+          "source": "MulZeroOneClass",
+          "target": "Zero",
+          "args": "R",
+          "stratum": "own"
+        },
+        "rejected": "whole parsed telescope changes more than the retained E0 event",
+        "removed": [
+          {
+            "stratum": "own",
+            "class": "MulZeroOneClass",
+            "args": "R"
+          },
+          {
+            "stratum": "own",
+            "class": "Nontrivial",
+            "args": "R"
+          }
+        ],
+        "added": [
+          {
+            "stratum": "own",
+            "class": "NeZero",
+            "args": "(1 : R)"
+          },
+          {
+            "stratum": "own",
+            "class": "One",
+            "args": "R"
+          },
+          {
+            "stratum": "own",
+            "class": "Zero",
+            "args": "R"
+          }
+        ]
+      },
+      {
+        "child": "4cea329f5d28ff4afb3c77deefa3d615b69a7172",
+        "parent": "ff11cd51652709cdc648592c03b5933bfcb1fb7e",
+        "date": "2025-10-15T10:28:26Z",
+        "subject": "chore(algebra): generalize mul_mem_smul_iff to rings (#30254)",
+        "module": "Mathlib.Algebra.Algebra.Operations",
+        "parent_file": "Mathlib/Algebra/Algebra/Operations.lean",
+        "child_file": "Mathlib/Algebra/Algebra/Operations.lean",
+        "declaration": "Submodule.mul_mem_smul_iff",
+        "event": {
+          "source": "CommRing",
+          "target": "Ring",
+          "args": "S",
+          "stratum": "own"
+        },
+        "rejected": "already used by E1 replay 1-4"
+      },
+      {
+        "child": "a49279ceae066e572a83c69c421cada205ede3b9",
+        "parent": "aced7b254a016bc6710d3b4bdc74776193867041",
+        "date": "2025-08-14T20:25:41Z",
+        "subject": "feat(RingTheory/PowerSeries/Binomial): add basic lemmas, golf (#27497)",
+        "module": "Mathlib.RingTheory.PowerSeries.Binomial",
+        "parent_file": "Mathlib/RingTheory/PowerSeries/Binomial.lean",
+        "child_file": "Mathlib/RingTheory/PowerSeries/Binomial.lean",
+        "declaration": "PowerSeries.binomialSeries_nat",
+        "event": {
+          "source": "CommRing",
+          "target": "Ring",
+          "args": "A",
+          "stratum": "own"
+        },
+        "rejected": "whole parsed telescope changes more than the retained E0 event",
+        "removed": [
+          {
+            "stratum": "own",
+            "class": "CommRing",
+            "args": "A"
+          }
+        ],
+        "added": [
+          {
+            "stratum": "inherited",
+            "class": "BinomialRing",
+            "args": "R"
+          },
+          {
+            "stratum": "inherited",
+            "class": "CommRing",
+            "args": "R"
+          },
+          {
+            "stratum": "own",
+            "class": "Algebra",
+            "args": "R A"
+          },
+          {
+            "stratum": "own",
+            "class": "Ring",
+            "args": "A"
+          }
+        ]
+      },
+      {
+        "child": "3ed8cd1505fee74686464f636d3fdb44d668602c",
+        "parent": "2c48e6c5e5e440e02eceaf7fba44004d0f95f97d",
+        "date": "2025-03-09T18:34:24Z",
+        "subject": "chore(MeasureTheory/Function/LpSeminorm/Basic): generalise more results to enorm classes (#22708)",
+        "module": "Mathlib.MeasureTheory.Function.StronglyMeasurable.AEStronglyMeasurable",
+        "parent_file": "Mathlib/MeasureTheory/Function/StronglyMeasurable/AEStronglyMeasurable.lean",
+        "child_file": "Mathlib/MeasureTheory/Function/StronglyMeasurable/AEStronglyMeasurable.lean",
+        "declaration": "MeasureTheory.AEStronglyMeasurable.enorm",
+        "event": {
+          "source": "SeminormedAddCommGroup",
+          "target": "TopologicalSpace",
+          "args": "β",
+          "stratum": "own"
+        },
+        "rejected": "whole parsed telescope changes more than the retained E0 event",
+        "removed": [
+          {
+            "stratum": "own",
+            "class": "SeminormedAddCommGroup",
+            "args": "β"
+          }
+        ],
+        "added": [
+          {
+            "stratum": "own",
+            "class": "ENormedAddMonoid",
+            "args": "β"
+          },
+          {
+            "stratum": "own",
+            "class": "TopologicalSpace",
+            "args": "β"
+          }
+        ]
+      },
+      {
+        "child": "2d8f64e7a9340bd3d4bce48d9498f903d01884de",
+        "parent": "383b0748ba499f742d97bf6ff772502b1e458986",
+        "date": "2024-12-13T08:43:41Z",
+        "subject": "feat: generalize `LinearMap.det_smul` (#19885)",
+        "module": "Mathlib.MeasureTheory.Function.Jacobian",
+        "parent_file": "Mathlib/MeasureTheory/Function/Jacobian.lean",
+        "child_file": "Mathlib/MeasureTheory/Function/Jacobian.lean",
+        "declaration": "MeasureTheory.det_one_smulRight",
+        "event": {
+          "source": "NormedField",
+          "target": "CommRing",
+          "args": "𝕜",
+          "stratum": "own"
+        },
+        "rejected": "whole parsed telescope changes more than the retained E0 event",
+        "removed": [
+          {
+            "stratum": "own",
+            "class": "NormedField",
+            "args": "𝕜"
+          }
+        ],
+        "added": [
+          {
+            "stratum": "own",
+            "class": "CommRing",
+            "args": "𝕜"
+          },
+          {
+            "stratum": "own",
+            "class": "ContinuousMul",
+            "args": "𝕜"
+          },
+          {
+            "stratum": "own",
+            "class": "TopologicalSpace",
+            "args": "𝕜"
+          }
+        ]
+      },
+      {
+        "child": "edcdc3e1603a3d61b9e9e2cea650beaa663f26bb",
+        "parent": "09242aa0f47b50626ae7552e5695f06fd4068b7a",
+        "date": "2024-11-20T14:09:19Z",
+        "subject": "feat(UpperHalfPlane): weaken assumptions of multiple atImInfty lemmas (#16015)",
+        "module": "Mathlib.Order.Filter.ZeroAndBoundedAtFilter",
+        "parent_file": "Mathlib/Order/Filter/ZeroAndBoundedAtFilter.lean",
+        "child_file": "Mathlib/Order/Filter/ZeroAndBoundedAtFilter.lean",
+        "declaration": "Filter.ZeroAtFilter.boundedAtFilter",
+        "event": {
+          "source": "NormedAddCommGroup",
+          "target": "SeminormedAddGroup",
+          "args": "β",
+          "stratum": "own"
+        },
+        "rejected": "already used by E1 replay 1-4"
+      },
+      {
+        "child": "59fe8aee62dd3ef39cf02fc131c92a3f14d883e4",
+        "parent": "e62619b105b7842d908239df1e111c430e9e46fc",
+        "date": "2024-11-14T11:25:30Z",
+        "subject": "feat(MeasurePreserving): add `add_measure` and `smul_measure` (#18953)",
+        "module": "Mathlib.MeasureTheory.Measure.MeasureSpace",
+        "parent_file": "Mathlib/MeasureTheory/Measure/MeasureSpace.lean",
+        "child_file": "Mathlib/MeasureTheory/Measure/MeasureSpace.lean",
+        "declaration": "MeasureTheory.Measure.AbsolutelyContinuous.smul",
+        "event": {
+          "source": "DistribMulAction",
+          "target": "SMul",
+          "args": "R ℝ≥0∞",
+          "stratum": "own"
+        },
+        "rejected": "whole parsed telescope changes more than the retained E0 event",
+        "removed": [
+          {
+            "stratum": "own",
+            "class": "DistribMulAction",
+            "args": "R ℝ≥0∞"
+          },
+          {
+            "stratum": "own",
+            "class": "Monoid",
+            "args": "R"
+          }
+        ],
+        "added": [
+          {
+            "stratum": "own",
+            "class": "SMul",
+            "args": "R ℝ≥0∞"
+          }
+        ]
+      }
+    ]
+  },
+  "development": [
+    {
+      "child": "114b8de56ffcd3c2e5c69396f118bbe39754c04c",
+      "parent": "a54dd1cf0ba3953f2d46ae8ded15cc74b98de128",
+      "date": "2025-03-05T14:00:11Z",
+      "subject": "feat: generalize map_div's type class (#22571)",
+      "module": "Mathlib.Algebra.Group.Hom.Defs",
+      "parent_file": "Mathlib/Algebra/Group/Hom/Defs.lean",
+      "child_file": "Mathlib/Algebra/Group/Hom/Defs.lean",
+      "declaration": "map_div'",
+      "event": {
+        "source": "MonoidHomClass",
+        "target": "MulHomClass",
+        "args": "F G H",
+        "stratum": "own"
+      },
+      "parent_toolchain": "leanprover/lean4:v4.18.0-rc1",
+      "parent_binders": [
+        {
+          "stratum": "own",
+          "class": "DivInvMonoid",
+          "args": "G"
+        },
+        {
+          "stratum": "own",
+          "class": "DivInvMonoid",
+          "args": "H"
+        },
+        {
+          "stratum": "own",
+          "class": "MonoidHomClass",
+          "args": "F G H"
+        },
+        {
+          "stratum": "inherited",
+          "class": "FunLike",
+          "args": "F G H"
+        }
+      ],
+      "parent_argument_groups": [
+        "F G H",
+        "G",
+        "H"
+      ],
+      "source_telescope_delta": "exactly the retained E0 binder-head replacement"
+    },
+    {
+      "child": "a5f50bc33216ba08f7e555873f7475f1b93579e2",
+      "parent": "71f079f9d2860606575d65f12a9ad4e34d80a841",
+      "date": "2024-09-10T08:39:37Z",
+      "subject": "feat: generalize Module.Finite.finite_basis to semirings (#16655)",
+      "module": "Mathlib.RingTheory.Finiteness",
+      "parent_file": "Mathlib/RingTheory/Finiteness.lean",
+      "child_file": "Mathlib/RingTheory/Finiteness.lean",
+      "declaration": "Module.Finite.finite_basis",
+      "event": {
+        "source": "Ring",
+        "target": "Semiring",
+        "args": "R",
+        "stratum": "own"
+      },
+      "parent_toolchain": "leanprover/lean4:v4.12.0-rc1",
+      "parent_binders": [
+        {
+          "stratum": "own",
+          "class": "Ring",
+          "args": "R"
+        },
+        {
+          "stratum": "own",
+          "class": "Nontrivial",
+          "args": "R"
+        },
+        {
+          "stratum": "own",
+          "class": "AddCommGroup",
+          "args": "M"
+        },
+        {
+          "stratum": "own",
+          "class": "Module",
+          "args": "R M"
+        },
+        {
+          "stratum": "own",
+          "class": "Module.Finite",
+          "args": "R M"
+        }
+      ],
+      "parent_argument_groups": [
+        "M",
+        "R",
+        "R M"
+      ],
+      "source_telescope_delta": "exactly the retained E0 binder-head replacement"
+    },
+    {
+      "child": "af101290534012f2928c3d6d0d67f0aade6ef428",
+      "parent": "08c93a33a405639ed569abdbf535d687b2f10e0a",
+      "date": "2024-07-15T00:22:14Z",
+      "subject": "feat(Algebra/Polynomial/AlgebraMap): generalize one of the ring in `map_aeval_eq_aeval_map` to `Semiring` (#14735)",
+      "module": "Mathlib.Algebra.Polynomial.AlgebraMap",
+      "parent_file": "Mathlib/Algebra/Polynomial/AlgebraMap.lean",
+      "child_file": "Mathlib/Algebra/Polynomial/AlgebraMap.lean",
+      "declaration": "Polynomial.map_aeval_eq_aeval_map",
+      "event": {
+        "source": "CommSemiring",
+        "target": "Semiring",
+        "args": "S",
+        "stratum": "own"
+      },
+      "parent_toolchain": "leanprover/lean4:v4.10.0-rc2",
+      "parent_binders": [
+        {
+          "stratum": "own",
+          "class": "CommSemiring",
+          "args": "S"
+        },
+        {
+          "stratum": "own",
+          "class": "CommSemiring",
+          "args": "T"
+        },
+        {
+          "stratum": "own",
+          "class": "Semiring",
+          "args": "U"
+        },
+        {
+          "stratum": "own",
+          "class": "Algebra",
+          "args": "R S"
+        },
+        {
+          "stratum": "own",
+          "class": "Algebra",
+          "args": "T U"
+        },
+        {
+          "stratum": "inherited",
+          "class": "CommSemiring",
+          "args": "R"
+        }
+      ],
+      "parent_argument_groups": [
+        "R",
+        "R S",
+        "S",
+        "T",
+        "T U",
+        "U"
+      ],
+      "source_telescope_delta": "exactly the retained E0 binder-head replacement"
+    }
+  ],
+  "outcomes": {
+    "exact_proposal": "the carrier-attached method includes the expert target for the event binder",
+    "wrong_target": "the method judges the event binder but excludes the expert target",
+    "refused": "the method refuses before candidate generation",
+    "no_attached_requirement": "the row has no retained statement requirement at the event carrier",
+    "statement_failure": "the expert target cannot be re-elaborated as a standalone parent statement",
+    "proof_success": "a proof of the exact expert target is kernel-accepted in the parent",
+    "proof_search_failure": "the exact statement elaborates but the frozen tactic ladder finds no proof",
+    "environment_failure": "the historical parent cannot be reconstructed or imported"
+  },
+  "claim_boundary": "a bounded source-selected replay population, not detector recall and not a sample of every historical opportunity"
+}

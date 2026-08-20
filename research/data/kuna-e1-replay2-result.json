@@ -1,0 +1,72 @@
+{
+  "schema": "fh-kuna-e1-result-v1",
+  "executed_at": "2026-08-05",
+  "status": "rejected-dependency-contaminated",
+  "manifest": {
+    "path": "research/data/kuna-e1-replay2-manifest.json",
+    "sha256": "2a40269a56f6cabeefc9ac9ae9b82804c88d4f0d4cecefd7884b13c9fb12ec52"
+  },
+  "replay": {
+    "parent": "09242aa0f47b50626ae7552e5695f06fd4068b7a",
+    "child": "edcdc3e1603a3d61b9e9e2cea650beaa663f26bb",
+    "toolchain": "leanprover/lean4:v4.14.0-rc2",
+    "module": "Mathlib.Order.Filter.ZeroAndBoundedAtFilter",
+    "declaration": "Filter.ZeroAtFilter.boundedAtFilter",
+    "event": {
+      "source": "NormedAddCommGroup",
+      "target": "SeminormedAddGroup",
+      "args": "β"
+    },
+    "parent_build": {"jobs": 1367, "exit": 0, "source_worktree_clean": true},
+    "child_build": {"jobs": 1367, "exit": 0, "source_worktree_clean": true}
+  },
+  "extractor": {
+    "source_hashes_identical_to_replay1": true,
+    "rows": 127999,
+    "bytes": 235078181,
+    "sha256": "ff55b5137e23c14dcbe243e4f49f676a1375c9891a8a6adc7133c9fe831b04a1",
+    "import_ms": 1403,
+    "selection_ms": 1436,
+    "encode_write_ms": 67303,
+    "json_validation": "127999 of 127999 rows parsed",
+    "raw_path": "/tmp/fh-kuna-e1r2-parent-09242aa0.jsonl",
+    "raw_path_is_ephemeral": true
+  },
+  "unchanged_detector": {
+    "path": "scripts/fh_home.py",
+    "sha256": "612bbe49285994b4e0d7d01d5caa8b00a3856b1aeebe4865f95f3215a407ce11",
+    "rows": 127999,
+    "classes": 796,
+    "lattice_edges": 1124,
+    "forgetful_instances": 5433,
+    "parse_errors": 0,
+    "load_seconds": 4.356,
+    "index_seconds": 63.118,
+    "peak_rss_gib": 0.664,
+    "instance_binders": [["NormedAddCommGroup", 1]],
+    "verdict": {
+      "name": "Filter.ZeroAtFilter.boundedAtFilter",
+      "binders": [{"class": "NormedAddCommGroup", "verdict": "at-home"}]
+    }
+  },
+  "expressibility": {
+    "weakened_signature_as_axiom_in_parent_exit": 0,
+    "weakened_signature_as_axiom_in_child_exit": 0,
+    "actual_child_proof_in_parent_exit": 1,
+    "actual_child_proof_in_child_exit": 0,
+    "parent_error": "Asymptotics.isLittleO_one_iff still fixes the codomain to the stronger commutative normed group",
+    "same_commit_prerequisite": "Asymptotics.isLittleO_one_iff",
+    "prerequisite_diff": "the same commit generalized the lemma from the ambient f' to an independently typed f"
+  },
+  "selection_audit": {
+    "defect": "the replay-2 selector treated E0 artifact row order as chronology",
+    "actual_newest_single-event_own_commit": "8cf8a74bee8b26c02f12d6407bc7938683fd4ad7",
+    "repair": "sort eligible commits by Git committer timestamp and require child-proof elaboration in the parent"
+  },
+  "decision": {
+    "detector_change": "rejected",
+    "denominator": "excluded",
+    "reason": "the target theorem is only provable after a same-commit prerequisite generalization, so it is not a standalone parent opportunity",
+    "next_gate": "dependency-isolated child proof must elaborate unchanged in the parent before detector output is scored"
+  }
+}

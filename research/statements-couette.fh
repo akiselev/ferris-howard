@@ -1,0 +1,160 @@
+// statements/couette.fh — couette-re-e Phase 1 statement layer (FROZEN after G1)
+// Ferris–Howard surface. Bootstrap mode: each decl carries its Lean elaboration
+// as the agent implements; hashes recorded in ledger/freeze.txt at G1 sign-off.
+//
+// NONDIMENSIONALIZATION (fixed once, per CLAUDE.md §4 Phase 1):
+//   channel y ∈ [-1, 1], base flow U(y) = y, so U'(y) = 1. Periodic x, z.
+//   Reynolds number on half-gap and wall speed. #[units(nondim)] throughout.
+//
+// PHASE 0 AMENDMENT (binding): the admissible perturbation class is a PARAMETER.
+// "Energy stability of plane Couette flow" is ambiguous in the literature
+// (Joseph 20.65 vs Orr 44.3); every predicate below names its class explicitly.
+
+mod couette {
+
+use mathlib::analysis::*;
+use mathlib::linear_algebra::*;
+
+// ---------- 1. Perturbation fields (finite definition layer) ----------------
+// Definition-layer decision (ledgered): fields live on finite Fourier×poly
+// truncations; the continuum object enters via suprema + the adequacy bridge.
+
+/// Truncation level: Fourier wavenumbers (alpha, beta) and wall-normal degree N.
+struct Trunc { alpha: Rat, beta: Rat, n: Nat }
+
+/// A divergence-free, no-slip perturbation field at truncation t,
+/// represented through a streamfunction/potential pair so that
+/// incompressibility is STRUCTURAL (never a numerical side condition).
+struct Field(t: Trunc) { /* coefficient data, div-free by construction */ }
+
+#[control(positive)]  // V1: habitability — the class must be inhabited
+theorem field_nonzero_exists(t: Trunc, h: t.n >= 2)
+  -> exists<u: Field(t)> (u != Field::zero(t))
+{ todo!() }
+
+// ---------- 2. Admissible classes (THE Phase-0-critical parameter) ----------
+
+enum AdmissibleClass {
+  Full,      // all truncations (alpha, beta) — Joseph's 1966 maximization runs here
+  XIndep,    // alpha == 0: streamwise-independent rolls (Joseph's reported minimizer)
+  ZIndep,    // beta == 0: 2D fields in the x–y plane (Orr's 1907 class)
+}
+// NAMING HAZARD (ledgered, V7 must reconcile): the dispute literature calls
+// XIndep fields "streamwise perturbations" and ZIndep "spanwise perturbations"
+// in some papers and the reverse in others. FH names are wavenumber-support
+// facts, never words. The rosetta for referees lives in the non-claims section.
+
+fn inClass(c: AdmissibleClass, t: Trunc) -> Bool {
+  match c { Full => true, XIndep => decide(t.alpha == 0), ZIndep => decide(t.beta == 0) }
+}
+
+// ---------- 3. The quadratic form and the variational threshold -------------
+
+/// Dissipation D[u] and production P[u]: exact rational values of the two
+/// integrals (polynomial × trig closed forms — Phase 3a evaluates them
+/// exactly in Rust AND re-verifies the closed forms in Lean).
+fn dissipation(t: Trunc, u: Field(t)) -> Rat { todo!() }
+fn production(t: Trunc, u: Field(t)) -> Rat { todo!() }
+
+#[control(positive)]
+theorem dissipation_pos(t: Trunc, u: Field(t), h: u != Field::zero(t))
+  -> (0 < dissipation(t, u))
+{ todo!() }
+
+/// Q_Re[u] = (1/Re)·D[u] + P[u].  Junk-guard: Re > 0 is a HYPOTHESIS
+/// everywhere (V10: Mathlib's 1/0 = 0 must never silently enter a statement).
+fn energyForm(re: Rat, t: Trunc, u: Field(t)) -> Rat {
+  (1/re) * dissipation(t, u) + production(t, u)
+}
+
+/// Monotone-energy predicate AT a Reynolds number, FOR a class:
+/// the form is PSD on every truncation in the class.
+fn energyMonotoneAt(re: Rat, c: AdmissibleClass) -> Prop {
+  for<t: Trunc, u: Field(t)>
+    ((0 < re) && (inClass(c, t) == true) -> (0 <= energyForm(re, t, u)))
+}
+
+/// The variational threshold for class c (the object Joseph/Orr computed):
+/// supremum of Reynolds numbers with monotone energy. Real-valued; may be ∞
+/// for a class (that possibility is exactly the FMP claim — see §6).
+fn Re_E(c: AdmissibleClass) -> EReal {
+  sSup { re : Rat | (0 < re) && energyMonotoneAt(re, c) }
+}
+
+// ---------- 4. FROZEN TARGETS: the bracket (primary deliverable) ------------
+// Placeholders LOWER, UPPER instantiated by Phase 3; the STATEMENTS freeze now.
+// Answer-key expectation (gate-script use only): Re_E(Full) ≈ 20.65-ish.
+
+const LOWER: Rat;   // Phase 3b: LDLᵀ certificate + tail lemma
+const UPPER: Rat;   // Phase 3a: rational trial field
+
+#[rigor(certified)]
+theorem couette_stable_below(re: Rat, h1: 0 < re, h2: re <= LOWER)
+  -> energyMonotoneAt(re, AdmissibleClass::Full)
+{ todo!() }
+
+#[rigor(certified)]
+theorem couette_not_monotone_above()
+  -> !energyMonotoneAt(UPPER, AdmissibleClass::Full)
+{ todo!() }
+
+#[rigor(certified)]
+theorem re_e_bracket()
+  -> ((LOWER <= Re_E(AdmissibleClass::Full)) && (Re_E(AdmissibleClass::Full) <= UPPER))
+{ todo!() }
+
+// ---------- 5. Controls & discrimination (the battery's hooks) --------------
+
+#[control(negative)]  // definition must FAIL where physics says it fails
+theorem not_monotone_at_large_re()
+  -> !energyMonotoneAt(1000000, AdmissibleClass::Full)
+{ todo!() }
+
+#[control(discrimination)]  // V9: the bracket with endpoints swapped is FALSE
+theorem bracket_swap_refuted(h: UPPER < LOWER) -> False
+{ todo!() }
+
+#[control(positive)]  // V1: some Reynolds number IS monotone (non-vacuity of the sup)
+theorem monotone_at_one() -> energyMonotoneAt(1, AdmissibleClass::Full)
+{ todo!() }
+
+// ---------- 6. The dispute, formalized (co-deliverable) ---------------------
+// The adjudication thesis: the controversy conflates TWO predicates —
+// the variational threshold (above) and dynamical energy decay along the
+// actual nonlinear evolution. We state both; the hypothesis-diff IS the paper.
+
+/// Statement-level: energy decay along nonlinear Navier–Stokes solutions with
+/// initial data in class c. (Evolution is Phase-4+ / statement-level; the
+/// referee deliverable needs the STATEMENT pinned, not the PDE theory built.)
+#[rigor(statement)]
+fn energyDecays(re: Rat, c: AdmissibleClass) -> Prop { todo!() }
+
+#[reading(joseph_1966)] #[rigor(statement)]
+theorem reading_joseph()
+  -> (Re_E(AdmissibleClass::Full) < 21)   // classical: threshold finite, ≈20.65
+{ todo!() }
+
+#[reading(fmp_2021)] #[rigor(statement)]
+theorem reading_fmp(re: Rat, h: 0 < re)
+  -> energyDecays(re, AdmissibleClass::XIndep)   // FMP: x-indep data decays at ALL Re
+{ todo!() }
+
+// The diff exhibited: both readings can hold — they speak of different objects.
+#[rigor(statement)]
+theorem readings_compatible()
+  -> ((Re_E(AdmissibleClass::Full) < 21)
+      && for<re: Rat> ((0 < re) -> energyDecays(re, AdmissibleClass::XIndep))
+      -> True)   // compatibility scaffold; sharpened during adjudication phase
+{ todo!() }
+
+// ---------- 7. Adequacy (V12: the continuum bridge, tagged not hidden) ------
+
+#[rigor(statement)] #[assumption(adequacy_gap)]
+theorem truncation_adequacy()
+  // The finite-truncation Re_E equals the textbook continuum variational
+  // threshold. Stated so the gap is NAMED; proving it (or importing it) is
+  // ledgered as an assumption until discharged.
+  -> True
+{ todo!() }
+
+} // mod couette

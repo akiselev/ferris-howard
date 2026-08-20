@@ -1,0 +1,159 @@
+{
+  "schema": "fh-kuna-e1-result-v1",
+  "executed_at": "2026-08-05",
+  "status": "completed-genuine-miss",
+  "manifest": {
+    "path": "research/data/kuna-e1-replay3-manifest.json",
+    "sha256": "2df70b9040132c5253222ed089fe5a1ebae7e316aefc76d36d687d4036e70004"
+  },
+  "replay": {
+    "parent": "8f9d9cff6bd728b17a24e163c9402775d9e6a365",
+    "child": "8cf8a74bee8b26c02f12d6407bc7938683fd4ad7",
+    "toolchain": "leanprover/lean4:v4.28.0",
+    "module": "Mathlib.Topology.Algebra.Group.Basic",
+    "declaration": "Filter.tendsto_div_const_iff",
+    "event": {
+      "source": "CommGroupWithZero",
+      "target": "GroupWithZero",
+      "args": "G"
+    },
+    "parent_build": {"jobs": 1225, "exit": 0, "source_worktree_clean": true},
+    "child_build": {"jobs": 1225, "exit": 0, "source_worktree_clean": true}
+  },
+  "dependency_isolation": {
+    "weakened_signature_in_parent_exit": 0,
+    "weakened_signature_in_child_exit": 0,
+    "actual_child_proof_in_parent_exit": 0,
+    "actual_child_proof_in_child_exit": 0,
+    "same_commit_prerequisite": false,
+    "certificate": "the exact child theorem body elaborates unchanged under GroupWithZero in the frozen parent kernel"
+  },
+  "extractor": {
+    "source_files": {
+      "atlas-extract/lakefile.toml": "a194f71d7d0349c4954805363c5b6b8b3d06415445d982e957251aa77f04104c",
+      "atlas-extract/AtlasExtract.lean": "be49b34cb3ad684bcdcd19d81b756bbde6332ee60bc8d2eddc01a6215305bf5d",
+      "atlas-extract/FhAtlas/Extract.lean": "e296f1be37209a52f95549bccde795b1212c8624cd86a6f4a886de64b0b86528",
+      "atlas-extract/FhAtlas/Statement.lean": "e0d5a35d91dd6a7cc3333a978dcb8173041ba7144c1849f172d0fcc2db57203c"
+    },
+    "rows": 162287,
+    "bytes": 193561096,
+    "sha256": "e8f74714aaca65add3fb4b01635b0a53c2d1a95b82dcb958c1fce00ead5d57d5",
+    "import_ms": 1828,
+    "encode_write_ms": 120657,
+    "wall_seconds": 125.07,
+    "json_validation": "162287 of 162287 rows parsed",
+    "raw_path": "/tmp/fh-kuna-e1r3-parent-8f9d9cff.jsonl",
+    "raw_path_is_ephemeral": true
+  },
+  "unchanged_detector": {
+    "path": "scripts/fh_home.py",
+    "sha256": "612bbe49285994b4e0d7d01d5caa8b00a3856b1aeebe4865f95f3215a407ce11",
+    "rows": 162287,
+    "classes": 847,
+    "lattice_edges": 847,
+    "forgetful_instances": 4304,
+    "parse_errors": 0,
+    "load_seconds": 5.440,
+    "index_seconds": 47.448,
+    "peak_rss_kib": 741852,
+    "instance_binders": [
+      ["CommGroupWithZero", 1],
+      ["TopologicalSpace", 1],
+      ["ContinuousDiv", 3]
+    ],
+    "verdict": {"skipped": "multi-carrier", "carriers": 2},
+    "event_verdict": "refused"
+  },
+  "loss_localization": {
+    "stage_1": "carrier inference chooses ContinuousDiv's TopologicalSpace instance argument instead of its structural G parameter",
+    "stage_2": "combined statement-plus-parent-proof evidence retains commutative requirements from the old proof",
+    "stage_3": "class-head-only statement evidence collapses OfNat G 0 to OfNat and cannot uniquely identify GroupWithZero",
+    "classification": "genuine candidate-generation false negative after a valid dependency-isolated replay"
+  },
+  "ablations": {
+    "parameter_aware_carrier": {
+      "rule": "ignore arguments corresponding to the class declaration's own instance parameters, then retain the existing last-structural-parameter convention",
+      "baseline_multi_carrier": 20540,
+      "refined_multi_carrier": 10132,
+      "newly_judged": 9568,
+      "changed_declarations": 13708,
+      "target_result": "no-single-home",
+      "decision": "insufficient alone and too broad for an unqualified default change"
+    },
+    "statement_only_unique_bundle": {
+      "target_requirements": ["Div", "OfNat"],
+      "unique_target": "DivInvMonoid",
+      "historical_target": "GroupWithZero",
+      "decision": "rejected because class-head evidence erases the numeral parameter and produces an ill-typed target"
+    },
+    "statement_cover_enumeration": {
+      "judged_theorems": 30909,
+      "requirement_bearing_events": 10926,
+      "events_with_nonempty_cover_sets": 8671,
+      "raw_cover_proposals": 35461,
+      "target_candidates": [
+        "DivInvMonoid",
+        "DivInvOneMonoid",
+        "DivisionCommMonoid",
+        "DivisionMonoid",
+        "GroupWithZero"
+      ],
+      "target_candidate_count": 5,
+      "historical_target_present": true,
+      "statement_reelaboration": {
+        "DivInvMonoid": "NO STATEMENT: missing OfNat G 0",
+        "DivInvOneMonoid": "NO STATEMENT: missing OfNat G 0",
+        "DivisionCommMonoid": "NO STATEMENT: missing OfNat G 0",
+        "DivisionMonoid": "NO STATEMENT: missing OfNat G 0",
+        "GroupWithZero": "statement elaborates"
+      },
+      "exact_child_proof_for_survivor_in_parent_exit": 0
+    }
+  },
+  "attempt_command_audit": {
+    "historical_4_28_compatibility_patch": "removed two result-pattern type annotations in an ephemeral copy",
+    "four_invalid_candidates": "NO STATEMENT",
+    "GroupWithZero_with_standard_ladder": "not proved",
+    "GroupWithZero_with_supplied_child_tactic_before_fix": "not proved",
+    "root_cause": "tryTactic declared its temporary theorem with no universe parameters, so polymorphic proofs elaborated and then failed addDeclCore",
+    "fix": "pass the original declaration's levelParams to the temporary theorem",
+    "GroupWithZero_with_supplied_child_tactic_after_fix": "PROVED",
+    "fixed_historical_exit": 0,
+    "interpretation": "candidate filtering and the exact child proof now pass through the command surface as well as the standalone parent theorem"
+  },
+  "option_gated_implementation": {
+    "path": "scripts/fh_home.py",
+    "method": "HomeIndex.statement_candidates",
+    "post_change_sha256": "92c8c6904c49485a11dfe1a810f9f10ced89e018f00a5d98b926286f01791ede",
+    "default_home_behavior_changed": false,
+    "historical_default_result": {"skipped": "multi-carrier", "carriers": 2},
+    "historical_search_candidates": [
+      "DivInvMonoid",
+      "DivInvOneMonoid",
+      "DivisionCommMonoid",
+      "DivisionMonoid",
+      "GroupWithZero"
+    ],
+    "full_parent_search_events": 8671,
+    "full_parent_search_proposals": 35461,
+    "selftest": {
+      "path": "scripts/fh-home-search-selftest.py",
+      "sha256": "fe352ff2ee70d448ced45f42a6687799e8b0a8c353cecc7cd9fa7dfd431a0f9c",
+      "exit": 0
+    },
+    "prover_fix": {
+      "path": "lean/FerrisHoward/Atlas/Home.lean",
+      "sha256": "e1c0cee09b38e1fd9e0d87368a786863ff096afbb453ae829df22746be5d8db6",
+      "regression_path": "lean/Tests/Atlas/Home.lean",
+      "regression_sha256": "a2746b0f7b278ec505e84655ab51f6607f696348443eb688742a1ca3dc7d8bb5",
+      "regression": "attemptUniverse uses Type* and is proved by exact?; the empty-levelParams implementation fails it"
+    }
+  },
+  "decision": {
+    "detector_default_change": "rejected",
+    "recovery_status": "end-to-end exact recovery demonstrated through default-off enumeration, historical statement filtering, and #fh_home_attempt",
+    "reason": "the exact target is recovered and proved, but 35461 raw corpus proposals still require filtering before this can become a production default",
+    "next_refinement": "preserve applied class arguments such as OfNat G 0 to reduce the candidate set, automate probe emission, and score additional frozen development events",
+    "claim": "E1 now contains one valid detector false negative and an exact parent-kernel recovery certificate; it is still one development event, not a recall estimate"
+  }
+}

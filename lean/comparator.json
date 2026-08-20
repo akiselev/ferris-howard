@@ -1,0 +1,12 @@
+{
+  "challenge_module": "Challenge",
+  "solution_module": "Solution",
+  "theorem_names": [
+    "Palomar.CrystallographicRestriction.main_result",
+    "Palomar.CrystallographicRestriction.order_four_occurs",
+    "Palomar.CrystallographicRestriction.order_six_occurs"
+  ],
+  "definition_names": [],
+  "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"],
+  "enable_nanoda": true
+}

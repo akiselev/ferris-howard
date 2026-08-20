@@ -1,9 +1,9 @@
 # Ferris–Howard Stress Corpus & Adversarial Review
 
-**Status:** Draft 0.1 · Companion to `ferris-howard-design.md`
+**Status:** Draft 0.2 (amended 2026-08-01: reconciled with `design.md`; F18 migration executed) · Companion to `design.md`
 **Standing decision (recorded):** theorem declarations require the `theorem` keyword. No automatic Prop-detection. The governing principle throughout this review is *explicit over implicit*; every finding below is resolved in that direction unless doing so destroys readability, and each such exception is flagged.
 
-Each group below gives the mathematics, the proposed Ferris–Howard rendering, and the ambiguities it flushed out (tagged `F1`–`F16`). Consolidated rulings follow in the review section. These files are the seed of the golden-test suite: every group should become `Tests/corpus/gNN_*.fh` with its findings encoded as positive or negative tests.
+Each group below gives the mathematics, the proposed Ferris–Howard rendering, and the ambiguities it flushed out (tagged `F1`–`F16`). Consolidated rulings follow in the review section. These files are the seed of the golden-test suite: every group should become `Tests/corpus/gNN_*.lean` (FH-in-`.lean` embedding through M2 — design.md §2; a standalone `.fh` fixture form arrives with M3) with its findings encoded as positive or negative tests. Fixture note (2026-08-01): until M3, the `.lean` lexer owns comments — corpus code uses `--` line and `/- -/` block comments; Rust's `//` and `/* */` cannot lex.
 
 ---
 
@@ -46,7 +46,7 @@ trait Grp<Self> {
 theorem id_unique<G>(e2: G, h: for<a: G> Grp::op(e2, a) == a) -> e2 == Grp::e()
 where G: Grp
 {
-    lean! { simpa using congrArg id (h Grp.e) }  // sketch; real proof in tests
+    lean! { simpa using congrArg id (h Grp.e) }  -- sketch; real proof in tests
 }
 ```
 
@@ -63,7 +63,7 @@ trait POrder<Self> {
     trans:    for<a, b, c: Self> (a <= b) -> (b <= c) -> (a <= c);
 }
 
-// A Galois connection between two ordered types.
+-- A Galois connection between two ordered types.
 fn galois_connection<A, B>(f: A -> B, g: B -> A) -> Prop
 where A: POrder, B: POrder
 {
@@ -71,7 +71,7 @@ where A: POrder, B: POrder
 }
 ```
 
-**F3 (implication):** hypothesis chains need an arrow in expression position. Resolution: since propositions *are* types, implication *is* the function arrow — `->` becomes a first-class right-associative operator of the unified expression grammar, lowest precedence. `(a <= b) -> (b <= a) -> a == b` is `a ≤ b → b ≤ a → a = b`. This is not new syntax; it is the type-arrow made available everywhere, which the unified grammar already implied. **F4 (iff):** no Rust spelling exists; adopt `<->`, precedence just above `->`. **F5 (Prop-valued comparisons):** `<=`, `<`, `>`, `>=` denote the mathematical relations (`≤` etc.), i.e. Props, not Bools. This is the single most consequential ruling in the review — see "Prop-first operators" below, and Group 11 for the `if` consequence. **F6 (comparison vs. generics):** `a < b` in type/expression position collides with generic application `a<...>`. Ruling: in any position where `<` could open a generic argument list, a comparison must be parenthesized — `(a < b)` — enforced by the parser with a targeted error ("if you meant less-than, add parentheses"). The corpus above already obeys this. Negative test: `fn f(h: a < b)` unparenthesized must fail with that message.
+**F3 (implication):** hypothesis chains need an arrow in expression position. Resolution: since propositions *are* types, implication *is* the function arrow — `->` becomes a first-class right-associative operator of the unified expression grammar, lowest precedence. `(a <= b) -> (b <= a) -> a == b` is `a ≤ b → b ≤ a → a = b`. This is not new syntax; it is the type-arrow made available everywhere, which the unified grammar already implied. **F4 (iff):** no Rust spelling exists; adopt `<->`, precedence just above `->`. **F5 (Prop-valued comparisons):** `<=`, `<`, `>`, `>=` denote the mathematical relations (`≤` etc.), i.e. Props, not Bools. This is the single most consequential ruling in the review — see "Prop-first operators" below, and Group 11 for the `if` consequence. **F6 (comparison vs. generics):** `a < b` in type/expression position collides with generic application `a<...>`. Ruling: in any position where `<` could open a generic argument list, a comparison must be parenthesized — `(a < b)` — with a targeted error ("if you meant less-than, add parentheses"). (Amended 2026-08-01: enforcement happens at macro-expansion time, since Lean's parser cannot emit custom wording; same fixed message, exact FH-source span, observable behavior unchanged.) The corpus above already obeys this. Negative test: `fn f(h: a < b)` unparenthesized must fail with that message.
 
 ## Group 4 — Real analysis: ε–δ limits (nested quantifiers, precedence)
 
@@ -92,7 +92,7 @@ theorem limit_unique(f: Real -> Real, a: Real, L1: Real, L2: Real,
 }
 ```
 
-Stresses: function types as parameter types (`Real -> Real` — the F3 arrow again, now in type position, same operator); deep quantifier alternation; method-call chains inside Props. **F7 (precedence table):** the interaction of `->`, `<->`, `&&`, `||`, comparisons, and arithmetic must be specified once, normatively. Ruling: from loosest to tightest, `->` (right-assoc), `<->`, `||`, `&&`, `!`, comparisons (non-associative — `a < b < c` is a parse error, matching Rust and avoiding a classic math-notation trap), then Rust's arithmetic precedence unchanged. `exists<>`/`for<>` scope extends as far right as possible (like Lean's `∀`, unlike C's declarators); parenthesize to stop them early. Golden tests must pin every row of this table.
+Stresses: function types as parameter types (`Real -> Real` — the F3 arrow again, now in type position, same operator); deep quantifier alternation; method-call chains inside Props. **F7 (precedence table):** the interaction of `->`, `<->`, `&&`, `||`, comparisons, and arithmetic must be specified once, normatively. Ruling: from loosest to tightest, `->` (right-assoc), `<->`, `||`, `&&`, `!`, comparisons (non-associative — `a < b < c` is a parse error, matching Rust and avoiding a classic math-notation trap), then Rust's arithmetic precedence unchanged. `exists<>`/`for<>` scope extends as far right as possible (like Lean's `∀`, unlike C's declarators); parenthesize to stop them early. Golden tests must pin every row of this table. **Amendment (2026-08-01, completing the table before the pre-M1 freeze):** (i) `<->` is **non-associative** — `a <-> b <-> c` is a parse error (chained iff is the same trap as chained comparison; relaxing to associative later is non-breaking, the reverse is not). (ii) `in` (F12) sits in the comparison band: non-associative, no chaining (`a in b in c` errors), so `x in s && y in t` is `(x in s) && (y in t)`. (iii) In do-block loop headers (`for pat in expr`, design §4.7), `in` is a positional keyword of the header, not the binary operator; a membership Prop at the top level of the iteree must be parenthesized — F6's philosophy, parens over cleverness. (iv) Quantifier-scope interactions are normative golden rows: `for<x: T> P && Q` is `for<x: T> (P && Q)` — scope swallows every operator including `->`; conjoining outside requires parenthesizing the quantifier.
 
 ## Group 5 — Linear algebra: rank–nullity (bundled morphisms, types as arguments)
 
@@ -102,7 +102,7 @@ theorem rank_nullity<K, V, W>(f: LinearMap<K, V, W>)
 where K: Field, V: AddCommGroup + Module<K> + FiniteDimensional<K>,
       W: AddCommGroup + Module<K>
 {
-    lean! { exact Submodule.finrank_quotient_add_finrank ... }  // via first iso thm
+    lean! { exact Submodule.finrank_quotient_add_finrank ... }  -- via first iso thm
 }
 ```
 
@@ -125,13 +125,13 @@ Stresses: big operators via iterator-method style — `Finset::range(n+1).sum(|k
 ## Group 7 — Number theory: our home turf (Fact bounds, named arguments)
 
 ```rust
-theorem fermat_little<const P: Nat>(a: Fp<P>) -> a.pow(P) == a
+theorem fermat_little<P: Nat>(a: Fp<P>) -> a.pow(P) == a
 where P: Prime
 {
     lean! { exact ZMod.pow_card a }
 }
 
-theorem primes_infinite() -> for<n: Nat> exists<p: Nat> (p > n) && p.prime {
+theorem primes_infinite() -> for<n: Nat> exists<p: Nat> (p > n) && p.Prime {
     lean! { intro n; exact Nat.exists_infinite_primes (n + 1) |>.imp (by omega) }
 }
 
@@ -142,7 +142,7 @@ theorem crt(a: Nat, b: Nat, m: Nat, n: Nat, h: coprime(m, n))
 }
 ```
 
-Stresses: the flagship `where P: Prime` → `[Fact P.Prime]` bridge; `p.prime` as generalized dot notation reaching `Nat.Prime p` (dot syntax on a Prop-valued family — Lean handles this natively, we inherit). **F11 (named arguments):** `congruent(x, a, modulus: m)` — Rust has no named args; Lean does (`(modulus := m)`). Ruling: adopt `name: expr` in call position mapping to Lean named arguments. Grammar check: in Rust, `ident: expr` inside a call is currently ill-formed, so the syntax is free; no collision with struct literals (brace-delimited) or ascription (paren-delimited, F10). This also retroactively blesses the keyword-argument idiom from our notation discussions.
+Stresses: the flagship `where P: Prime` → `[Fact P.Prime]` bridge; `p.Prime` as generalized dot notation reaching `Nat.Prime p` (dot syntax on a Prop-valued family — Lean handles this natively and *case-sensitively*, we inherit; the spelling is `p.Prime`, never `p.prime`, per design §6's no-mangling policy). Note also: no `const` modifier on `<P: Nat>` — FH angle-bracket generics are already implicit binders over values as well as types (design §4.1's dependency), so Rust's const-generic marker adds nothing and is not FH syntax. **F11 (named arguments):** `congruent(x, a, modulus: m)` — Rust has no named args; Lean does (`(modulus := m)`). Ruling: adopt `name: expr` in call position mapping to Lean named arguments. Grammar check: in Rust, `ident: expr` inside a call is currently ill-formed, so the syntax is free; no collision with struct literals (brace-delimited) or ascription (paren-delimited, F10). This also retroactively blesses the keyword-argument idiom from our notation discussions.
 
 ## Group 8 — Set theory: Cantor's theorem (membership, negation, set-builder)
 
@@ -156,21 +156,20 @@ fn surjective<A, B>(f: A -> B) -> Prop {
 }
 
 theorem cantor<A>(f: A -> Set<A>) -> !surjective(f) {
-    // diagonal set: those x not members of their own image
+    -- diagonal set: those x not members of their own image
     let d: Set<A> = {x: A | !(x in f(x))};
     lean! { intro hsurj; obtain ⟨a, ha⟩ := hsurj d; ... }
 }
 ```
 
-**F12 (membership):** adopt `in` as a binary Prop operator, `x in s` → `x ∈ s`. Grammar-safe: Rust reserves `in` but uses it only inside `for` loops, and our `for<>` quantifier is bracketed, so no collision — negative test to confirm `for` headers never capture it. **F13 (set-builder vs. subtype):** `{x: A | P(x)}` appears in *term* position (a `Set<A>`, i.e. `A -> Prop`) and in *type* position (a subtype, `{r: Nat | P(r)}` as in Group 12). Same surface, two elaborations, disambiguated by position — acceptable because the two meanings are the same mathematical idea (comprehension) and Lean itself uses `{x | P}` for
-both `Set` and `Subtype` notation. The brace-expression escape in generic args (`Vector<T, {n*2}>`) is distinguished by the absence of `ident:` + `|` — parser rule with two-token lookahead; both readings get golden tests.
+**F12 (membership):** adopt `in` as a binary Prop operator, `x in s` → `x ∈ s`. Grammar-safe: Rust reserves `in` but uses it only inside `for` loops, and our `for<>` quantifier is bracketed, so no collision — negative test to confirm `for` headers never capture it. (Do-block `for pat in expr` loop headers, a later addition, are handled by F7's 2026-08-01 amendment, clause iii.) **F13 (set-builder vs. subtype):** `{x: A | P(x)}` appears in *term* position (a `Set<A>`, i.e. `A -> Prop`) and in *type* position (a subtype, `{r: Nat | P(r)}` as in Group 12). Same surface, two elaborations, disambiguated by position — acceptable because the two meanings are the same mathematical idea (comprehension) and Lean itself uses `{x | P}` for both `Set` and `Subtype` notation. The brace-expression escape in generic args (`Vector<T, {n*2}>`) is distinguished by the absence of `ident:` + `|` — longest-match suffices (verified on-toolchain; no lookahead machinery needed); both readings get golden tests. **Amendment (2026-08-01, mechanism re-spec):** "disambiguated by position" is unimplementable under the unified expression grammar — there is no syntactic term/type position (design §4.1), so stage-one macros cannot see "position." Ruled: `{x: A | P(x)}` elaborates **by expected type** (stage two): expected `Set<A>` → `setOf`, expected `Space`/kind context → `Subtype`, no expectation → defaults to `Set<A>` (matching Lean's own `{x | P}`). This is sanctioned-implicitness item six in Ruling C; escape: F10 ascription.
 
 ## Group 9 — Category theory (universes, dependent fields)
 
 ```rust
 #[universes(u, v)]
-trait Cat<Self: Type<u>> {
-    fn Hom(a: Self, b: Self) -> Type<v>;
+trait Cat<Self: Space<u>> {
+    fn Hom(a: Self, b: Self) -> Space<v>;
 
     fn id<a: Self>() -> Hom(a, a);
     fn comp<a: Self, b: Self, c: Self>(f: Hom(a, b), g: Hom(b, c)) -> Hom(a, c);
@@ -183,7 +182,7 @@ trait Cat<Self: Type<u>> {
 }
 ```
 
-Stresses: a field whose *type* is computed by applying another field (`Hom(a, b)` in binder and return positions — full dependency inside a trait body); explicit universes via `Type<u>` and the `#[universes]` attribute; `id()`'s object argument inferred from context (F1 again, harder — needs the expected-type machinery to thread through `comp`'s unification; this group is the acid test for it). No new findings, but Group 9 is deliberately the elaboration stress-maximum: if stage-one macros can expand this to Lean `class` syntax and Lean elaborates it, the architecture is validated. Schedule it as the M2 gate alongside the conversation file.
+Stresses: a field whose *type* is computed by applying another field (`Hom(a, b)` in binder and return positions — full dependency inside a trait body); explicit universes via `Space<u>` and the `#[universes]` attribute; `id()`'s object argument inferred from context (F1 again, harder — needs the expected-type machinery to thread through `comp`'s unification; this group is the acid test for it). No new findings, but Group 9 is deliberately the elaboration stress-maximum: if stage-one macros can expand this to Lean `class` syntax and Lean elaborates it, the architecture is validated. Schedule it as the M2 gate alongside the conversation file.
 
 ## Group 10 — Probability: PMF monad (do-notation, `?`)
 
@@ -217,7 +216,7 @@ fn find_root(f: Nat -> Nat, bound: Nat) -> Option<Nat> {
 }
 ```
 
-**F14 (the price of Prop-first, paid here):** because `a <= b` is a Prop, `if a <= b { ... }` cannot be Bool-tested — it elaborates to Lean's decidable-if, requiring a `Decidable (a ≤ b)` instance. For `Nat`, `Real` (classically), and everything Mathlib-standard, instances exist and the code reads exactly like Rust; for exotic Props the error message must say "no Decidable instance" in those words. This is the *correct* semantics (it's Lean's own), and the Rust-reading is preserved — but it's the review's biggest hidden semantic shift, so it gets a doc section and a dedicated error. Where a genuine `Bool` is needed (HOF interfaces like `find`), `decide(p)` converts explicitly — F5's companion. **F15 (dependent if):** proofs sometimes need the hypothesis in scope: adopt `if h @ (a <= b) { /* h: a <= b */ } else { /* h: !(a <= b) */ }`, reusing Rust's `@` pattern-binding. Rust precedent makes it readable; maps to `if h : a ≤ b then _ else _`.
+**F14 (the price of Prop-first, paid here):** because `a <= b` is a Prop, `if a <= b { ... }` cannot be Bool-tested — it elaborates to Lean's decidable-if, requiring a `Decidable (a ≤ b)` instance. For `Nat`, `Real` (classically), and everything Mathlib-standard, instances exist and the code reads exactly like Rust; for exotic Props the error message must say "no Decidable instance" in those words. This is the *correct* semantics (it's Lean's own), and the Rust-reading is preserved — but it's the review's biggest hidden semantic shift, so it gets a doc section and a dedicated error. (Amended 2026-08-01: the raw elaboration error is Lean's own "failed to synthesize Decidable …" — stage one cannot reword it; negative tests pin Lean's actual message, and the required "no Decidable instance" wording is delivered by the FH diagnostic layer, `fh check`'s error taxonomy, which is where agents and CI read errors.) Where a genuine `Bool` is needed (HOF interfaces like `find`), `decide(p)` converts explicitly — F5's companion. **F15 (dependent if):** proofs sometimes need the hypothesis in scope: adopt `if h @ (a <= b) { /- h: a <= b -/ } else { /- h: !(a <= b) -/ }`, reusing Rust's `@` pattern-binding. Rust precedent makes it readable; maps to `if h : a ≤ b then _ else _`.
 
 ## Group 12 — Verified computation: gcd with specification (termination, subtypes, dvd)
 
@@ -242,19 +241,19 @@ fn nat_sqrt(n: Nat) -> {r: Nat | (r * r <= n) && (n < (r + 1) * (r + 1))} {
 }
 ```
 
-Stresses: `#[terminates_by]` with the well-founded measure (`b` decreases — our monovariant discussion, now as an attribute); `if b == 0` exercising F14 (Decidable Eq on Nat — fine); divisibility as method `d.dvd(a)` → `d ∣ a` (**F16, unicode policy:** ASCII-method spellings are canonical for every Mathlib notation without a Rust operator — `.dvd()`, `.union()`, `.comp()`; Unicode operator input is a v2 opt-in, never required — keeps the corpus typeable everywhere); subtype in return position via F13's type-position comprehension, elaborating to `{r : Nat // r*r ≤ n ∧ n < (r+1)*(r+1)}` with the value–proof pair introduced by F10 ascription + tuple syntax.
+Stresses: `#[terminates_by]` with the well-founded measure (`b` decreases — our monovariant discussion, now as an attribute); `if b == 0` exercising F14 (Decidable Eq on Nat — fine); divisibility as method `d.dvd(a)` → `d ∣ a` (**F16, unicode policy:** ASCII-method spellings are canonical for every Mathlib notation without a Rust operator — `.dvd()`, `.union()`, `.comp()`; Unicode operator input is a v2 opt-in, never required — keeps the corpus typeable everywhere); subtype in return position via F13's comprehension braces (expected-kind election, per the F13 amendment), elaborating to `{r : Nat // r*r ≤ n ∧ n < (r+1)*(r+1)}` with the value–proof pair introduced by F10 ascription + tuple syntax.
 
 ---
 
 # Adversarial Review — Consolidated Rulings
 
-**Ruling A: Prop-first operator semantics (F3, F4, F5, F12, F14, and Group 6's `&&`).** The comparison, equality, and logical operators of Rust are reassigned to their *mathematical* meanings: `==`/`!=` are `Eq`/`Ne`, `<= < > >=` are order relations, `&& || !` are `∧ ∨ ¬`, `->` is implication/function-arrow, `<->` is `Iff`, `in` is `∈`. Bool is demoted to an ordinary type reached explicitly: `decide(p)` for Prop→Bool, methods (`.xor`, `.band`) for Bool algebra. There is no expected-type-driven double reading of any operator — the earlier design's "`||` means `∨` when in Prop position" is *revoked* as hidden implicitness; one operator, one meaning, everywhere. This inverts Rust's priorities to match the domain's: in a mathematics frontend, propositions are the common case. The entire cost is F14's Decidable-if, which is Lean's own semantics and correctly surfaces exactly where classical/computable distinctions genuinely live.
+**Ruling A: Prop-first operator semantics (F3, F4, F5, F12, F14, and Group 4's `&&`).** The comparison, equality, and logical operators of Rust are reassigned to their *mathematical* meanings: `==`/`!=` are `Eq`/`Ne`, `<= < > >=` are order relations, `&& || !` are `∧ ∨ ¬`, `->` is implication/function-arrow, `<->` is `Iff`, `in` is `∈`. Bool is demoted to an ordinary type reached explicitly: `decide(p)` for Prop→Bool, methods (`.xor`, `.band`) for Bool algebra. There is no expected-type-driven double reading of any operator — the earlier design's "`||` means `∨` when in Prop position" is *revoked* as hidden implicitness; one operator, one meaning, everywhere. This inverts Rust's priorities to match the domain's: in a mathematics frontend, propositions are the common case. The entire cost is F14's Decidable-if, which is Lean's own semantics and correctly surfaces exactly where classical/computable distinctions genuinely live.
 
 **Ruling B: parenthesization over parser cleverness (F6, F7).** Comparisons adjacent to generic-argument position require parens; `a < b < c` is an error; the precedence table in F7 is normative and frozen pre-M1 (changing precedence after users exist is a breaking change of the worst kind). We accept slightly noisier source over backtracking parsers — every backtrack is a future ambiguity report.
 
-**Ruling C: sanctioned implicitness, enumerated and closed.** Three places retain expected-type-driven behavior, each with an explicit escape: nullary/output-position inference (F1; escape: turbofish), tuple-syntax anonymous constructors for `Exists`/`Sigma`/structures (escape: named constructor), and monad inference for `?`-blocks (escape: ascribe the block, F10). Everything else is explicit: theorem keyword (standing decision), coercions written as `as` (F9), ascription distinct from coercion (F10), `pure` written in do-tails (Group 10), `decide` written at Prop/Bool boundaries (Ruling A). The review's meta-rule: implicitness is permitted only where Rust itself already trained the intuition (`Default::default()`, `.into()`-style inference), because there it *is* the Rust reading experience.
+**Ruling C: sanctioned implicitness, enumerated and closed.** Six places retain expected-type-driven behavior (list last amended 2026-08-01), each with an explicit escape: (1) nullary/output-position inference (F1; escape: **F10 ascription** — amended 2026-08-01, was turbofish. Turbofish has no sound stage-one lowering: `@f T` leaves instance arguments explicit and fails on this ruling's own `Grp::e::<G>()` example, and `f (α := T)` needs the callee's binder name, which is elaboration information a macro cannot see. `(Grp::e(): G)` does the job today; turbofish is deferred to a deliberate stage-two decision, ledgered); (2) tuple-syntax anonymous constructors for `Exists`/`Sigma`/structures (escape: named constructor); (3) monad inference for `?`-blocks (escape: ascribe the block, F10); (4) `exists` with a `Space`-valued body electing `Sigma`/`Subtype` (design §4.2; escape: F10 ascription); (5) numeric-literal polymorphism via Lean's `OfNat`/`OfScientific` (escape: F10 ascription); (6) comprehension braces electing `Set`/`Subtype` (F13 as amended; escape: F10 ascription). Everything else is explicit: theorem keyword (standing decision), coercions written as `as` (F9), ascription distinct from coercion (F10), `pure` written in do-tails (Group 10), `decide` written at Prop/Bool boundaries (Ruling A). The review's meta-rule: implicitness is permitted only where Rust itself already trained the intuition (`Default::default()`, `.into()`-style inference), because there it *is* the Rust reading experience.
 
-**Ruling D: acknowledged divergences from Rust, to be documented as a "differences" page.** Distributed binder ascription in `for<>`/`exists<>` (F2); types in term position (F8); named arguments (F11); `@`-binding on `if` (F15); comprehension braces (F13); `in` outside loops (F12). Each is either a strict extension (ill-formed Rust becomes well-formed FH) or confined to constructs Rust lacks — none changes the meaning of a construct that is *also* legal Rust. That invariant ("legal-Rust-lookalike code never silently means something different"... with the sole, loudly-documented exception of Ruling A's operators, which is why Ruling A is the headline) is worth enforcing forever: add a CI check that every grammar change is classified extension/confined/violation, and violations need this document amended first.
+**Ruling D: acknowledged divergences from Rust, to be documented as a "differences" page.** Distributed binder ascription in `for<>`/`exists<>` (F2); types in term position (F8); named arguments (F11); `@`-binding on `if` (F15); comprehension braces (F13); `in` outside loops (F12). Amended 2026-08-01: the F17/F18 constructs are Ruling-D entries too — ambient `var` declarations with mention-based inclusion and the `include` escape, ambient hypotheses, the `Space` kind vocabulary, and trait-names-in-annotation-position (all confined: declaration forms Rust doesn't have). Each is either a strict extension (ill-formed Rust becomes well-formed FH) or confined to constructs Rust lacks — none changes the meaning of a construct that is *also* legal Rust. That invariant ("legal-Rust-lookalike code never silently means something different"... with the sole, loudly-documented exception of Ruling A's operators, which is why Ruling A is the headline) is worth enforcing forever: add a CI check that every grammar change is classified extension/confined/violation, and violations need this document amended first.
 
 **Ruling E: corpus as specification.** These twelve groups become `Tests/corpus/` with the F-findings as named test cases (positive and negative). Implementation order recommendation for the agents: Groups 1→3→4 (grammar core: F3–F7 are load-bearing for everything), then 8/11/12 (the Prop-first consequences), then 2/9 (trait/elaboration depth), then 5/6/7/10 (bridge + ergonomics). Group 9 gates M2.
 
@@ -262,6 +261,6 @@ Stresses: `#[terminates_by]` with the well-founded measure (`b` decreases — ou
 
 **F17 (ambient variables).** `var` declarations at module scope, expanding to Lean's `variable`: mandatory declaration sites (auto-binding rejected — Mathlib's disabling of `autoImplicit` is the cited precedent: typo'd identifiers silently becoming quantified type variables is the exact implicitness class this review exists to exclude), independent generalization per declaration, mention-based inclusion with `include` escape, shadowing requires full restatement plus lint. Full spec in design doc §4.9. Corpus impact: Groups 3, 8, 9 to be rewritten in `var` style alongside their inline-generic originals — both forms must elaborate identically, which is itself a golden test. The ambient-hypothesis mention rule (`var h: eps > 0;` included only when mentioned) gets a dedicated positive/negative test pair.
 
-**F18 (kind vocabulary).** `Space` replaces `Type` in all FH kind positions (`Space<u>` for explicit universes, `Sort<u>` escape, `Prop` unchanged); trait names are legal in annotation position of `var` and generics, folding carrier + structure (`var G: Grp;` → `(G : Type*) [Grp G]`), disambiguated by name resolution (type vs. trait), classified Ruling-D-confined. Kind keywords and `#[role(...)]` refinements persist as structured metadata surfaced via `fh check`/`fh mcp`; binding roles (parameter/ambient/bound/witness/temporary) are computed by tooling, never user-annotated. Corpus impact: all groups' `Type<u>` occurrences (Group 9 especially) migrate to `Space<u>`; Group 9's `trait Cat<Self: Type<u>>` becomes `trait Cat<Self: Space<u>>`.
+**F18 (kind vocabulary).** `Space` replaces `Type` in all FH kind positions (`Space<u>` for explicit universes, `Sort<u>` escape, `Prop` unchanged); trait names are legal in annotation position of `var` and generics, folding carrier + structure (`var G: Grp;` → `(G : Type*) [Grp G]`), disambiguated by name resolution (type vs. trait), classified Ruling-D-confined. Kind keywords and `#[role(...)]` refinements persist as structured metadata surfaced via `fh check`/`fh mcp`; binding roles (parameter/ambient/bound/witness/temporary) are computed by tooling, never user-annotated. Corpus impact: all groups' `Type<u>` occurrences (Group 9 especially) migrate to `Space<u>`; Group 9's `trait Cat<Self: Type<u>>` becomes `trait Cat<Self: Space<u>>`. (Migration executed 2026-08-01 — Group 9 above now reads `Space<u>`/`Space<v>`, and design §4.4's `Semigroup` example reads `Self: Space`.)
 
-**Open after review:** whether `!` on Bool should hard-error (forcing `.bnot()`) or coerce via `decide` — leaning hard-error for symmetry with Ruling A; whether F6's parenthesization requirement can be relaxed inside `for<>` bodies where no generic application can occur (leaning no — one rule, everywhere); and the `half` literal in Group 10 (rational literals: `1/2` as `Real` division vs. `Rat` literal — needs a literals-and-elaboration mini-design before M2, since numeric literal polymorphism is Lean's own subtlest UX area and we should not improvise it).
+**Open after review:** whether `!` on Bool should hard-error (forcing `.bnot()`) or coerce via `decide` — leaning hard-error for symmetry with Ruling A; whether F6's parenthesization requirement can be relaxed inside `for<>` bodies where no generic application can occur (leaning no — one rule, everywhere); and the `half` literal in Group 10 (rational literals: `1/2` as `Real` division vs. `Rat` literal — needs a literals-and-elaboration mini-design, since numeric literal polymorphism is Lean's own subtlest UX area and we should not improvise it). **Amendment (2026-08-01): the literals mini-design is pulled forward from pre-M2 to pre-M1.** Integer literals (`n + 1`, `if b == 0`, `range(n + 1)`) already permeate M0/M1 corpus code, and Lean's `OfNat` numeral elaboration is expected-type-driven — which Ruling C's closed list does not currently sanction. The mini-design must add that entry deliberately (recommended shape: inherit Lean's `OfNat`/`OfScientific` behavior as sanctioned item five, escape: F10 ascription) rather than leave polymorphic literals as unsanctioned implicitness by accident. **Decided (2026-08-01, the mini-design):** FH introduces no literal syntax of its own. Integer literals elaborate via Lean's `OfNat` (expected-type-driven — now sanctioned item five in Ruling C), decimals via `OfScientific`; `1/2` is division in the expected type, exactly as in Lean; no dedicated rational-literal form. Group 10's `half` is spelled explicitly at its use site (`(1: Real)/2`-style, or ascribed per F10) pending the M2 bridge's work on `PMF.bernoulli`'s actual argument type.

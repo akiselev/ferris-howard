@@ -1,0 +1,196 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref; a full Mathlib-backed build is not cheap.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lean:
+    name: lean (all four test tiers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Our own build products. Mathlib's oleans come from its own cache (below); this
+      # cache is what makes an unchanged FerrisHoward/ rebuild cheap.
+      - name: Cache .lake/build
+        uses: actions/cache@v4
+        with:
+          path: lean/.lake/build
+          key: lake-build-${{ runner.os }}-${{ hashFiles('lean/lean-toolchain', 'lean/lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: |
+            lake-build-${{ runner.os }}-${{ hashFiles('lean/lean-toolchain', 'lean/lake-manifest.json') }}-
+
+      # Installs elan at the pinned toolchain, runs `lake exe cache get`, then builds.
+      # `--wfail` turns a stray warning into a failure: an FH fixture that produces an
+      # uncaptured diagnostic has not been tested, it has been observed.
+      #
+      # All four tiers run here. `#guard_msgs` swallows the diagnostics it matches, so a
+      # negative fixture builds clean and a drifted one fails the build.
+      - name: Build and test
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: lean
+          build-args: --wfail
+          use-mathlib-cache: true
+          test: false
+          lint: false
+
+      # After the build, so that `.lake/packages/mathlib` exists.
+      - name: Toolchain-match assertion
+        run: ./scripts/check-toolchain.sh
+
+      # A drive-by `lake update` rewrites the manifest. Bumps are milestone-boundary PRs
+      # (R6), so an unexpected manifest change is a failure, not a diff to eyeball.
+      - name: Manifest is unchanged
+        run: git diff --exit-code lean/lake-manifest.json
+
+      # ADR-006's guarantee. Emits publication-grade Lean, checks it carries no FH
+      # dependency, elaborates it from scratch, and compares it to the FH original
+      # declaration by declaration using the I3 statement encoding. The point is not that
+      # the artifact compiles — it is that it states exactly what we proved, which is what
+      # lets FH drop out of the trusted base.
+      - name: emit-lean round-trip
+        run: python3 scripts/round-trip.py
+
+      # `fh check` is the agent layer's entry point (C1), so its JSON is a contract:
+      # a corpus fixture must report `ok`, a complete proof must report no sorry, and
+      # every hole must come with the goal and local context an agent edits against —
+      # agent-interface §1 calls edit -> check -> read goals -> edit "90% of an agent's
+      # loop", so the goals array is load-bearing rather than informational.
+      - name: fh check smoke
+        working-directory: lean
+        run: |
+          lake exe fh_check Tests/corpus/g01_peano.lean > /tmp/fh-check.json
+          lake exe fh_check Tests/corpus/g12_gcd.lean > /tmp/fh-check-holes.json
+          python3 - <<'PY'
+          import json
+          d = json.load(open("/tmp/fh-check.json"))
+          assert d["status"] == "ok", d
+          add_comm = next(x for x in d["declarations"] if x["name"] == "add_comm")
+          assert not add_comm["sorry"], add_comm
+          assert d["goals"] == [], d["goals"]
+
+          # Group 12 keeps the corpus's three `todo!()`s plus one in its span tier, so it
+          # is the fixture with holes. Synthetic sorries — Lean recovering from an
+          # elaboration error — are not holes and must not appear.
+          h = json.load(open("/tmp/fh-check-holes.json"))
+          assert len(h["goals"]) == 4, h["goals"]
+          g = next(g for g in h["goals"] if g["goal"] == "d \u2223 gcd2 a b")
+          names = [c["name"] for c in g["context"]]
+          assert names == ["a", "b", "d", "ha", "hb"], names
+
+          # Binding roles are computed, not annotated (design §4.9).
+          gt = next(x for x in h["declarations"] if x["name"] == "gcd2_greatest")
+          roles = [(b["name"], b["role"]) for b in gt["binders"]]
+          assert roles == [("a", "parameter"), ("b", "parameter"), ("d", "parameter"),
+                           ("ha", "parameter"), ("hb", "parameter")], roles
+          print("fh check: ok")
+          PY
+
+      # B2's queries are only as good as B1's edges, and `uses_proof` was empty for every
+      # theorem in Mathlib until B2's first real run caught it. So the gate is end to end:
+      # extract a slice, ask the graph a question, and check the answer is the citation
+      # chain rather than an empty one.
+      - name: atlas end-to-end
+        working-directory: lean
+        run: |
+          lake exe atlas_extract --local Tests.Atlas.Extract > /tmp/slice.jsonl
+          cargo build --manifest-path ../Cargo.toml -p fh-atlas --bins
+          ../target/debug/atlas stats /tmp/slice.jsonl
+          test "$(../target/debug/atlas why /tmp/slice.jsonl two_eq_two Eq.refl --lens proof)" = \
+               "$(printf 'two_eq_two\nEq.refl')"
+          # And the lens is load-bearing: the claim does not mention reflexivity.
+          if ../target/debug/atlas why /tmp/slice.jsonl two_eq_two Eq.refl --lens statement; then
+            echo "expected no statement-lens path to Eq.refl"; exit 1
+          fi
+          # C5's transitive-sorry scan, which the graph answers directly. The two names
+          # it finds in g01 are the same two `scripts/round-trip.py` omits as incomplete
+          # — two independent mechanisms (Lean's `collectAxioms`, Rust-side reachability)
+          # agreeing, which is the point of having both.
+          lake exe atlas_extract --local Tests.corpus.g01_peano > /tmp/g01.jsonl
+          ../target/debug/atlas honesty /tmp/g01.jsonl > /tmp/honesty.txt && \
+            { echo "expected honesty findings in g01"; exit 1; }
+          grep -q "as_bool  rests on  sorryAx" /tmp/honesty.txt
+          grep -q "bad_arm  rests on  sorryAx" /tmp/honesty.txt
+          echo "atlas: ok"
+
+      # The M2 exit gate's MCP round-trip: initialize -> tools/list -> elaborate -> goals.
+      # Drives the server over stdio the way a client does, including the `initialized`
+      # notification that must draw no reply.
+      - name: mcp round-trip smoke
+        run: |
+          cargo build -p fh-atlas --bins
+          python3 scripts/mcp-smoke.py
+
+  rust:
+    name: rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # GitHub's ubuntu images ship a current stable Rust with clippy and rustfmt, so
+      # there is no toolchain action to pin here.
+      - name: Toolchain versions
+        run: cargo --version && rustc --version
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - run: cargo fmt --all --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo test --all
+
+  governance:
+    name: governance (Ruling D — advisory)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      # Ruling D asks that every grammar change be classified extension / confined /
+      # violation, and PLAN ground rule 4 makes the classification *human-applied*: this
+      # job reports, it does not gate. A machine cannot tell whether a construct that also
+      # parses as Rust now means something different — that judgement is the review.
+      - uses: actions/checkout@v4
+      - name: Check the Ruling-D field
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          status=ok
+          # The field counts as filled only when it names a classification.
+          if ! printf '%s' "$PR_BODY" | grep -qiE '^- \*\*Ruling D:\*\* *(extension|confined|violation|none)'; then
+            echo "::warning title=Ruling D::The PR description has no filled-in Ruling-D classification (extension / confined / violation / none). See .github/pull_request_template.md."
+            status=missing
+          fi
+          # Ground rule 2: every feature PR states its expansion stage.
+          if ! printf '%s' "$PR_BODY" | grep -qiE '^- \*\*Stage:\*\* *(one|two)'; then
+            echo "::warning title=Stage::The PR description does not state stage one or stage two."
+          fi
+          case "$PR_LABELS" in
+            *ruling-d:*) ;;
+            *) echo "::warning title=Ruling D label::No ruling-d:* label on this PR. The label is applied by a human reviewer; this check is advisory." ;;
+          esac
+          {
+            echo "### Ruling D (advisory)"
+            echo
+            echo "- description field: \`$status\`"
+            echo "- labels: \`${PR_LABELS:-none}\`"
+            echo
+            echo "Automation is advisory here by design (PLAN ground rule 4)."
+          } >> "$GITHUB_STEP_SUMMARY"
